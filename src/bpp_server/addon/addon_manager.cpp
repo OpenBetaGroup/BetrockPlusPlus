@@ -80,6 +80,28 @@ void AddonManager::Load() {
 
 		addon->server = server;
 		addon->info = addonFn(&addon->api);
+		// Check for min version (0 = any/ignore)
+		if (addon->info.min_api_version != 0 && ADDON_API_VERSION < addon->info.min_api_version) {
+			Logger::Error <<
+				std::format("Addon at \"{}\" requires at least addon API v{} (using v{})\n",
+					addonPath.string(),
+					addon->info.min_api_version,
+					ADDON_API_VERSION
+				);
+			dlclose(handle);
+			continue;
+		}
+		// Check for max version (0 = any/ignore)
+		if (addon->info.max_api_version != 0 && ADDON_API_VERSION > addon->info.max_api_version) {
+			Logger::Error <<
+				std::format("Addon at \"{}\" supports at most addon API v{} (using v{})\n",
+					addonPath.string(),
+					addon->info.max_api_version,
+					ADDON_API_VERSION
+				);
+			dlclose(handle);
+			continue;
+		}
 		addon->dynHandle = handle;
 
 		if (addon->info.events.addonLoad)
