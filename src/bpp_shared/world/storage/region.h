@@ -7,7 +7,7 @@
 */
 #pragma once
 #include "chunk.h"
-#include "helpers/byteswap_compat.h"
+#include "helpers/endian_convert.h"
 #include "helpers/file_handle.h"
 #include "numeric_structs.h"
 #include <memory>

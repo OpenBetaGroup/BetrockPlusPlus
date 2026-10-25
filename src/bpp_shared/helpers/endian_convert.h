@@ -7,6 +7,9 @@
 */
 #pragma once
 
+// Endianness conversion where it's needed, as network packets, NBT data and Java itself are all big endian
+// Also endian.h was already taken by something in glibc, so... bweh whatever :p
+
 #include <bit>
 #include <cstdint>
 #include <type_traits>

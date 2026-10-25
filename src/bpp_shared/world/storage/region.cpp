@@ -12,7 +12,7 @@
 #include "nbt/nbt.h"
 #include "tile_entities/tile_entity.h"
 #include <cstdint>
-#include "helpers/byteswap_compat.h"
+#include "helpers/endian_convert.h"
 #include <fstream>
 #include <libdeflate.h>
 #include <memory>

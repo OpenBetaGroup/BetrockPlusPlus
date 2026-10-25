@@ -17,7 +17,7 @@
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #endif
-#include "helpers/byteswap_compat.h"
+#include "helpers/endian_convert.h"
 #include "packet_data.h"
 #include <atomic>
 #include <cstdint>
