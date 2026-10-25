@@ -277,8 +277,7 @@ void NetherGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 		for (int32_t iZ = 0; iZ < _max.z; ++iZ) {
 			// Sample contientalness noise
 			double continentalness = (continentalnessNoiseField[xzIndex] + 256.0) / 512.0;
-			if (continentalness > 1.0)
-				continentalness = 1.0;
+			continentalness = std::min(continentalness, 1.0);
 			// Sample depth noise
 			double depthNoise = depthNoiseField[xzIndex] / 8000.0;
 			if (depthNoise < 0.0)
@@ -286,14 +285,12 @@ void NetherGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 			depthNoise = depthNoise * 3.0 - 3.0;
 			if (depthNoise < 0.0) {
 				depthNoise /= 2.0;
-				if (depthNoise < -1.0)
-					depthNoise = -1.0;
+				depthNoise = std::max(depthNoise, -1.0);
 				depthNoise /= 1.4;
 				depthNoise /= 2.0;
 				continentalness = 0.0;
 			} else {
-				if (depthNoise > 1.0)
-					depthNoise = 1.0;
+				depthNoise = std::min(depthNoise, 1.0);
 				depthNoise /= 6.0;
 			}
 			continentalness += 0.5;
@@ -326,10 +323,7 @@ void NetherGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 				}
 				if (double(iY) < 0.0) {
 					double heightEdgeFade = (0.0 - double(iY) / 4.0);
-					if (heightEdgeFade < 0.0)
-						heightEdgeFade = 0.0;
-					if (heightEdgeFade > 1.0)
-						heightEdgeFade = 1.0;
+					heightEdgeFade = std::clamp(heightEdgeFade, 0.0, 1.0);
 					terrainDensity = (terrainDensity * (1.0 - heightEdgeFade)) + (-10.0 * heightEdgeFade);
 				}
 

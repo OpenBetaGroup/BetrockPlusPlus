@@ -312,8 +312,7 @@ void OverworldGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 			// Sample contientalness noise
 			double continentalness = (continentalnessNoiseField[xzIndex] + 256.0) / 512.0;
 			continentalness *= humi;
-			if (continentalness > 1.0)
-				continentalness = 1.0;
+			continentalness = std::min(continentalness, 1.0);
 			// Sample depth noise
 			double depthNoise = depthNoiseField[xzIndex] / 8000.0;
 			if (depthNoise < 0.0)
@@ -321,14 +320,12 @@ void OverworldGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 			depthNoise = depthNoise * 3.0 - 2.0;
 			if (depthNoise < 0.0) {
 				depthNoise /= 2.0;
-				if (depthNoise < -1.0)
-					depthNoise = -1.0;
+				depthNoise = std::max(depthNoise, -1.0);
 				depthNoise /= 1.4;
 				depthNoise /= 2.0;
 				continentalness = 0.0;
 			} else {
-				if (depthNoise > 1.0)
-					depthNoise = 1.0;
+				depthNoise = std::min(depthNoise, 1.0);
 				depthNoise /= 8.0;
 			}
 			if (continentalness < 0.0)

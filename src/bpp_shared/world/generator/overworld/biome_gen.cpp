@@ -6,6 +6,7 @@
 
 #include "biome_gen.h"
 #include "chunk.h"
+#include <algorithm>
 
 // This one does nothing. DO NOT USE!
 BiomeGenerator::BiomeGenerator() {}
@@ -62,14 +63,8 @@ void BiomeGenerator::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std
 			double humi = (_humidity[index] * 0.15 + 0.5) * limit + weird * scale;
 			temp = 1.0 - (1.0 - temp) * (1.0 - temp);
 			// Limit values to 0.0 - 1.0
-			if (temp < 0.0)
-				temp = 0.0;
-			if (humi < 0.0)
-				humi = 0.0;
-			if (temp > 1.0)
-				temp = 1.0;
-			if (humi > 1.0)
-				humi = 1.0;
+			temp = std::clamp(temp, 0.0, 1.0);
+			humi = std::clamp(humi, 0.0, 1.0);
 			// Write the temperature and humidity values back
 			_temperature[index] = temp;
 			_humidity[index] = humi;
@@ -94,15 +89,8 @@ Biome BiomeGenerator::GetBiomeAtPoint(Int2 _worldPos) {
 	double t = (temp[0] * 0.15 + 0.7) * 0.99 + w * 0.01;
 	double h = (humi[0] * 0.15 + 0.5) * 0.998 + w * 0.002;
 	t = 1.0 - (1.0 - t) * (1.0 - t);
-	if (t < 0.0)
-		t = 0.0;
-	if (t > 1.0)
-		t = 1.0;
-	if (h < 0.0)
-		h = 0.0;
-	if (h > 1.0)
-		h = 1.0;
-
+	t = std::clamp(t, 0.0, 1.0);
+	h = std::clamp(h, 0.0, 1.0);
 	return GetBiomeFromLookup(float(t), float(h));
 }
 
@@ -135,10 +123,7 @@ void BiomeGenerator::GenerateTemperature(std::span<double> _temperature, std::sp
 			double temp = (_temperature[index] * 0.15 + 0.7) * limit + weird * scale;
 			temp = 1.0 - (1.0 - temp) * (1.0 - temp);
 			// Limit values to 0.0 - 1.0
-			if (temp < 0.0)
-				temp = 0.0;
-			if (temp > 1.0)
-				temp = 1.0;
+			temp = std::clamp(temp, 0.0, 1.0);
 			// Write the temperature values back
 			_temperature[index] = temp;
 			++index;
