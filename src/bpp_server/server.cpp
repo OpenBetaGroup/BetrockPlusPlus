@@ -445,86 +445,88 @@ void Server::Startup() {
 	                    << Int2(int(gameRuntime.world.spawnPoint.x), int(gameRuntime.world.spawnPoint.z)) << "\n";
 
 	Logger::Info << "Preparing spawn chunks..\n";
-	// Push every single spawn chunk to get ready for generation
-	std::unordered_set<Int32_2> wanted;
-	for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
-		for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
-			Int32_2 pos = { (gameRuntime.world.spawnPoint.x >> 4) + dx, (gameRuntime.world.spawnPoint.z >> 4) + dz };
-			wanted.insert(pos);
+	if (Gamerule::Get<bool>(Gamerule::Id::SpawnChunks)) {
+		// Push every single spawn chunk to get ready for generation
+		std::unordered_set<Int32_2> wanted;
+		for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
+			for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
+				Int32_2 pos = { (gameRuntime.world.spawnPoint.x >> 4) + dx, (gameRuntime.world.spawnPoint.z >> 4) + dz };
+				wanted.insert(pos);
+			}
 		}
-	}
 
-	// Actually request chunks
-	for (auto pos : wanted) {
-		if (!gameRuntime.world.chunks.contains(pos)) {
-			auto c = std::make_shared<Chunk>();
-			c->spawnChunk = true;
-			c->cpos = pos;
-			gameRuntime.world.chunks.emplace(pos, std::move(c));
+		// Actually request chunks
+		for (auto pos : wanted) {
+			if (!gameRuntime.world.chunks.contains(pos)) {
+				auto c = std::make_shared<Chunk>();
+				c->spawnChunk = true;
+				c->cpos = pos;
+				gameRuntime.world.chunks.emplace(pos, std::move(c));
+			}
+			if (!gameRuntime.worldHell.chunks.contains(pos)) {
+				auto c = std::make_shared<Chunk>();
+				c->spawnChunk = true;
+				c->cpos = pos;
+				gameRuntime.worldHell.chunks.emplace(pos, std::move(c));
+			}
 		}
-		if (!gameRuntime.worldHell.chunks.contains(pos)) {
-			auto c = std::make_shared<Chunk>();
-			c->spawnChunk = true;
-			c->cpos = pos;
-			gameRuntime.worldHell.chunks.emplace(pos, std::move(c));
-		}
-	}
 
-	// Chunks are ready to load at this point.
-	auto loadSpawnChunks = [totalSpawnChunks, spawnChunkDistance](WorldManager& _world) {
-		auto start = std::chrono::steady_clock::now();
-		int loadedChunks = 0;
-		while (true) {
-			loadedChunks = 0;
-			// Force gen these chunks AS FAST AS POSSIBLE
-			_world.PumpPipeline({});
-			_world.pool.wait();
-			_world.DrainGenQueue();
-			_world.regionManager->iopool.wait();
-			_world.DrainLoadQueue();
-			_world.PopulateReady(INT_MAX);
-			_world.lightManager.ProcessLightQueue(_world);
+		// Chunks are ready to load at this point.
+		auto loadSpawnChunks = [totalSpawnChunks, spawnChunkDistance](WorldManager& _world) {
+			auto start = std::chrono::steady_clock::now();
+			int loadedChunks = 0;
+			while (true) {
+				loadedChunks = 0;
+				// Force gen these chunks AS FAST AS POSSIBLE
+				_world.PumpPipeline({});
+				_world.pool.wait();
+				_world.DrainGenQueue();
+				_world.regionManager->iopool.wait();
+				_world.DrainLoadQueue();
+				_world.PopulateReady(INT_MAX);
+				_world.lightManager.ProcessLightQueue(_world);
 
-			for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
-				for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
-					Int32_2 p{ (_world.spawnPoint.x >> 4) + dx, (_world.spawnPoint.z >> 4) + dz };
-					auto it = _world.chunks.find(p);
-					if (it != _world.chunks.end() && it->second->state.load() >= ChunkState::Generated)
-						loadedChunks++;
+				for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
+					for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
+						Int32_2 p{ (_world.spawnPoint.x >> 4) + dx, (_world.spawnPoint.z >> 4) + dz };
+						auto it = _world.chunks.find(p);
+						if (it != _world.chunks.end() && it->second->state.load() >= ChunkState::Generated)
+							loadedChunks++;
+					}
 				}
-			}
 
-			// Update load percentage every second
-			if (std::chrono::duration<float>(std::chrono::steady_clock::now() - start).count() >= 1.0f) {
-				int percentLoaded = int((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f);
-				Logger::Info << "Loading spawn.. " << percentLoaded << "%\n";
-				start = std::chrono::steady_clock::now();
-			}
+				// Update load percentage every second
+				if (std::chrono::duration<float>(std::chrono::steady_clock::now() - start).count() >= 1.0f) {
+					int percentLoaded = int((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f);
+					Logger::Info << "Loading spawn.. " << percentLoaded << "%\n";
+					start = std::chrono::steady_clock::now();
+				}
 
-			// Have we loaded all the spawn chunks?
-			if (loadedChunks >= totalSpawnChunks)
-				break;
+				// Have we loaded all the spawn chunks?
+				if (loadedChunks >= totalSpawnChunks)
+					break;
+			}
+			Logger::Info << "Loading spawn.. 100%\n";
+		};
+
+		// Benchmark gen speed
+		//ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
+
+		Logger::Info << "Loading spawn chunks for Overworld: (" << totalSpawnChunks << ")\n";
+		loadSpawnChunks(gameRuntime.world);
+
+		/*
+		std::vector<Chunk*> chunks;
+		for (auto& c : gameRuntime.world.chunks) {
+			chunks.push_back(c.second.get());
 		}
-		Logger::Info << "Loading spawn.. 100%\n";
-	};
+		auto result = ChunkBenchmark::Benchmark(chunks, 100);
+		ChunkBenchmark::Print(result);
+		*/
 
-	// Benchmark gen speed
-	//ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
-
-	Logger::Info << "Loading spawn chunks for Overworld: (" << totalSpawnChunks << ")\n";
-	loadSpawnChunks(gameRuntime.world);
-
-	/*
-	std::vector<Chunk*> chunks;
-	for (auto& c : gameRuntime.world.chunks) {
-		chunks.push_back(c.second.get());
+		Logger::Info << "Loading spawn chunks for Hell: (" << totalSpawnChunks << ")\n";
+		loadSpawnChunks(gameRuntime.worldHell);
 	}
-	auto result = ChunkBenchmark::Benchmark(chunks, 100);
-	ChunkBenchmark::Print(result);
-	*/
-
-	Logger::Info << "Loading spawn chunks for Hell: (" << totalSpawnChunks << ")\n";
-	loadSpawnChunks(gameRuntime.worldHell);
 
 	float startupSeconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - startupStart).count();
 	Logger::Info << "Startup Complete. (" << std::setprecision(4) << startupSeconds << "s)\n";

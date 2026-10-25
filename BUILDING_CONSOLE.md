@@ -1,3 +1,7 @@
+> [!NOTE]
+> This whole file, alongside a decent amount of the platform-specific files
+> for Switch and 3DS are vibecoded.
+
 # Nintendo Switch & Nintendo 3DS
 
 Betrock++ can be cross-compiled into homebrew for the Nintendo Switch (`.nro`)
@@ -116,13 +120,3 @@ cmake --build build -j$(nproc)
 
 `build/BetrockPlusPlus.3dsx` is produced as a post-build step (`3dsxtool`).
 Copy it to `/3ds/BetrockPlusPlus/` on the SD card and launch it from the Homebrew Launcher.
-
-## Troubleshooting
-
-- **`find_package(libdeflate CONFIG REQUIRED)` fails**: step 2 must install into
-  the portlibs folder matching the toolchain file you pass (`portlibs/switch` or `portlibs/3ds`).
-- **Packaging tool not found** (`nacptool`/`elf2nro`/`3dsxtool`): they ship in the
-  devkitPro docker images; otherwise install `switch-tools` / `3ds-tools` with
-  `dkp-pacman`, or run the tool by hand on `BetrockPlusPlus.elf`.
-- **The app exits straight back to the menu**: the reason is printed on screen
-  and kept there until you leave via HOME; check `logs/` in the data folder too.
