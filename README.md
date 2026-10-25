@@ -17,7 +17,7 @@ A full, from-scratch reimplementation of Beta 1.7.x into C++.
 
 ## Community
 
-This is another project that's part of/worked on by the OpenBeta Community. We have a [Discord Server](https://discord.gg/JHTz2HSKrf) and [Website](https://OpenBetaGroup.github.io/OpenBeta)!
+This is another project that's part of/worked on by the OpenBeta Community. We have a [Discord Server](https://discord.gg/JHTz2HSKrf) and [Website](https://openbetagroup.github.io)!
 
 ## Running
 
