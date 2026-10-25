@@ -226,43 +226,6 @@ int main(int argc, char** argv) {
 	BlockStopSignals();
 #endif
 #endif
-	// For testing REMOVE LATER!
-	// TextNBTifier tnbt;
-	// auto test = tnbt.Parse(R"---({
-	// name: "Alex",
-	// 'single': 'it\'s "fine"',
-	// "spaced key": "commas, colons: {braces} [brackets]",
-	// "esc\"aped": "tab\there \\ backslash \"quoted\"",
-	// "": "empty key",
-	// unicode: "héllo wörld ✓",
-	// 15: "numeric key",
-	// 1b: "suffixed key",
-	// -3: "negative key",
-	// under_score-dash.dot+plus: "unquoted key chars",
-	// 
-	// bytes:   { a: 0b, b: 127b, c: -128B, t: true, f: false },
-	// shorts:  { a: 0s, b: 32767s, c: -32768S },
-	// ints:    { a: 0, b: 2147483647, c: -2147483648, d: +42, e: 550, f: -200 },
-	// longs:   { a: 0L, b: 9223372036854775807l, c: -9223372036854775808L },
-	// floats:  { a: 0.5f, b: -1.25F, c: 3f, d: .5f },
-	// doubles: { a: 0.5, b: -1.25d, c: 3D, d: 1.0 },
-	// 
-	// notNumbers: [12x, 1.2.3, -, +, b, abc],
-	// 
-	// emptyCompound: {},
-	// emptyList: [],
-	// byteArray: [B; 1b, -2b, 127b],
-	// intArray: [I; 550, -200, 0, 2147483647, -2147483648],
-	// emptyIntArray: [I;],
-	// spacing: [ 1 , 2 ,3,  4 ],
-	// 
-	// listOfLists: [ [1, 2], [], [3] ],
-	// listOfCompounds: [ { id: 1 }, { id: 2, extra: "x" }, {} ],
-	// nested: { a: { b: { c: { d: { e: [ { f: [ [ "deep" ] ] } ] } } } } },
-	// compact:{x:1,y:[2,3],z:{w:"no spaces"}},
-	// last: "no trailing comma"
-	// })---");
-
 	Server serv;
 	//if (args.enableWhitelist)
 	//	serv.SetWhitelistEnabled(true, false);
