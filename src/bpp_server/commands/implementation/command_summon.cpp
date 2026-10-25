@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2025-2026, jwaxy <jwaxy.is-a.dev>
+ * Copyright (c) 2026, jwaxy <jwaxy.is-a.dev>
  * Copyright (c) 2026, Anya Rihtarshich <vesui@proton.me>
+ * Copyright (c) 2026, Pixel Brush <pixelbrush.dev>
  *
  * SPDX-License-Identifier: AGPL-3.0-only
 */
@@ -20,6 +21,7 @@
 #include "entities/entity_slime.h"
 #include "entities/entity_spider.h"
 #include "entities/entity_zombie.h"
+#include "entities/entity_wolf.h"
 #include "entities/entity_squid.h"
 #include "networking/packets.h"
 #include <memory>
@@ -67,6 +69,9 @@ EntityType GetEntityTypeFromString(std::string _name) {
 	if (_name == "slime") {
 		return EntityType::SLIME;
 	}
+	if (_name == "wolf") {
+		return EntityType::WOLF;
+	}
 	return EntityType::NONE;
 }
 
@@ -96,6 +101,8 @@ std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 		return std::make_shared<MinecartEntity>();
 	case EntityType::SLIME:
 		return std::make_shared<SlimeEntity>();
+	case EntityType::WOLF:
+		return std::make_shared<WolfEntity>();
 	default:
 		return nullptr;
 	}
