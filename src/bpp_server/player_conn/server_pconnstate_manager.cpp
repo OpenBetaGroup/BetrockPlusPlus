@@ -210,7 +210,7 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	spawn.Serialize(_session.stream);
 
 	Packet::SetHealth health;
-	health.health = _session.entity->health;
+	health.health = static_cast<int16_t>(_session.entity->health);
 	health.Serialize(_session.stream);
 
 	Packet::SetTime time;
@@ -331,7 +331,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 		}
 	}
 
-	int percent = std::ceil((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f);
+	int percent = static_cast<int>(std::ceil((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f));
 
 	if (loadedChunks % (totalSpawnChunks / 4) == 0)
 		Logger::Info << "Spawn chunks: " << percent << "%\n";
