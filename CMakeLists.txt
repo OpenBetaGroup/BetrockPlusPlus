@@ -18,6 +18,28 @@ set_property(CACHE GENERATION_PRECISION PROPERTY STRINGS "DOUBLE" "FLOAT" "LONG"
 option(BUILD_SERVER "Build as server" ON)
 option(SDL_VENDORED "Use vendored (locally built) SDL library" ON)
 
+# Nintendo 3DS / Switch homebrew (devkitPro). Detected from the toolchain file
+# (see BUILDING_CONSOLE.md); BPP_TARGET=3DS|SWITCH forces it for odd setups.
+set(BPP_TARGET "" CACHE STRING "Force a console target: 3DS or SWITCH (normally auto-detected)")
+set(BPP_TARGET_3DS OFF)
+set(BPP_TARGET_SWITCH OFF)
+if(BPP_TARGET STREQUAL "3DS" OR CMAKE_TOOLCHAIN_FILE MATCHES "[/\\\\]3DS\\.cmake$")
+    set(BPP_TARGET_3DS ON)
+elseif(BPP_TARGET STREQUAL "SWITCH" OR CMAKE_TOOLCHAIN_FILE MATCHES "[/\\\\]Switch\\.cmake$")
+    set(BPP_TARGET_SWITCH ON)
+endif()
+if(BPP_TARGET_3DS OR BPP_TARGET_SWITCH)
+    set(BPP_TARGET_CONSOLE ON)
+    message(STATUS "Building for a homebrew console target: server only, optional features disabled")
+    # No client (SDL3/OpenGL), no libcurl/vcpkg, and CrashCatch needs fork()/execinfo
+    set(BUILD_SERVER ON CACHE BOOL "Build as server" FORCE)
+    set(ONLINE_MODE_AUTHENTICATION OFF CACHE BOOL "" FORCE)
+    set(BETACRAFT_HEARTBEAT OFF CACHE BOOL "" FORCE)
+    set(CRASH_LOGGING OFF CACHE BOOL "" FORCE)
+else()
+    set(BPP_TARGET_CONSOLE OFF)
+endif()
+
 if(BETACRAFT_HEARTBEAT)
     list(APPEND VCPKG_MANIFEST_FEATURES "betacraft-heartbeat")
 endif()
@@ -295,6 +317,12 @@ set(SERVER_SOURCES
     ${COMMAND_SOURCES}
 )
 
+# No terminal / line editor on the consoles, use the headless stand-in
+if(BPP_TARGET_CONSOLE)
+    list(REMOVE_ITEM SERVER_SOURCES src/bpp_server/console/server_console.cpp)
+    list(APPEND SERVER_SOURCES src/bpp_server/console/server_console_headless.cpp)
+endif()
+
 # Client-specific source code
 set(CLIENT_SOURCES
     src/bpp_client/client.cpp
@@ -305,7 +333,15 @@ set(CLIENT_SOURCES
 )
 
 # Platform-specific source code
-if(WIN32)
+if(BPP_TARGET_3DS)
+    file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/src/bpp_shared/platform/3ds/*.cpp"
+    )
+elseif(BPP_TARGET_SWITCH)
+    file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/src/bpp_shared/platform/nx/*.cpp"
+    )
+elseif(WIN32)
     file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/src/bpp_shared/platform/win32/*.cpp"
     )
@@ -360,6 +396,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_BUILD_TYPE MATCHES "^(Debug|RelW
 endif()
 
 if(BUILD_SERVER)
+if(NOT BPP_TARGET_CONSOLE)
 find_package(replxx CONFIG QUIET)
 if(NOT replxx_FOUND)
     include(FetchContent)
@@ -374,6 +411,7 @@ if(NOT replxx_FOUND)
     FetchContent_MakeAvailable(replxx)
 endif()
 target_link_libraries(BetrockPlusPlus PRIVATE replxx::replxx)
+endif()
 # Server mode
     target_compile_definitions(BetrockPlusPlus PRIVATE
         BUILD_SERVER
@@ -455,7 +493,7 @@ target_link_libraries(BetrockPlusPlus
 )
 
 # TODO: Ideally we do a test to see if we need to manually link in atomics as a library
-if(NOT WIN32 AND NOT APPLE)
+if(NOT WIN32 AND NOT APPLE AND UNIX AND LINUX)
     target_link_libraries(BetrockPlusPlus PRIVATE atomic)
 endif()
 
@@ -609,6 +647,34 @@ target_compile_options(BetrockPlusPlus PRIVATE
         /analyze
     >
 )
+
+# Nintendo 3DS / Switch: small terminal, and package the .elf the way the
+# docs describe (BUILDING_CONSOLE.md) so there's nothing to do by hand
+if(BPP_TARGET_3DS)
+    # 50 columns on the top screen, so no date in the log timestamps
+    target_compile_definitions(BetrockPlusPlus PRIVATE LOGGER_SHORT_TIME)
+    find_program(BPP_3DSXTOOL_EXE 3dsxtool PATHS "$ENV{DEVKITPRO}/tools/bin" NO_CMAKE_FIND_ROOT_PATH)
+    if(BPP_3DSXTOOL_EXE)
+        add_custom_command(TARGET BetrockPlusPlus POST_BUILD
+            COMMAND ${BPP_3DSXTOOL_EXE} "$<TARGET_FILE:BetrockPlusPlus>" "${CMAKE_BINARY_DIR}/BetrockPlusPlus.3dsx"
+            COMMENT "Packaging BetrockPlusPlus.3dsx"
+        )
+    else()
+        message(WARNING "3dsxtool not found; package the .3dsx by hand (BUILDING_CONSOLE.md)")
+    endif()
+elseif(BPP_TARGET_SWITCH)
+    find_program(BPP_NACPTOOL_EXE nacptool PATHS "$ENV{DEVKITPRO}/tools/bin" NO_CMAKE_FIND_ROOT_PATH)
+    find_program(BPP_ELF2NRO_EXE elf2nro PATHS "$ENV{DEVKITPRO}/tools/bin" NO_CMAKE_FIND_ROOT_PATH)
+    if(BPP_NACPTOOL_EXE AND BPP_ELF2NRO_EXE)
+        add_custom_command(TARGET BetrockPlusPlus POST_BUILD
+            COMMAND ${BPP_NACPTOOL_EXE} --create "BetrockPlusPlus" "Pixel Brush" "${PROJECT_VERSION}" "${CMAKE_BINARY_DIR}/BetrockPlusPlus.nacp"
+            COMMAND ${BPP_ELF2NRO_EXE} "$<TARGET_FILE:BetrockPlusPlus>" "${CMAKE_BINARY_DIR}/BetrockPlusPlus.nro" "--nacp=${CMAKE_BINARY_DIR}/BetrockPlusPlus.nacp"
+            COMMENT "Packaging BetrockPlusPlus.nro"
+        )
+    else()
+        message(WARNING "nacptool/elf2nro not found; package the .nro by hand (BUILDING_CONSOLE.md)")
+    endif()
+endif()
 
 # Ensure all files have copyright notice
 file(GLOB_RECURSE SOURCE_FILES

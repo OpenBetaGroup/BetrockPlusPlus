@@ -9,6 +9,7 @@
 #include "generator/overworld/biome_gen.h"
 #include "generator/overworld/tree_gen.h"
 #include "tree_gen.h"
+#include <memory>
 
 /**
  * @brief Construct a new Beta 1.7.3 Overworld Generator
@@ -389,7 +390,10 @@ Biome OverworldGenerator::GetBiomeAt(Int2 _worldPos) {
 
 // Exact port of BiomeGenBase.getRandomWorldGenForTrees() and per-biome overrides.
 void OverworldGenerator::GenerateTreeForBiome(WorldWrapper& _world, Java::Random& _pRand, Int3 _pos, Biome _biome) {
-	thread_local TreeGenerator::BigTree big;
+	thread_local std::unique_ptr<TreeGenerator::BigTree> bigTree;
+	if (!bigTree)
+		bigTree = std::make_unique<TreeGenerator::BigTree>();
+	TreeGenerator::BigTree& big = *bigTree;
 	switch (_biome) {
 	case BIOME_TAIGA:
 		if (_pRand.NextInt(3) == 0)

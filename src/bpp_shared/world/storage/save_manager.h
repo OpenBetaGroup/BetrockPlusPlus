@@ -8,6 +8,8 @@
 #include "helpers/file_handle.h"
 #include "java_math.h"
 #include "nbt/nbt.h"
+#include "platform/fs_compat.h"
+#include "platform/platform_caps.h"
 #include "utilities.h"
 #include <chrono>
 #include <filesystem>
@@ -20,7 +22,9 @@
 #include <winsock2.h>
 #else
 #include <fcntl.h>
+#ifdef BPP_HAS_FLOCK
 #include <sys/file.h>
+#endif
 #include <unistd.h>
 #endif
 
@@ -64,11 +68,13 @@ struct SessionLock {
 		fd = open(_path.c_str(), O_RDWR | O_CREAT, 0644);
 		if (fd < 0)
 			return false;
+#ifdef BPP_HAS_FLOCK
 		if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
 			close(fd);
 			fd = -1;
 			return false;
 		}
+#endif // Consoles have no flock(); there's only ever one process there
 #endif
 		WriteTimestamp();
 		return true;
@@ -82,7 +88,9 @@ struct SessionLock {
 		}
 #else
 		if (fd >= 0) {
+#ifdef BPP_HAS_FLOCK
 			flock(fd, LOCK_UN);
+#endif
 			close(fd);
 			fd = -1;
 		}
@@ -125,7 +133,8 @@ struct SaveManager {
 				Logger::Warning << "level.dat_old couldn't be found!\n";
 				return LevelInitFailureReason::LEVELDAT_FAILURE;
 			}
-			std::filesystem::copy_file(saveDirectory + "/level.dat_old", saveDirectory + "/level.dat");
+			if (!Platform::FS::CopyFileOverwrite(saveDirectory + "/level.dat_old", saveDirectory + "/level.dat"))
+				return LevelInitFailureReason::LEVELDAT_FAILURE;
 		}
 		worldFile = std::make_unique<FileHandle>(saveDirectory + "/level.dat");
 		if (!worldFile->Get().is_open())
@@ -236,8 +245,8 @@ struct SaveManager {
 	bool SaveLevelFile(const LevelData& _levelData) {
 		// Back up existing level.dat if present
 		if (std::filesystem::exists(saveDirectory + "/level.dat")) {
-			std::filesystem::copy_file(saveDirectory + "/level.dat", saveDirectory + "/level.dat_old",
-			                           std::filesystem::copy_options::overwrite_existing);
+			if (!Platform::FS::CopyFileOverwrite(saveDirectory + "/level.dat", saveDirectory + "/level.dat_old"))
+				Logger::Warning << "Couldn't back up level.dat to level.dat_old.\n";
 		}
 
 		Tag root;
@@ -542,7 +551,10 @@ struct SaveManager {
 				return false;
 			file.close();
 
-			std::filesystem::rename(tmpPath, finalPath);
+			if (!Platform::FS::ReplaceFile(tmpPath, finalPath)) {
+				Logger::Error << "Failed to move " << tmpPath << " into place.\n";
+				return false;
+			}
 			return true;
 		} catch (const std::exception& e) {
 			Logger::Error << "Failed to save player NBT for " << _playerName << ": " << e.what() << "\n";

@@ -38,7 +38,7 @@
 #include "bpp_utilities/utilities.h"
 #include <format>
 #include <thread>
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(PS2)
+#if defined(BPP_HAS_POSIX_SIGNALS)
 #include <pthread.h>
 #include <signal.h>
 #endif
@@ -76,7 +76,7 @@ static void SignalHandler(int /*sig*/) {
 	shutdownRequested.store(true);
 }
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(PS2)
+#if defined(BPP_HAS_POSIX_SIGNALS)
 static void BlockStopSignals() {
 	sigset_t set;
 	sigemptyset(&set);
@@ -99,7 +99,7 @@ static void SignalWatchThread() {
 #endif
 
 static void InstallProcessSignalHandlers() {
-#if defined(_WIN32) || defined(_WIN64) || defined(PS2)
+#if !defined(BPP_HAS_POSIX_SIGNALS)
 	std::signal(SIGINT, SignalHandler);
 	std::signal(SIGTERM, SignalHandler);
 #else
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
 #ifdef CRASH_LOGGING
 	InitCrashHandler(platformString);
 #endif
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(PS2)
+#if defined(BPP_HAS_POSIX_SIGNALS)
 	// Block before any other threads so they inherit this mask; sigwait in
 	// SignalWatchThread is then the only consumer of SIGINT/SIGTERM.
 	BlockStopSignals();
@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
 	if (!CurlRuntimeInit())
 		Logger::Warning << "libcurl global init failed; online-mode auth and Betacraft heartbeat may not work.\n";
 	InstallProcessSignalHandlers();
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(PS2)
+#if defined(BPP_HAS_POSIX_SIGNALS)
 	BlockStopSignals();
 #endif
 #endif

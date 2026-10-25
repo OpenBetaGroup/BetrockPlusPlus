@@ -153,3 +153,7 @@ Please see the [docker markdown file for more info](./DOCKER.md).
 
 Do note that most of the information in that file was AI-generated,
 and isn't updated often.
+
+## Nintendo Switch / 3DS
+
+See [BUILDING_CONSOLE.md](BUILDING_CONSOLE.md).

@@ -9,11 +9,15 @@
 #include <deque>
 #include <memory>
 #include <mutex>
-#include <replxx.hxx>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <vector>
+
+#include "platform/platform_caps.h"
+#ifndef BPP_HEADLESS_CONSOLE
+#include <replxx.hxx>
+#endif
 
 class CommandManager;
 
@@ -32,7 +36,9 @@ public:
 private:
 	void ReaderLoop();
 	void QueueLine(std::string _line);
+#ifndef BPP_HEADLESS_CONSOLE
 	replxx::Replxx::completions_t Complete(std::string_view _input, int& _contextLen) const;
+#endif
 
 	const CommandManager* commands = nullptr;
 	mutable std::mutex namesMutex;

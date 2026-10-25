@@ -7,11 +7,14 @@
 */
 #pragma once
 #include "logger.h"
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2)
+#include "platform/platform_caps.h"
+#if defined(BPP_HAS_POSIX_SOCKETS)
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#ifdef BPP_HAS_TCP_NODELAY
 #include <netinet/tcp.h>
+#endif
 #include <sys/socket.h>
 #include <unistd.h>
 #elif defined(_WIN32) || defined(_WIN64)
@@ -21,6 +24,10 @@
 #endif
 
 #include <string>
+
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16 // "255.255.255.255" + NUL
+#endif
 
 namespace ServerSocketManager {
 inline void CloseSocket(int _socket) {
@@ -46,8 +53,10 @@ inline int CreateServerSocket(int _port) {
 	int reuse = 1;
 	setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&reuse), sizeof(reuse));
 
+#ifdef BPP_HAS_TCP_NODELAY
 	int nodelay = 1;
 	setsockopt(serverSocket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&nodelay), sizeof(nodelay));
+#endif
 
 	sockaddr_in addr{};
 	addr.sin_family = AF_INET;
@@ -58,7 +67,7 @@ inline int CreateServerSocket(int _port) {
 		return -1;
 	}
 	// feels unsafe. did you know it was only 5 in 4.4BSD!? Maybe set to like 128/512.
-	listen(serverSocket, SOMAXCONN);
+	listen(serverSocket, BPP_LISTEN_BACKLOG);
 
 #if defined(_WIN32) || defined(_WIN64)
 	u_long mode = 1;
@@ -90,10 +99,14 @@ inline int CreateClientSocket(int _socket = -1, std::string* _outIp = nullptr) {
 	if (clientSocket < 0)
 		return -1;
 	fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+#ifdef BPP_HAS_SO_RCVTIMEO
 	struct timeval recvTimeout{ 0, 45000 };
 	setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&recvTimeout), sizeof(recvTimeout));
+#endif
+#ifdef BPP_HAS_TCP_NODELAY
 	int nodelay = 1;
 	setsockopt(clientSocket, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay));
+#endif
 #endif
 
 	if (_outIp) {

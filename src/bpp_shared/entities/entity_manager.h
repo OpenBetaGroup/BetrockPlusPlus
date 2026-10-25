@@ -86,8 +86,7 @@ public:
 			               MathHelper::FloorDouble(_position.y / 16.0) };
 
 		// Entity collisions below and above the world are just gonna be inefficient
-		bucketPos.z = std::max(0, bucketPos.z);
-		bucketPos.z = std::min(9, bucketPos.z);
+		bucketPos.z = std::clamp<int32_t>(bucketPos.z, 0, 9);
 		return bucketPos;
 	}
 	static bool IsContainerEmpty(const EntityContainer& _container) {

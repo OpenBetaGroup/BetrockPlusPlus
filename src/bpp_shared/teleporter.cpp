@@ -177,7 +177,7 @@ bool CreatePortal(WorldManager& _world, Entity& _entity) {
 	                 FindPortalSite(_world, _entity.position, startFacing, 2, 1, base, axis);
 
 	if (!foundSite) {
-		base.y = std::clamp(base.y, 70, 118);
+		base.y = std::clamp<int32_t>(base.y, 70, 118);
 		for (int side = -1; side <= 1; side++) {
 			for (int w = 1; w < 3; w++) {
 				for (int h = -1; h < 3; h++) {

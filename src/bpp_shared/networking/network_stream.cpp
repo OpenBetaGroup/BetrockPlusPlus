@@ -46,6 +46,7 @@ void NetworkStream::FlushWriteBufferBlocking() {
 	fcntl(clientSocket, F_SETFL, flags & ~O_NONBLOCK);
 #endif
 
+#ifdef BPP_HAS_SO_SNDTIMEO
 #if defined(_WIN32) || defined(_WIN64)
 	DWORD sndTimeoutMs = SHUTDOWN_FLUSH_TIMEOUT_MS;
 	setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&sndTimeoutMs),
@@ -55,6 +56,7 @@ void NetworkStream::FlushWriteBufferBlocking() {
 	sndTimeout.tv_sec = SHUTDOWN_FLUSH_TIMEOUT_MS / 1000;
 	sndTimeout.tv_usec = (SHUTDOWN_FLUSH_TIMEOUT_MS % 1000) * 1000;
 	setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, &sndTimeout, sizeof(sndTimeout));
+#endif
 #endif
 
 	size_t sent = 0;

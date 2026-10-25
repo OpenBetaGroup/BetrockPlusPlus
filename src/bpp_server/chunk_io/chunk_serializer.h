@@ -40,7 +40,7 @@ inline std::vector<uint8_t> Serialize(const Chunk& _chunk, int _xmin = 0, int _x
 	for (int x = _xmin; x < _xmax; x++) {
 		for (int z = _zmin; z < _zmax; z++) {
 			for (int y = _ymin; y < _ymax;) {
-				const int slabEnd = CrossPlatform::Math::Min(_ymax, (y | (SUB_CHUNK_SIZE - 1)) + 1);
+				const int slabEnd = std::min<int>(_ymax, (y | (SUB_CHUNK_SIZE - 1)) + 1);
 				const SubChunk& sub = _chunk.subChunks[size_t(y >> 4)];
 
 				const SubChunk::BlockLayer* blockLayer = sub.blocks.get();

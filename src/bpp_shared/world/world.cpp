@@ -20,6 +20,7 @@
 #include "managers/redstone_manager.h"
 #include "world_wrapper.h"
 #include <limits>
+#include <memory>
 #include <unordered_set>
 
 BiomeGenerator WorldManager::biomeGenerator;
@@ -42,16 +43,20 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 	if (isHell || _chunk.climateBaked)
 		return;
 
-	thread_local BiomeGenerator tlBiomeGen(0);
+	thread_local std::unique_ptr<BiomeGenerator> tlBiomeGen;
 	thread_local int64_t tlBiomeSeed = std::numeric_limits<int64_t>::min();
-	if (tlBiomeSeed != this->seed) {
-		tlBiomeGen = BiomeGenerator(this->seed);
+	if (!tlBiomeGen || tlBiomeSeed != this->seed) {
+		tlBiomeGen = std::make_unique<BiomeGenerator>(this->seed);
 		tlBiomeSeed = this->seed;
 	}
-	thread_local double temp[CHUNK_AREA];
-	thread_local double humi[CHUNK_AREA];
-	thread_local double weird[CHUNK_AREA];
-	tlBiomeGen.GenerateBiomeMap(_chunk.biomes, temp, humi, weird,
+	thread_local std::unique_ptr<double[]> climateBuffer;
+	if (!climateBuffer)
+		climateBuffer = std::make_unique<double[]>(size_t(CHUNK_AREA) * 3);
+	double* temp = climateBuffer.get();
+	double* humi = temp + CHUNK_AREA;
+	double* weird = humi + CHUNK_AREA;
+	tlBiomeGen->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
+	                             std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
 	                            Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
 	for (int i = 0; i < CHUNK_AREA; ++i) {
 		_chunk.temperature[i] = float(temp[i]);
@@ -291,8 +296,8 @@ std::vector<AABB> WorldManager::GetCollidingBoundingBoxes(const AABB& _area, Ent
 	int minZ = Java::DoubleToInt32(std::floor(_area.minZ));
 	int maxZ = Java::DoubleToInt32(std::floor(_area.maxZ + 1.0));
 
-	int startY = CrossPlatform::Math::Max(0, minY - 1);
-	int endY = CrossPlatform::Math::Min(127, maxY);
+	int startY = std::max<int>(0, minY - 1);
+	int endY = std::min<int>(127, maxY);
 
 	// Iterate for our potential grid
 	for (int x = minX; x < maxX; x++) {
@@ -740,8 +745,8 @@ void WorldManager::SeedChunkLighting(Int32_2 _pos) {
 				int neighborH = GetHeightValue(nx, nz);
 				if (neighborH == thisH)
 					continue;
-				int minY = CrossPlatform::Math::Min(thisH, neighborH);
-				int maxY = CrossPlatform::Math::Max(thisH, neighborH);
+				int minY = std::min<int>(thisH, neighborH);
+				int maxY = std::max<int>(thisH, neighborH);
 				lightManager.ScheduleLightRegion({ nx, minY, nz }, { nx, maxY, nz }, LightType::Sky);
 			}
 		}
@@ -866,21 +871,21 @@ void WorldManager::PumpPipeline(const std::vector<ClientPosition>& _players) {
 			// thread last generated a chunk (e.g. switching worlds, or the chunk-gen benchmark cycling seeds).
 			const int64_t genSeed = this->seed;
 			if (isHell) {
-				thread_local NetherGenerator tlGen(genSeed);
-				thread_local int64_t tlGenSeed = genSeed;
-				if (tlGenSeed != genSeed) {
-					tlGen = NetherGenerator(genSeed);
+				thread_local std::unique_ptr<NetherGenerator> tlGen;
+				thread_local int64_t tlGenSeed = 0;
+				if (!tlGen || tlGenSeed != genSeed) {
+					tlGen = std::make_unique<NetherGenerator>(genSeed);
 					tlGenSeed = genSeed;
 				}
-				tlGen.GenerateChunk(*chunk);
+				tlGen->GenerateChunk(*chunk);
 			} else {
-				thread_local OverworldGenerator tlGen(genSeed);
-				thread_local int64_t tlGenSeed = genSeed;
-				if (tlGenSeed != genSeed) {
-					tlGen = OverworldGenerator(genSeed);
+				thread_local std::unique_ptr<OverworldGenerator> tlGen;
+				thread_local int64_t tlGenSeed = 0;
+				if (!tlGen || tlGenSeed != genSeed) {
+					tlGen = std::make_unique<OverworldGenerator>(genSeed);
 					tlGenSeed = genSeed;
 				}
-				tlGen.GenerateChunk(*chunk);
+				tlGen->GenerateChunk(*chunk);
 			}
 			chunk->isModified = true;
 			chunk->GenerateSkylightMap();
@@ -965,15 +970,15 @@ void WorldManager::PopulateReady(int _maxPopulates) {
 
 	// Reuse generators across chunks: PopulateChunk resets its RNG from the world seed,
 	// so perm tables only need rebuilding when the world seed changes.
-	thread_local OverworldGenerator tlOverworld(0);
-	thread_local NetherGenerator tlNether(0);
+	thread_local std::unique_ptr<OverworldGenerator> tlOverworld;
+	thread_local std::unique_ptr<NetherGenerator> tlNether;
 	thread_local int64_t tlOverworldSeed = std::numeric_limits<int64_t>::min();
 	thread_local int64_t tlNetherSeed = std::numeric_limits<int64_t>::min();
-	if (!isHell && tlOverworldSeed != this->seed) {
-		tlOverworld = OverworldGenerator(this->seed);
+	if (!isHell && (!tlOverworld || tlOverworldSeed != this->seed)) {
+		tlOverworld = std::make_unique<OverworldGenerator>(this->seed);
 		tlOverworldSeed = this->seed;
-	} else if (isHell && tlNetherSeed != this->seed) {
-		tlNether = NetherGenerator(this->seed);
+	} else if (isHell && (!tlNether || tlNetherSeed != this->seed)) {
+		tlNether = std::make_unique<NetherGenerator>(this->seed);
 		tlNetherSeed = this->seed;
 	}
 
@@ -997,9 +1002,9 @@ void WorldManager::PopulateReady(int _maxPopulates) {
 		wrapper.centerChunkPos = pos;
 		wrapper.GetChunkRegion();
 		if (isHell)
-			tlNether.PopulateChunk(*cit->second, wrapper);
+			tlNether->PopulateChunk(*cit->second, wrapper);
 		else
-			tlOverworld.PopulateChunk(*cit->second, wrapper);
+			tlOverworld->PopulateChunk(*cit->second, wrapper);
 		auto& chunk = cit->second;
 		chunk->isTerrainPopulated = true;
 		chunk->isModified = true;
@@ -1125,14 +1130,14 @@ void WorldManager::SetBlock(const Int3 _wpos, const BlockType _blockType, const 
 		// Always re-evaluate the edited block and its 4 horizontal neighbours
 		lightManager.ScheduleLightUpdate(pos, LightType::Sky);
 		lightManager.ScheduleLightUpdate(pos, LightType::Block);
-		int extendedBottom = CrossPlatform::Math::Min(newHeight, oldHeight);
+		int extendedBottom = std::min<int>(newHeight, oldHeight);
 		while (extendedBottom > 0 &&
 		       Blocks::blockProperties[chunk->GetBlock({ localXz.x, extendedBottom - 1, localXz.z })].lightOpacity == 0)
 			--extendedBottom;
 
 		if (newHeight != oldHeight) {
 			lightManager.ScheduleLightRegion({ pos.x - 1, extendedBottom, pos.z - 1 },
-			                                 { pos.x + 1, CrossPlatform::Math::Max(newHeight, oldHeight), pos.z + 1 },
+			                                 { pos.x + 1, std::max<int>(newHeight, oldHeight), pos.z + 1 },
 			                                 LightType::Sky);
 		}
 	}
@@ -1209,12 +1214,12 @@ void WorldManager::NotifyRegionChanged(Chunk& _chunk, Int3 _localMin, Int3 _loca
 }
 
 void WorldManager::FillVolume(Int3 _posA, Int3 _posB, BlockType _type, uint8_t _meta) {
-	const Int3 mn{ CrossPlatform::Math::Min(_posA.x, _posB.x),
-		           CrossPlatform::Math::Max(CrossPlatform::Math::Min(_posA.y, _posB.y), 0),
-		           CrossPlatform::Math::Min(_posA.z, _posB.z) };
-	const Int3 mx{ CrossPlatform::Math::Max(_posA.x, _posB.x),
-		           CrossPlatform::Math::Min(CrossPlatform::Math::Max(_posA.y, _posB.y), CHUNK_HEIGHT - 1),
-		           CrossPlatform::Math::Max(_posA.z, _posB.z) };
+	const Int3 mn{ std::min<int>(_posA.x, _posB.x),
+		           std::max<int>(std::min<int>(_posA.y, _posB.y), 0),
+		           std::min<int>(_posA.z, _posB.z) };
+	const Int3 mx{ std::max<int>(_posA.x, _posB.x),
+		           std::min<int>(std::max<int>(_posA.y, _posB.y), CHUNK_HEIGHT - 1),
+		           std::max<int>(_posA.z, _posB.z) };
 	if (mn.y > mx.y)
 		return;
 
@@ -1240,10 +1245,10 @@ void WorldManager::FillVolume(Int3 _posA, Int3 _posB, BlockType _type, uint8_t _
 
 			// This chunk's share of the box, chunk-local and inclusive
 			const int baseX = cx * CHUNK_WIDTH, baseZ = cz * CHUNK_WIDTH;
-			const int x0 = CrossPlatform::Math::Max(mn.x, baseX) - baseX;
-			const int x1 = CrossPlatform::Math::Min(mx.x, baseX + CHUNK_WIDTH - 1) - baseX;
-			const int z0 = CrossPlatform::Math::Max(mn.z, baseZ) - baseZ;
-			const int z1 = CrossPlatform::Math::Min(mx.z, baseZ + CHUNK_WIDTH - 1) - baseZ;
+			const int x0 = std::max<int>(mn.x, baseX) - baseX;
+			const int x1 = std::min<int>(mx.x, baseX + CHUNK_WIDTH - 1) - baseX;
+			const int z0 = std::max<int>(mn.z, baseZ) - baseZ;
+			const int z1 = std::min<int>(mx.z, baseZ + CHUNK_WIDTH - 1) - baseZ;
 
 			// Blocks
 			if (x0 == 0 && x1 == CHUNK_WIDTH - 1 && z0 == 0 && z1 == CHUNK_WIDTH - 1)

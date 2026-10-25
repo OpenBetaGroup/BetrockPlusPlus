@@ -20,7 +20,7 @@ WorldManager& Overworld(CommandContext& _ctx) {
 }
 
 std::string FormatTicks(int32_t _ticks) {
-	int32_t totalSeconds = std::max(0, _ticks) / 20;
+	int32_t totalSeconds = std::max<int32_t>(0, _ticks) / 20;
 	return std::format("{} ticks ({}m {}s)", _ticks, totalSeconds / 60, totalSeconds % 60);
 }
 

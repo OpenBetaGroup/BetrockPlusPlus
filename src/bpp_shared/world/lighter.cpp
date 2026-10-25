@@ -85,12 +85,12 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 
 	auto scanBest = [&]() -> int {
 		int best = 0;
-		best = CrossPlatform::Math::Max(best, neighbor(0, cxn, lxn, _y, lz));
-		best = CrossPlatform::Math::Max(best, neighbor(1, cxp, lxp, _y, lz));
-		best = CrossPlatform::Math::Max(best, neighbor(2, chunk, lx, _y - 1, lz));
-		best = CrossPlatform::Math::Max(best, neighbor(3, chunk, lx, _y + 1, lz));
-		best = CrossPlatform::Math::Max(best, neighbor(4, czn, lx, _y, lzn));
-		best = CrossPlatform::Math::Max(best, neighbor(5, czp, lx, _y, lzp));
+		best = std::max<int>(best, neighbor(0, cxn, lxn, _y, lz));
+		best = std::max<int>(best, neighbor(1, cxp, lxp, _y, lz));
+		best = std::max<int>(best, neighbor(2, chunk, lx, _y - 1, lz));
+		best = std::max<int>(best, neighbor(3, chunk, lx, _y + 1, lz));
+		best = std::max<int>(best, neighbor(4, czn, lx, _y, lzn));
+		best = std::max<int>(best, neighbor(5, czp, lx, _y, lzp));
 		return best;
 	};
 
@@ -100,7 +100,7 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 		if (chunk->CanBlockSeeSky({ lx, _y, lz })) {
 			newVal = 15;
 		} else if (opacity < 15) {
-			newVal = CrossPlatform::Math::Max(0, scanBest() - opacity);
+			newVal = std::max<int>(0, scanBest() - opacity);
 		}
 		int oldVal = chunk->GetSkyLight({ lx, _y, lz });
 		if (oldVal == newVal)
@@ -118,7 +118,7 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 	} else {
 		int emitted = Blocks::blockProperties[blockId].lightEmission;
 		if (opacity < 15) {
-			newVal = CrossPlatform::Math::Max(emitted, scanBest() - opacity);
+			newVal = std::max<int>(emitted, scanBest() - opacity);
 		} else {
 			newVal = emitted;
 		}
@@ -142,7 +142,7 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 	auto maybeQueue = [&](int _nx, int _ny, int _nz, Chunk* _nc, int _nlx, int _nlz, int _i) {
 		if (_ny < 0 || _ny >= CHUNK_HEIGHT || !_nc)
 			return;
-		int expected = CrossPlatform::Math::Max(0, newVal - 1);
+		int expected = std::max<int>(0, newVal - 1);
 		if (neighbor(_i, _nc, _nlx, _ny, _nlz) < expected && lightQueue.size() < MAX_LIGHT_QUEUE)
 			lightQueue.push_back({ { _nx, _ny, _nz }, { _nx, _ny, _nz }, _type });
 	};
@@ -278,8 +278,8 @@ bool Lighter::ProcessLightQueue(WorldManager& _world, int _maxIterations) {
 		if (dx * dy * dz > 32768)
 			continue;
 
-		region.min.y = CrossPlatform::Math::Max(region.min.y, 0);
-		region.max.y = CrossPlatform::Math::Min(region.max.y, CHUNK_HEIGHT - 1);
+		region.min.y = std::max<int>(region.min.y, 0);
+		region.max.y = std::min<int>(region.max.y, CHUNK_HEIGHT - 1);
 
 		for (int x = region.min.x; x <= region.max.x; ++x)
 			for (int z = region.min.z; z <= region.max.z; ++z)

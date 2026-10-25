@@ -28,7 +28,8 @@
 #include <cstdint>
 #include <string>
 
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2)
+#include "platform/platform_caps.h"
+#if defined(BPP_HAS_POSIX_SOCKETS)
 #include <fcntl.h>
 #include <iomanip>
 #include <netinet/in.h>

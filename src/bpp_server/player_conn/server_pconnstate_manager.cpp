@@ -318,7 +318,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 	int spawnChunkX = int(std::floor(_session.position.pos.x)) >> 4;
 	int spawnChunkZ = int(std::floor(_session.position.pos.z)) >> 4;
 
-	int radius = CrossPlatform::Math::Min(3, sessionWorld.GetViewRadius());
+	int radius = std::min<int>(3, sessionWorld.GetViewRadius());
 
 	int totalSpawnChunks = ((radius * 2) + 1) * ((radius * 2) + 1);
 	int loadedChunks = 0;

@@ -157,7 +157,7 @@ void WorldWrapper::SetBlock(const Int3 _wpos, const BlockType _type, const uint8
 		// Always re-evaluate the edited block and its 4 horizontal neighbours
 		manager.lightManager.ScheduleLightUpdate(_wpos, LightType::Sky);
 		manager.lightManager.ScheduleLightUpdate(_wpos, LightType::Block);
-		int extendedBottom = CrossPlatform::Math::Min(newHeight, oldHeight);
+		int extendedBottom = std::min<int>(newHeight, oldHeight);
 		while (extendedBottom > 0 &&
 		       Blocks::blockProperties[chunk->GetBlock({ local.x, extendedBottom - 1, local.z })].lightOpacity == 0)
 			--extendedBottom;
@@ -165,7 +165,7 @@ void WorldWrapper::SetBlock(const Int3 _wpos, const BlockType _type, const uint8
 		if (newHeight != oldHeight) {
 			manager.lightManager.ScheduleLightRegion(
 			    { _wpos.x - 1, extendedBottom, _wpos.z - 1 },
-			    { _wpos.x + 1, CrossPlatform::Math::Max(newHeight, oldHeight), _wpos.z + 1 }, LightType::Sky);
+			    { _wpos.x + 1, std::max<int>(newHeight, oldHeight), _wpos.z + 1 }, LightType::Sky);
 		}
 	}
 

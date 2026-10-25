@@ -34,7 +34,7 @@ enum class InvMap : uint8_t {
 struct InventoryPlayer : Inventory {
 public:
 	int activeHotbarSlot = 0;
-	Event<ItemStack*> heldItemUpdate;
+	EventEmitter<ItemStack*> heldItemUpdate;
 	int currentItem = 0;
 
 	InventoryPlayer() : Inventory(45) {

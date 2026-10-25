@@ -7,6 +7,7 @@
 
 #include "addon_manager.h"
 #include "logger.h"
+#include "platform/platform_caps.h"
 #include "server.h"
 
 // This is terrible
@@ -37,12 +38,32 @@ static inline const char* dlerror() {
 	SetLastError(0);
 	return buf;
 }
+#elif defined(BPP_NO_DYNAMIC_ADDONS)
+// Homebrew builds are statically linked, there's nothing to dlopen
+#define RTLD_NOW 0
+#define RTLD_LOCAL 0
+static inline void* dlopen(const char*, int) {
+	return nullptr;
+}
+static inline void* dlsym(void*, const char*) {
+	return nullptr;
+}
+static inline int dlclose(void*) {
+	return 0;
+}
+static inline const char* dlerror() {
+	return "dynamic loading isn't supported on this platform";
+}
 #else
 #include <dlfcn.h>
 #endif
 #include <filesystem>
 
 void AddonManager::Load() {
+#ifdef BPP_NO_DYNAMIC_ADDONS
+	Logger::Info << "Addons aren't supported on this platform.\n";
+	return;
+#endif
 	const std::filesystem::path addonDir = "addons";
 	std::error_code ec;
 

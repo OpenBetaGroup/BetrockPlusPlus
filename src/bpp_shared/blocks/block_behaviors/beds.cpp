@@ -71,7 +71,7 @@ bool TriggerNightmareSpawns(WorldManager& _world, PlayerEntity& _player, Int3 _h
 			_headPos.z + (_world.rand.NextInt(32) - _world.rand.NextInt(32)),
 		};
 
-		int startY = std::clamp(_headPos.y + (_world.rand.NextInt(16) - _world.rand.NextInt(16)), 1, CHUNK_HEIGHT - 1);
+		int startY = std::clamp<int>(_headPos.y + (_world.rand.NextInt(16) - _world.rand.NextInt(16)), 1, CHUNK_HEIGHT - 1);
 
 		// Search for an open spot
 		int y = startY;

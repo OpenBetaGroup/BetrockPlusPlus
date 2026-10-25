@@ -6,7 +6,8 @@
 */
 #pragma once
 #define INVALID_SOCKET -1
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2)
+#include "platform/platform_caps.h"
+#if defined(BPP_HAS_POSIX_SOCKETS)
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
