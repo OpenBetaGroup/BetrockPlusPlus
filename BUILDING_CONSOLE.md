@@ -25,12 +25,12 @@ If your toolchain file isn't called `Switch.cmake`/`3DS.cmake`, pass
 
 Everything console specific lives in `src/bpp_shared/platform/`:
 
-| File | What it does |
-| --- | --- |
-| `platform_caps.h` | `BPP_HAS_*` capability flags (flock, signals, socket options, ...) that the rest of the code tests instead of listing platforms |
-| `3ds/`, `nx/` | `Platform::Init()/Shutdown()`, memory and hardware info |
-| `homebrew/system_pump.h` | Runs the OS per-frame service on a background thread, enters the data folder, reports uncaught exceptions on screen |
-| `fs_compat.h` | `ReplaceFile()` / `CopyFileOverwrite()` for filesystems that can't rename over an existing file |
+| File                     | What it does                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `platform_caps.h`        | `BPP_HAS_*` capability flags (flock, signals, socket options, ...) that the rest of the code tests instead of listing platforms |
+| `3ds/`, `nx/`            | `Platform::Init()/Shutdown()`, memory and hardware info                                                                         |
+| `homebrew/system_pump.h` | Runs the OS per-frame service on a background thread, enters the data folder, reports uncaught exceptions on screen             |
+| `fs_compat.h`            | `ReplaceFile()` / `CopyFileOverwrite()` for filesystems that can't rename over an existing file                                 |
 
 The OS service loop (`aptMainLoop` + `gfxSwapBuffers` on 3DS, `appletMainLoop` +
 `consoleUpdate` on Switch) runs on its own thread, so the server tick loop

@@ -17,6 +17,7 @@ Nope! The client is not intended to provide free access to Beta 1.7.3. Players w
 Nope! We intend to use official account-based authentication to verify that players are eligible to use the client. A supplied `.jar` file alone is not sufficient proof of a valid license, unfortunately.
 
 ## Server
+
 ### Why does this crafting recipe not work?
 
 There are two options.
@@ -47,8 +48,8 @@ Very few sounds were networked by the time Beta 1.7.3 rolled around. A few examp
 
 This often happens when a mod is used that modifies the client-side crafting recipes. The client tends to prefer it's own crafting recipe results over whatever the server thinks.
 
-
 ## General
+
 ### Support for older Operating Systems (e.g. WinXP or 9x)
 
 While this isn't impossible, these older OS' lack features we rely on at a fundamental level, such as sockets. It'd require a very extensive rewrite, or at least one that'd force us to use an older C++ version, which would just make the codebase a lot more painful to work with.

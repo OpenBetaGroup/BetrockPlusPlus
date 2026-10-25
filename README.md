@@ -24,6 +24,7 @@ This is another project that's part of/worked on by the OpenBeta Community. We h
 Grab the [latest build from the Releases tab](https://github.com/OpenBetaGroup/BetrockPlusPlus/releases/latest), choose the build that you need for your OS, then just run it wherever you need!
 
 ## Bug Reporting
+
 If you encounter a bug, inaccuracy or other issue, please file an issue here on Github. Check if a similar issue has already been reported, and roughly follow the same sort of style we use. Provide as much info as you can!
 
 If you don't have a Github account, please report the issue on Discord, though this is generally discouraged.
