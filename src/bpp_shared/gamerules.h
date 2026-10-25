@@ -31,6 +31,7 @@ enum class Id {
 	Nightmares,
 	NetherBedsExplode,
 	SpawnProtectionRadius,
+	SpawnChunks,
 	// Mobs
 	ForgiveDeadPlayers,
 	MobGriefing,

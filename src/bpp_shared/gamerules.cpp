@@ -42,6 +42,7 @@ struct Registry {
         //Register(Id::ForgiveDeadPlayers, "forgive_dead_players", "If aggro'd mobs forgive a player after dying", true);
         Register(Id::MobGriefing, "mob_griefing", "If mobs can damage the environment (e.g. creeper explosions destroying blocks)", true);
         Register(Id::AccurateDespawnRules, "accurate_despawn_rules", "If squids, ghasts and slimes should never despawn", false);
+        Register(Id::SpawnChunks, "spawn_chunks", "If spawn chunks should be and remain loaded (requires restart to take effect)", true);
         // Player
         Register(Id::AllowEnteringNetherUsingPortals, "allow_entering_nether_using_portals", "If players should be able to travel to the Nether via a Portal from the Overworld", true);
         Register(Id::DrowningDamage, "drowning_damage", "If players should take drowning damage", true);
