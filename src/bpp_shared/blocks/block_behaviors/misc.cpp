@@ -340,11 +340,31 @@ void RegisterMiscBehaviors() {
 		.getRayBounds = WallSignAabb,
 		.getCollider = EmptyCollider,
 	};
+	blockBehaviors[BLOCK_SIGN_WALL].onTick = [](WorldManager& _world, Int3 _pos, uint8_t _meta,
+	                                         Java::Random& /*_random*/) -> void {
+		if (!IsSupported(_world, _pos, GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta))) {
+			Logger::Debug << _pos << " - " << int(_meta) << "\n";
+			BreakAndDropBlock(_world, _pos);
+		}
+	};
+	blockBehaviors[BLOCK_SIGN_WALL].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
+	                                                        BlockType /*_blockId*/) -> void {
+		blockBehaviors[BLOCK_SIGN_WALL].onTick(_world, _pos, _world.GetMetadata(_pos), _world.rand);
+	};
 
 	blockBehaviors[BlockType::BLOCK_SIGN_STANDING] = {
 		.getSelectionBox = StandingSignAabb,
 		.getRayBounds = StandingSignAabb,
 		.getCollider = EmptyCollider,
+	};
+	blockBehaviors[BLOCK_SIGN_STANDING].onTick = [](WorldManager& _world, Int3 _pos, uint8_t /*_meta*/,
+	                                         Java::Random& /*_random*/) -> void {
+		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
+			BreakAndDropBlock(_world, _pos);
+	};
+	blockBehaviors[BLOCK_SIGN_STANDING].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
+	                                                        BlockType /*_blockId*/) -> void {
+		blockBehaviors[BLOCK_SIGN_STANDING].onTick(_world, _pos, 0, _world.rand);
 	};
 }
 }; // namespace Blocks
