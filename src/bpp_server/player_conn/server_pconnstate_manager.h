@@ -15,7 +15,6 @@ struct PlayerConnStateManager {
 	void HandleVerifyingUsername(PlayerSession& _session, Server& _server);
 	void WaitForSpawnChunks(PlayerSession& _session, Server& _server);
 	void DisconnectPlayer(PlayerSession& _session, const std::string& _reason, Server& _server, bool doSave = true);
-
 private:
 	void FinishLogin(PlayerSession& _session, Server& _server);
 };

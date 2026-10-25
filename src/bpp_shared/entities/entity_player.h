@@ -23,17 +23,28 @@ struct PlayerEntity : public MobileEntity {
 	Int3 bedPosition{ 0, 0, 0 };
 	Vec3 spawnPos = {};
 	std::weak_ptr<FishingBobberEntity> fishingBobber;
+	
 	// Also called "SleepTimer" in the player save
 	TickTime ticksInBed = 0;
 	float timeInPortal = 0.0f;
 	int portalCooldown = 0;
 	bool isSleeping : 1 = false;
 	bool isInPortal : 1 = false;
+
+	// Only used for wolves! Annoying!
+	std::string username;
 	PlayerEntity() : MobileEntity() {
 		type = EntityType::PLAYER;
 		width = 0.6f;
 		height = 1.8f;
 		stepHeight = 0.5f;
+	}
+	PlayerEntity(std::string _username) : MobileEntity() {
+		type = EntityType::PLAYER;
+		width = 0.6f;
+		height = 1.8f;
+		stepHeight = 0.5f;
+		username = _username;
 	}
 	~PlayerEntity() = default;
 	bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) override;

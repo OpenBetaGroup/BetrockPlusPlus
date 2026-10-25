@@ -25,6 +25,7 @@ struct EntityContainer {
 };
 
 // For ticking all entities and keeping track of them in the world
+struct PlayerEntity;
 struct EntityManager {
 	EntityId* nextEntityId = nullptr; // Vanilla seems to reserve 0 and 1
 	std::vector<std::shared_ptr<Entity>> entities;
@@ -89,6 +90,7 @@ public:
 		bucketPos.z = std::clamp<int32_t>(bucketPos.z, 0, 9);
 		return bucketPos;
 	}
+
 	static bool IsContainerEmpty(const EntityContainer& _container) {
 		for (const auto& bucket : _container.buckets) {
 			if (!bucket.entities.empty())
@@ -114,6 +116,7 @@ public:
 	void EraseContainer(Int2 _cpos) {
 		entityContainers.erase(_cpos);
 	}
+
 	std::shared_ptr<Entity> GetEntityByIdShared(EntityId _id) {
 		for (auto& entity : entities) {
 			if (entity->id == _id)
@@ -121,11 +124,13 @@ public:
 		}
 		return nullptr;
 	}
+
 	EntityId GetNextEntityId() {
 		if (!nextEntityId)
 			return -1;
 		return (*nextEntityId)++;
 	}
+
 	int CountEntitiesOfType(EntityType _type) {
 		int count = 0;
 		for (auto& entity : entities) {
@@ -134,6 +139,7 @@ public:
 		}
 		return count;
 	}
+
 	template <typename T>
 	std::shared_ptr<Entity> GetClosestPlayerWithin(T _pos, int _distance) {
 		double minDist = 0;
@@ -154,5 +160,6 @@ public:
 		return closestPlayer;
 	}
 
+	std::shared_ptr<PlayerEntity> GetPlayerWithName(std::string _name);
 	std::vector<Entity*> GetLivingEntitiesWithinAabb(const AABB& _box);
 };

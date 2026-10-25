@@ -26,8 +26,23 @@
 #include "entity_zombie.h"
 #include "entity_squid.h"
 #include "entity_wolf.h"
+#include "entity_player.h"
 #include "gamerules.h"
 #include "world.h"
+
+std::shared_ptr<PlayerEntity> EntityManager::GetPlayerWithName(std::string _name) {
+	// I hate this
+	for (const auto& playerWeak : players) {
+		if (auto playerEntity = playerWeak.lock()) {
+			if (auto player = std::dynamic_pointer_cast<PlayerEntity>(playerEntity)) {
+				if (player->username == _name) {
+					return player;
+				}
+			}
+		}
+	}
+	return nullptr;
+}
 
 void EntityManager::RemoveEntity(EntityId _id) {
 	// Find the entity for this ID

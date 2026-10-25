@@ -178,7 +178,7 @@ void PlayerConnStateManager::HandleVerifyingUsername(PlayerSession& _session, Se
 void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _server) {
 	// Initialize our entity first as the player session depends on it
 	if (!_session.entity)
-		_session.entity = std::make_shared<EntityMPPlayer>();
+		_session.entity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
 
 	// Load player data before building the Login response so we know which dimension they're in
 	auto playerNbt = _server.gameRuntime.saveManager.GetPlayerNbt(

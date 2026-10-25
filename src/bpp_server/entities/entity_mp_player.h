@@ -21,9 +21,15 @@ struct EntityMPPlayer : public PlayerEntity {
 	double simulatedFallDistance = 0.0;
 	Vec3 firstUpPosition = {};
 	Vec3 previousVelocity = {};
+	
 	EntityMPPlayer() : PlayerEntity() {
 		hasPhysics = false;
 	}
+
+	EntityMPPlayer(std::string _username) : PlayerEntity(_username) {
+		hasPhysics = false;
+	}
+
 	~EntityMPPlayer() {
 		session = nullptr;
 	}

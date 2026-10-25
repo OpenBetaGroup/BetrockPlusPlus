@@ -757,7 +757,7 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	oldWorld->entityManager.RemoveEntity(_session.entity->id);
 	_session.entity->session = nullptr;
 
-	auto newEntity = std::make_shared<EntityMPPlayer>();
+	auto newEntity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
 	newEntity->session = &_session;
 	newEntity->id = _session.entity->id;
 	_session.entity = newEntity;
