@@ -9,7 +9,7 @@
 
 // Responsible for handling portal placement validation and creation
 
-struct WorldManager;
+class WorldManager;
 namespace Teleporter {
 void PlaceAtValidTransferSpot(WorldManager& _world, Entity& _entity);
 bool PlaceInExistingPortal(WorldManager& _world, Entity& _entity);
