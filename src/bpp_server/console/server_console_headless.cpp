@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// Stand-in for server_console.cpp on targets without a terminal or a line
-// editor (Nintendo 3DS / Switch). The server keeps the same interface; there is
-// just never any input to read. Log output is shown by the platform's console.
+// Stand-in for server_console.cpp on targets without a terminal or a line editor
 
 #include "server.h"
 

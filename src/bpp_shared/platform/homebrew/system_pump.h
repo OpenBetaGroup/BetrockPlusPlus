@@ -5,7 +5,7 @@
  *
 */
 
-// Shared helpers for the Nintendo 3DS / Switch homebrew targets.
+// Shared helpers for some consoles, such as the Nintendo 3DS and Switch homebrew targets.
 //
 // Both consoles expect the application to service the OS (applet/APT events,
 // the frame buffer) every frame, and kill or hang it if it doesn't. Our server

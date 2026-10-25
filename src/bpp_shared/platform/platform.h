@@ -14,7 +14,7 @@
 
 namespace Platform {
 #if defined(BPP_PLATFORM_CONSOLE)
-// Implemented in platform/3ds/platform.cpp and platform/nx/platform.cpp
+// Implemented in the platform-specific platform.cpp files
 // Run at program start. Brings up the console/gfx, keeps the OS service loop
 // alive on a background thread, sets up sockets and enters the data folder.
 bool Init();
