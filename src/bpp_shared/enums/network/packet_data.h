@@ -143,10 +143,10 @@ public:
 // Used by Block Action Packet (0x36)
 enum NoteInstrument : int8_t {
 	HARP = 0,
-	BASS = 1,
+	BASS_DRUM = 1,
 	SNARE_DRUM = 2,
 	HI_HAT = 3,
-	BASS_DRUM = 4
+	BASS = 4,
 };
 
 enum NotePitch : int8_t {
