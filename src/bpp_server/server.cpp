@@ -59,7 +59,7 @@ Server::Server() : config("server.properties"), gamerulesConfig("gamerules.txt")
 	Logger::Info << "Server initialized on port " << serverPort << "\n";
 	// TODO: If seed is 0, have it generate a new seed
 	gameRuntime.Init(config.GetAsString("level-name", "world"), config.GetAsString("level-seed", "0"),
-	                 config.GetAsNumber("view-distance", 8));
+	                 config.GetAsNumber("view-distance", BPP_DEFAULT_VIEW_DISTANCE));
 	commandManager.Init(this);
 }
 
@@ -196,7 +196,7 @@ void Server::LoadConfig() {
 	if (!config.LoadFromDisk()) {
 		config.Overwrite({
 		    { "level-name", "world" },
-		    { "view-distance", "10" },
+		    { "view-distance", std::to_string(BPP_DEFAULT_VIEW_DISTANCE) },
 		    { "white-list", "false" },
 		    //{"server-ip", ""},
 		    //{"motd", "A Betrock++ Server"},

@@ -58,3 +58,12 @@
 #define BPP_HEADLESS_CONSOLE 1
 #define BPP_NO_DYNAMIC_ADDONS 1
 #endif
+
+// Default view distance (mostly figured out experimentally)
+#if defined (__3DS__) || defined(__wii__)
+#define BPP_DEFAULT_VIEW_DISTANCE 3
+#elif defined (__NDS__)
+#define BPP_DEFAULT_VIEW_DISTANCE 2
+#else
+#define BPP_DEFAULT_VIEW_DISTANCE 10
+#endif

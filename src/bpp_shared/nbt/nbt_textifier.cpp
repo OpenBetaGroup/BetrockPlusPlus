@@ -57,9 +57,9 @@ Tag TextNBTifier::Link(std::vector<Token>* _tokens) {
 }
 
 // Links a list of tokens into a tag
-Tag TextNBTifier::LinkTag(std::vector<Token>* _tokens, int64_t& _stepper, std::string& _tagName) {
-	int64_t prevIndex = _stepper - 1 >= 0 ? _stepper - 1 : 0;
-	int64_t nextIndex = _stepper + 1 > _tokens->size() - 1 ? _tokens->size() - 1 : _stepper + 1;
+Tag TextNBTifier::LinkTag(std::vector<Token>* _tokens, size_t& _stepper, std::string& _tagName) {
+	size_t prevIndex = _stepper > 0 ? _stepper - 1 : 0;
+	size_t nextIndex = _stepper + 1 > _tokens->size() - 1 ? _tokens->size() - 1 : _stepper + 1;
 	auto& token = _tokens->at(_stepper);
 	auto& previousToken = _tokens->at(prevIndex);
 	auto& nextToken = _tokens->at(nextIndex);
@@ -119,11 +119,12 @@ Tag TextNBTifier::LinkTag(std::vector<Token>* _tokens, int64_t& _stepper, std::s
 	}
 	default:
 		Throw("Invalid token while linking NBT structure!");
+		return {};
 	}
 }
 
 // Links together tag lists and specialty int and byte lists
-Tag TextNBTifier::LinkList(std::vector<Token>* _tokens, int64_t& _stepper, std::string _name) {
+Tag TextNBTifier::LinkList(std::vector<Token>* _tokens, size_t& _stepper, std::string _name) {
 	auto& nextToken = _tokens->at(_stepper + 1);
 	bool specialList = nextToken.identifier == ARRAY_PREFIX;
 	TagType listType = TAG_END;
@@ -169,7 +170,7 @@ Tag TextNBTifier::LinkList(std::vector<Token>* _tokens, int64_t& _stepper, std::
 }
 
 // Links together tags into a compound
-Tag TextNBTifier::LinkCompound(std::vector<Token>* _tokens, int64_t& _stepper, std::string _name) {
+Tag TextNBTifier::LinkCompound(std::vector<Token>* _tokens, size_t& _stepper, std::string _name) {
 	Tag compound;
 	compound.type = TAG_COMPOUND;
 	compound.name = _name;
@@ -192,7 +193,7 @@ Tag TextNBTifier::LinkCompound(std::vector<Token>* _tokens, int64_t& _stepper, s
 }
 
 // Checks if there is an array identifier
-bool TextNBTifier::IsArrayIdentifier(std::vector<Token>* _tokens, int64_t& _stepper) {
+bool TextNBTifier::IsArrayIdentifier(std::vector<Token>* _tokens, size_t& _stepper) {
 	const char lowerChar = std::tolower(Peek());
 	if (!SkipWhitespace())
 		Advance();
@@ -211,7 +212,7 @@ bool TextNBTifier::IsArrayIdentifier(std::vector<Token>* _tokens, int64_t& _step
 }
 
 // Lexes a string into a series of tokens
-void TextNBTifier::Lex(std::vector<Token>* _tokens, int64_t& _stepper) {
+void TextNBTifier::Lex(std::vector<Token>* _tokens, size_t& _stepper) {
 	while (IndexInBounds(_stepper)) {
 		SkipWhitespace();
 		LexToken(_tokens, _stepper);
@@ -219,7 +220,7 @@ void TextNBTifier::Lex(std::vector<Token>* _tokens, int64_t& _stepper) {
 }
 
 // Lex a single token
-void TextNBTifier::LexToken(std::vector<Token>* _tokens, int64_t& _stepper) {
+void TextNBTifier::LexToken(std::vector<Token>* _tokens, size_t& _stepper) {
 	SkipWhitespace();
 
 	switch (Peek()) {
@@ -249,7 +250,7 @@ void TextNBTifier::LexToken(std::vector<Token>* _tokens, int64_t& _stepper) {
 }
 
 // Lex a number or string literal
-void TextNBTifier::LexLiteral(std::vector<Token>* _tokens, int64_t& _stepper) {
+void TextNBTifier::LexLiteral(std::vector<Token>* _tokens, size_t& /*_stepper*/) {
 	TokenIdentifier identifier = NUMBER_LITERAL;
 	std::string tokenString;
 
@@ -342,8 +343,8 @@ void TextNBTifier::LexLiteral(std::vector<Token>* _tokens, int64_t& _stepper) {
 	bool sawDigit = false;
 	TagType numericType = TAG_INT;
 	if (!isIdentifier) {
-		auto len = tokenString.length();
-		for (size_t i = 0; i < tokenString.length(); i++) {
+		const auto len = tokenString.length();
+		for (size_t i = 0; i < len; i++) {
 			const char thisChar = tokenString[i];
 
 			if (i == 0 && (thisChar == '-' || thisChar == '+'))
@@ -364,7 +365,7 @@ void TextNBTifier::LexLiteral(std::vector<Token>* _tokens, int64_t& _stepper) {
 			}
 
 			// Only the last character may be a type suffix
-			if (i == tokenString.length() - 1 && sawDigit) {
+			if (i == len - 1 && sawDigit) {
 				isTyped = true;
 				switch (std::tolower(static_cast<unsigned char>(thisChar))) {
 				case 'b':
@@ -410,10 +411,11 @@ void TextNBTifier::LexLiteral(std::vector<Token>* _tokens, int64_t& _stepper) {
 }
 
 // Lex a list recursively
-void TextNBTifier::LexList(std::vector<Token>* _tokens, int64_t& _stepper) {
-	bool isSpecialList = false;
+void TextNBTifier::LexList(std::vector<Token>* _tokens, size_t& _stepper) {
+	// TODO: isSpecialList is currently not checked anywhere
+	//bool isSpecialList = false;
 	TagType listType = TAG_END;
-	int64_t length = 0;
+	//size_t length = 0;
 
 	if (Peek() != '[') {
 		Throw("Tried to parse an invalid list!");
@@ -422,7 +424,7 @@ void TextNBTifier::LexList(std::vector<Token>* _tokens, int64_t& _stepper) {
 	_tokens->push_back({ .identifier = LIST_BEGIN, .tokenText = std::string(1, Peek()), .type = TAG_LIST });
 	Advance();
 	SkipWhitespace();
-	isSpecialList = IsArrayIdentifier(_tokens, _stepper);
+	//isSpecialList = IsArrayIdentifier(_tokens, _stepper);
 
 	while (IndexInBounds(stepper) && Peek() != ']') {
 		SkipWhitespace();
@@ -444,7 +446,7 @@ void TextNBTifier::LexList(std::vector<Token>* _tokens, int64_t& _stepper) {
 }
 
 // Lex a compound recursively
-void TextNBTifier::LexCompound(std::vector<Token>* _tokens, int64_t& _stepper) {
+void TextNBTifier::LexCompound(std::vector<Token>* _tokens, size_t& _stepper) {
 	if (Peek() != '{') {
 		Throw("Tried to parse an invalid compound!");
 	}

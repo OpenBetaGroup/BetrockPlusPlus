@@ -55,7 +55,7 @@ public:
 	Config config;
 	Config gamerulesConfig;
 private:
-	int serverViewRadius = 8;
+	int serverViewRadius = BPP_DEFAULT_VIEW_DISTANCE;
 	int spawnChunkRadius = 5;
 	std::atomic<uint16_t> shutdownTimer{ 0 };
 

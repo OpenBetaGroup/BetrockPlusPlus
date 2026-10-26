@@ -16,7 +16,10 @@ bool WolfEntity::TryDespawn() {
 }
 
 void WolfEntity::OnPlayerInteract(PlayerEntity* _entity) {
-
+	if (!_entity)
+		return;
+	if (_entity->username == ownerUsername)
+		isSitting = !isSitting;
 }
 
 bool WolfEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
@@ -67,6 +70,7 @@ bool WolfEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type
 			attackTarget = entityManager->GetEntityByIdShared(_entity->id);
 		}
 	}
+	return false;
 }
 
 std::shared_ptr<Entity> WolfEntity::FindPlayerToAttack() {
