@@ -7,13 +7,66 @@
  */
 #include "entity_wolf.h"
 #include "entity_mob.h"
+#include "entity_player.h"
+
+bool WolfEntity::TryDespawn() {
+	if (IsTamed())
+		return false;
+	return MobEntity::TryDespawn();
+}
 
 void WolfEntity::OnPlayerInteract(PlayerEntity* _entity) {
 
 }
 
 bool WolfEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
-	return MobEntity::AttackEntityFrom(_entity, _damage, _type);
+	this->SetWolfSitting(false);
+
+	auto attackerWasPlayer = dynamic_cast<PlayerEntity*>(_entity);
+	auto isMobileEntity = dynamic_cast<MobileEntity*>(_entity);
+
+	if (_entity && !attackerWasPlayer) {
+		_damage = (_damage + 1) / 2;
+	}
+
+	if (!MobEntity::AttackEntityFrom(_entity, _damage, _type)) {
+		return false;
+	} else {
+		if (!IsTamed() && !isAngry) {
+			if (attackerWasPlayer) {
+				this->SetWolfAngry(true);
+				this->attackTarget = entityManager->GetEntityByIdShared(_entity->id);
+			}
+
+			if (isMobileEntity) {
+				auto searchCollider = AABB{position.x, position.y, position.z, position.x + 1.0, position.y + 1.0, position.z + 1.0};
+				searchCollider = searchCollider.Expand(16.0, 4.0, 16.0);
+
+				auto candidates = entityManager->GetEntitiesWithinAabbOfType(searchCollider, this->type);
+				for (auto& wolf : candidates) {
+					auto wolfEntity = dynamic_cast<WolfEntity*>(wolf);
+					if (!wolfEntity)
+						continue;
+					if (!wolfEntity->IsTamed() && wolfEntity->attackTarget.lock() == nullptr) {
+						wolfEntity->attackTarget = entityManager->GetEntityByIdShared(_entity->id);
+						if (attackerWasPlayer)
+							wolfEntity->SetWolfAngry(true);
+					}
+				}
+			}
+		} else if (_entity && _entity != this) {
+			// Annoying!
+			std::string playerName = attackerWasPlayer ? attackerWasPlayer->username : "";
+			std::transform(ownerUsername.begin(), ownerUsername.end(), ownerUsername.begin(),
+			               [](unsigned char c) { return std::tolower(c); });
+			std::transform(playerName.begin(), playerName.end(), playerName.begin(),
+			               [](unsigned char c) { return std::tolower(c); });
+			if (this->IsTamed() && attackerWasPlayer && playerName == ownerUsername) {
+				return true;
+			}
+			attackTarget = entityManager->GetEntityByIdShared(_entity->id);
+		}
+	}
 }
 
 std::shared_ptr<Entity> WolfEntity::FindPlayerToAttack() {
@@ -24,11 +77,55 @@ std::shared_ptr<Entity> WolfEntity::FindPlayerToAttack() {
 }
 
 void WolfEntity::TryAttackEntity(Entity& _target, float _distance) {
-	// Check if our attack time and distance are valid, make sure our Y axis overlap
+	auto activeTarget = attackTarget.lock();
+	if (!activeTarget)
+		return;
+	if (_distance > 2.0f && _distance < 6.0f && rand.NextInt(10) == 0) {
+		if (this->onGround) {
+			double dx = _target.position.x - position.x;
+			double dz = _target.position.z - position.z;
+			float dist = std::sqrt(dx * dx + dz * dz);
+			this->velocity.x = dx / dist * 0.5f * 0.8 + this->velocity.x * 0.2;
+			this->velocity.z = dz / dist * 0.5f * 0.8 + this->velocity.z * 0.2;
+			this->velocity.y = 0.4;
+			return;
+		}
+	}
 	if (attackTime <= 0 && _distance < 2.0f && _target.collider.maxY > collider.minY &&
 	    _target.collider.minY < collider.maxY) {
 		attackTime = 20;
 		_target.AttackEntityFrom(this, GetAttackStrength(), DamageType::Punch);
+	}
+}
+
+void WolfEntity::PathToOrTPToOwner(PlayerEntity& _owner, float _distance) {
+	Int3 goal = { MathHelper::FloorDouble(_owner.position.x), MathHelper::FloorDouble(_owner.position.y),
+		          MathHelper::FloorDouble(_owner.position.z) };
+	SetGoal(goal);
+
+	bool hasPath = !currentPath.empty();
+
+	if (!hasPath && _distance > 12.0f) {
+		int32_t baseX = goal.x - 2;
+		int32_t baseY = goal.y;
+		int32_t baseZ = goal.z - 2;
+
+		for (int x = 0; x <= 4; x++) {
+			for (int z = 0; z <= 4; z++) {
+				// Only the outer ring
+				if (x >= 1 && x <= 3 && z >= 1 && z <= 3)
+					continue;
+
+				Int3 feet = { baseX + x, baseY, baseZ + z };
+
+				// Solid floor and two blocks of clear space above it
+				if (world->IsBlockNormalCube({ feet.x, feet.y - 1, feet.z }) && !world->IsBlockNormalCube(feet) &&
+				    !world->IsBlockNormalCube({ feet.x, feet.y + 1, feet.z })) {
+					Teleport({ feet.x + 0.5, double(feet.y), feet.z + 0.5 }, { rotationYaw, rotationPitch });
+					return;
+				}
+			}
+		}
 	}
 }
 
@@ -37,7 +134,7 @@ void WolfEntity::UpdateAIState() {
 		return;
 
 	// Only a couple mobs use this!
-	hasAttacked = false;
+	hasAttacked = IsMovementBlocked();
 
 	auto currentTarget = attackTarget.lock();
 
@@ -79,7 +176,6 @@ void WolfEntity::UpdateAIState() {
 
 	rotationPitch = 0.0;
 
-	// Follow our path and strafe if we are close and have attacked
 	if (FollowPath()) {
 		if (hasAttacked && currentTarget) {
 			double dx = currentTarget->position.x - position.x;
@@ -93,12 +189,45 @@ void WolfEntity::UpdateAIState() {
 		}
 
 		if (currentTarget)
-			FaceEntity(dynamic_cast<MobileEntity&>(*currentTarget), 30.0f, 30.0f);
+			FaceEntity(dynamic_cast<MobileEntity&>(*currentTarget), isSitting ? 20.0f : 40.0f,
+			           isSitting ? 20.0f : 40.0f);
 	} else {
-		UpdateState(); // Idle if we dont have a path
+		UpdateState();
 	}
 
 	randomYawVelocity *= 0.9f;
+
+	if (!hasAttacked && !hasPath && IsTamed() && !passenger.lock()) {
+		// Follow our owner
+		auto owner = entityManager->GetPlayerWithName(ownerUsername);
+		if (owner) {
+			float distance = this->position.Distance(owner->position);
+			if (distance > 5.0f) {
+				PathToOrTPToOwner(*owner, distance);
+			}
+		} else {
+			this->SetWolfSitting(true);
+		}
+	} else if (!attackTarget.lock() && !hasPath && !IsTamed() && rand.NextInt(100) == 0) {
+		// Randomly attack sheep
+		auto searchCollider = AABB{ position.x,       position.y,       position.z,
+			                        position.x + 1.0, position.y + 1.0, position.z + 1.0 };
+		searchCollider = searchCollider.Expand(16.0, 4.0, 16.0);
+
+		EntityType sheepType = EntityType::SHEEP;
+		auto candidates = entityManager->GetEntitiesWithinAabbOfType(searchCollider, sheepType);
+		auto chosen = candidates[rand.NextInt(candidates.size())];
+		attackTarget = entityManager->GetEntityByIdShared(chosen->id);
+	}
+
+	if (this->inWater)
+		this->SetWolfSitting(false);
+
+	// So health updates
+	if (previousSentHealth != health) {
+		previousSentHealth = health;
+		wasMetadataUpdated = true;
+	}
 }
 
 bool WolfEntity::IsTamed() {
