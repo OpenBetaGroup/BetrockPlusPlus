@@ -113,11 +113,11 @@ std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 	auto entityType = _cmd.get_arg<std::string>("entityType");
 	if (!entityType)
 		return ERROR_REASON_PARAMETERS;
-	if (!ctx.session)
+	if (!ctx.executionEntity)
 		return ERROR_PLAYER_REQUIRED;
 
-	Vec3 spawnPos = ctx.session->position.pos;
-	spawnPos.y += 1.0; // Spawn above the player
+	Vec3 spawnPos = ctx.executionEntity->position;
+	spawnPos.y += 1.0; // Spawn above the executor, who is one of my favorite pokemon.
 
 	auto eTypeEnum = GetEntityTypeFromString(*entityType);
 	if (eTypeEnum == EntityType::NONE)

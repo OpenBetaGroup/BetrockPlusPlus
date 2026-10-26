@@ -11,27 +11,27 @@
 
 namespace {
 
-std::string ExecuteAsPlayer(const strategos::CmdNode& command, void* userData) {
+std::string ExecuteAsTarget(const strategos::CmdNode& command, void* userData) {
 	auto& ctx = CmdCtx(userData);
 	if (ctx.executionDepth >= 16) return "Maximum execute depth exceeded!";
 
-	auto playerName = command.get_arg<std::string>("player");
+	auto targetArg = command.get_arg<std::string>("target");
 	auto nestedCommand = command.get_arg<std::string>("command");
+	if (!targetArg || !nestedCommand) return ERROR_REASON_PARAMETERS;
 
-	if (!playerName || !nestedCommand) return ERROR_REASON_PARAMETERS;
-
-	auto target = ctx.server->GetSessionByUsername(*playerName);
-	if (!target || !target->stream.IsConnected() || target->connState != ConnectionState::Playing || !target->entity)
-		return *playerName + " is not connected!";
-
-	CommandContext nested = ctx;
-	nested.session = target.get();
-	nested.world = ctx.server->GetWorldForDimension(target->dimension);
-	nested.executionDepth = ctx.executionDepth + 1;
-
-	if (!ctx.manager->Parse(*nestedCommand, nested))
-        ctx.executionSucceeded = false;
-
+	auto targets = ResolveCmdTargets(*targetArg, ctx);
+	if (!targets) return targets.error();
+	for (const CommandTarget& target : *targets) {
+		Entity* entity = target.entity;
+		if (!entity || entity->isDead) continue;
+		CommandContext nested = ctx;
+		nested.executionEntity = entity;
+		nested.session = target.session;
+		nested.world = ctx.server->GetWorldForDimension(entity->dim);
+		nested.executionDepth = ctx.executionDepth + 1;
+		if (!ctx.manager->Parse(*nestedCommand, nested) || !nested.executionSucceeded)
+			ctx.executionSucceeded = false;
+	}
 	return "";
 }
 
@@ -39,11 +39,11 @@ std::string ExecuteAsPlayer(const strategos::CmdNode& command, void* userData) {
 
 void RegisterExecute(strategos::BrigadierContext& dispatcher) {
 	dispatcher.add_command(strategos::Node::literal("execute")
-	                           .describe("Runs a command as another player")
+	                           .describe("Runs a command as another target")
 	                           .op()
-	                           .then(strategos::Node::string("player")
+	                           .then(strategos::Node::string("target")
 	                                     .suggests(strategos::SuggestionSource::Players)
 	                                     .then(strategos::Node::greedy_string("command")
 	                                               .suggests(strategos::SuggestionSource::NestedCommand)
-	                                               .executes(ExecuteAsPlayer))));
+	                                               .executes(ExecuteAsTarget))));
 }

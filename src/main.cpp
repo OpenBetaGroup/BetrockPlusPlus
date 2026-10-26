@@ -43,7 +43,7 @@
 #include <signal.h>
 #endif
 
-#include "nbt/nbt_textifier.h" // FOR TESTING
+#include "nbt/nbt_textifier.h"
 
 Server* server;
 std::atomic<bool> shutdownRequested{ false };

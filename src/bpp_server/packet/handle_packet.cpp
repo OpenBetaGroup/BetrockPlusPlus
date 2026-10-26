@@ -81,6 +81,7 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 		CommandContext ctx;
 		ctx.session = &_session;
 		ctx.sender = &_session;
+		ctx.executionEntity = _session.entity.get();
 		ctx.world = &_world;
 		ctx.server = &_server;
 		ctx.transferDimension = _transferDimension;

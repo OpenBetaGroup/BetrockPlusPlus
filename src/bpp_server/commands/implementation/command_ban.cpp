@@ -40,6 +40,30 @@ std::string BanPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
 	if (!targetName)
 		return ERROR_PLAYER_NAME_REQUIRED;
+	if (!targetName->empty() && targetName->front() == '@') {
+		auto targets = ResolveCmdTargets(*targetName, ctx);
+		if (!targets) return targets.error();
+
+		for (const CommandTarget& target : *targets) {
+			if (!target.session) {
+				SendFeedback(ctx, "Ban Requires a player target; skipped non-player entity.");
+				continue;
+			}
+
+			auto& name = target.session->username;
+			auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
+			if (it != ctx.server->bannedUsernames.end()) {
+				SendFeedback(ctx, name + " is already banned!");
+				continue;
+			}
+
+			ctx.server->bannedUsernames.push_back(name);
+			if (!ctx.server->SaveBannedPlayers()) return "Failed to save banned players!";
+			ctx.server->DisconnectPlayer("You are banned from this server!", *target.session);
+			SendFeedback(ctx, std::format("{} has been banned!", name));
+		}
+		return "";
+	}
 	std::string name = *targetName;
 	if (!IsValidUsername(name))
 		return "Invalid username!";
@@ -61,6 +85,29 @@ std::string PardonPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
 	if (!targetName)
 		return ERROR_PLAYER_NAME_REQUIRED;
+	if (!targetName->empty() && targetName->front() == '@') {
+		auto targets = ResolveCmdTargets(*targetName, ctx);
+		if (!targets) return targets.error();
+
+		for (const CommandTarget& target : *targets) {
+			if (!target.session) {
+				SendFeedback(ctx, "Pardon Requires a player target; skipped non-player entity.");
+				continue;
+			}
+
+			const auto& name = target.session->username;
+			auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
+			if (it == ctx.server->bannedUsernames.end()) {
+				SendFeedback(ctx, name + " is not banned!");
+				continue;
+			}
+
+			ctx.server->bannedUsernames.erase(it);
+			if (!ctx.server->SaveBannedPlayers()) return "Failed to save banned players!";
+			SendFeedback(ctx, std::format("{} has been pardoned!", name));
+		}
+		return "";
+	}
 	std::string name = *targetName;
 	auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
 	if (it == ctx.server->bannedUsernames.end())

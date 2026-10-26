@@ -89,6 +89,7 @@ bool Server::ExecuteCommand(std::string_view command, PlayerSession* sender) noe
 		CommandContext ctx;
 		ctx.sender = sender;
 		ctx.session = sender;
+		ctx.executionEntity = sender ? sender->entity.get() : nullptr;
 		ctx.world = sender ? GetWorldForDimension(sender->dimension) : &gameRuntime.world;
 		ctx.server = this;
 
