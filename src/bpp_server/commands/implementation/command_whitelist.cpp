@@ -41,10 +41,10 @@ std::string WhitelistAdd(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!IsValidUsername(*name))
 		return "Invalid username!";
 	WhitelistSession list(*ctx.server);
-	auto it = std::find(ctx.server->whitelistedUsernames.begin(), ctx.server->whitelistedUsernames.end(), *name);
+	auto it = FindUsername(ctx.server->whitelistedUsernames, *name);
 	if (it != ctx.server->whitelistedUsernames.end())
 		return "User is already on whitelist!";
-	ctx.server->whitelistedUsernames.push_back(*name);
+	ctx.server->whitelistedUsernames.push_back(NormalizeUsername(*name));
 	if (!ctx.server->SaveWhitelist())
 		return "Failed to save whitelist!";
 	SendFeedback(ctx, std::format("{} has been added to the whitelist!", *name));
@@ -57,7 +57,7 @@ std::string WhitelistRemove(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!name)
 		return ERROR_REASON_TOO_FEW_PARAMETERS;
 	WhitelistSession list(*ctx.server);
-	auto it = std::find(ctx.server->whitelistedUsernames.begin(), ctx.server->whitelistedUsernames.end(), *name);
+	auto it = FindUsername(ctx.server->whitelistedUsernames, *name);
 	if (it == ctx.server->whitelistedUsernames.end())
 		return "User is not on the whitelist!";
 	ctx.server->whitelistedUsernames.erase(it);

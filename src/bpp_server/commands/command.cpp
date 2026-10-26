@@ -8,14 +8,14 @@
 #include "command.h"
 #include "../../bpp_shared/helpers/identifiers.h"
 #include "../server.h"
+#include "username.h"
 #include "items.h"
 #include "command_manager.h"
 #include <algorithm>
 #include <string>
 
 bool IsOperator(PlayerSession& _session, Server& _server) {
-	return std::find(_server.operatorUsernames.begin(), _server.operatorUsernames.end(), _session.username) !=
-	       _server.operatorUsernames.end();
+	return ContainsUsername(_server.operatorUsernames, _session.username);
 }
 
 bool IsOperator(const CommandContext& _ctx) {

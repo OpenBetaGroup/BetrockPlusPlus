@@ -34,37 +34,38 @@ struct Registry {
         //Register(Id::MobDrops, "mob_drops", true);
         // Misc
         //Register(Id::MaxMinecartSpeed, "max_minecart_speed", "The limit of how fast a minecart can move per tick", 8);
-        Register(Id::TntExplodes, "tnt_explodes", "If TNT can explode", true);
-        Register(Id::Nightmares, "nightmares", "If monsters can spawn near a sleeping player", true);
-        Register(Id::NetherBedsExplode, "nether_beds_explode", "If beds should explode in the nether", true);
-        Register(Id::SpawnProtectionRadius, "spawn_protection_radius", "How large the radius in which blocks can't be placed is", 16);
+        Register(Id::TntExplodes, "tnt_explodes", "If TNT can explode", true); // Vanilla: true
+        Register(Id::Nightmares, "nightmares", "If monsters can spawn near a sleeping player", true); // Vanilla: true
+        Register(Id::NetherBedsExplode, "nether_beds_explode", "If beds should explode in the nether", true); // Vanilla: true
+        Register(Id::SpawnProtectionRadius, "spawn_protection_radius", "How large the radius in which blocks can't be placed is", 16); // Vanilla: 16
         // Mobs
         //Register(Id::ForgiveDeadPlayers, "forgive_dead_players", "If aggro'd mobs forgive a player after dying", true);
-        Register(Id::MobGriefing, "mob_griefing", "If mobs can damage the environment (e.g. creeper explosions destroying blocks)", true);
-        Register(Id::AccurateDespawnRules, "accurate_despawn_rules", "If squids, ghasts and slimes should never despawn", false);
-        Register(Id::SpawnChunks, "spawn_chunks", "If spawn chunks should be and remain loaded (requires restart to take effect)", true);
+        Register(Id::MobGriefing, "mob_griefing", "If mobs can damage the environment (e.g. creeper explosions destroying blocks)", true); // Vanilla: true
+        Register(Id::AccurateDespawnRules, "accurate_despawn_rules", "If squids, ghasts and slimes should never despawn", false); // Vanilla: true
+        Register(Id::SpawnChunks, "spawn_chunks", "If spawn chunks should be and remain loaded (requires restart to take effect)", true); // Vanilla: true
+        Register(Id::RespectUsernameCapitalization, "respect_username_capitalization", "If the capitalization of a username should be respected (forces to lowercase otherwise)", false); // Vanilla: false
         // Player
-        Register(Id::AllowEnteringNetherUsingPortals, "allow_entering_nether_using_portals", "If players should be able to travel to the Nether via a Portal from the Overworld", true);
-        Register(Id::DrowningDamage, "drowning_damage", "If players should take drowning damage", true);
-        Register(Id::FallDamage, "fall_damage", "If players should take fall damage", true);
-        Register(Id::FireDamage, "fire_damage", "If players should take fire damage", true);
-        //Register(Id::ImmediateRespawn, "immediate_respawn", "If a player should be respawned immediately instead of getting the death screen first", false);
-        Register(Id::KeepInventory, "keep_inventory", "If players should keep their inventory after dying instead of dropping it", false);
-        Register(Id::PlayerMovementCheck, "player_movement_check", "If the server should do movement checks on players (anti-cheat)", true);
-        //Register(Id::PlayersSleepingPercentage, "players_sleeping_percentage", "What percentage of players needs to be asleep for the server to skip to the next morning", 100);
-        //Register(Id::Pvp, "pvp", "If players are able to damage one another", true);
-        Register(Id::RespawnRadius, "respawn_radius", "In what radius from world spawn players are able to spawn at", 10);
+        Register(Id::AllowEnteringNetherUsingPortals, "allow_entering_nether_using_portals", "If players should be able to travel to the Nether via a Portal from the Overworld", true); // Vanilla: true
+        Register(Id::DrowningDamage, "drowning_damage", "If players should take drowning damage", true); // Vanilla: true
+        Register(Id::FallDamage, "fall_damage", "If players should take fall damage", true); // Vanilla: true
+        Register(Id::FireDamage, "fire_damage", "If players should take fire damage", true); // Vanilla: true
+        //Register(Id::ImmediateRespawn, "immediate_respawn", "If a player should be respawned immediately instead of getting the death screen first", false); // Vanilla: false
+        Register(Id::KeepInventory, "keep_inventory", "If players should keep their inventory after dying instead of dropping it", false); // Vanilla: false
+        Register(Id::PlayerMovementCheck, "player_movement_check", "If the server should do movement checks on players (anti-cheat)", true); // Vanilla: true
+        //Register(Id::PlayersSleepingPercentage, "players_sleeping_percentage", "What percentage of players needs to be asleep for the server to skip to the next morning", 100); // Vanilla: 100
+        //Register(Id::Pvp, "pvp", "If players are able to damage one another", true); // Vanilla: true
+        Register(Id::RespawnRadius, "respawn_radius", "In what radius from world spawn players are able to spawn at", 10);  // Vanilla: 10
         // Spawning
-        Register(Id::SpawnMobs, "spawn_mobs", "If mobs should spawn (e.g. pigs, sheep, cows)", true);
-        Register(Id::SpawnMonsters, "spawn_monsters", "If monsters should spawn (e.g. zombies, creepers)", true);
+        Register(Id::SpawnMobs, "spawn_mobs", "If mobs should spawn (e.g. pigs, sheep, cows)", true); // Vanilla: true
+        Register(Id::SpawnMonsters, "spawn_monsters", "If monsters should spawn (e.g. zombies, creepers)", true); // Vanilla: true
         // World Updates
-        //Register(Id::AdvanceTime, "advance_time", "If the time of day should advance", true);
-        Register(Id::AdvanceWeather, "advance_weather", "If the weather ticks should advance", true);
-        Register(Id::FireSpread, "fire_spread", "If fire should spread", true);
-        //Register(Id::LavaSourceConversion, "lava_source_conversion", "If lava should be able to form new source blocks", false);
-        //Register(Id::MaxSnowAccumulationHeight, "max_snow_accumulation_height", "How much snow layers are allowed to accumulate", 3);
-        //Register(Id::RandomTickSpeed, "random_tick_speed", 3);
-        //Register(Id::WaterSourceConversion, "water_source_conversion", "If lava should be able to form new source blocks", true);
+        //Register(Id::AdvanceTime, "advance_time", "If the time of day should advance", true); // Vanilla: true
+        Register(Id::AdvanceWeather, "advance_weather", "If the weather ticks should advance", true); // Vanilla: true
+        Register(Id::FireSpread, "fire_spread", "If fire should spread", true); // Vanilla: true
+        //Register(Id::LavaSourceConversion, "lava_source_conversion", "If lava should be able to form new source blocks", false); // Vanilla: false
+        //Register(Id::MaxSnowAccumulationHeight, "max_snow_accumulation_height", "How much snow layers are allowed to accumulate", 3); // Vanilla: Unsure
+        //Register(Id::RandomTickSpeed, "random_tick_speed", 3); // TODO: Remove?
+        //Register(Id::WaterSourceConversion, "water_source_conversion", "If lava should be able to form new source blocks", true);  // Vanilla: true
     }
 
     Entry* Find(Id _id) {

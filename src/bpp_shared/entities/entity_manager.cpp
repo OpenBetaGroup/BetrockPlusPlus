@@ -29,13 +29,14 @@
 #include "entity_player.h"
 #include "gamerules.h"
 #include "world.h"
+#include "username.h"
 
 std::shared_ptr<PlayerEntity> EntityManager::GetPlayerWithName(std::string _name) {
 	// I hate this
 	for (const auto& playerWeak : players) {
 		if (auto playerEntity = playerWeak.lock()) {
 			if (auto player = std::dynamic_pointer_cast<PlayerEntity>(playerEntity)) {
-				if (player->username == _name) {
+				if (UsernameEquals(player->username, _name)) {
 					return player;
 				}
 			}

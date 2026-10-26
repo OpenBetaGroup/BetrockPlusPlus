@@ -43,10 +43,10 @@ std::string BanPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	std::string name = *targetName;
 	if (!IsValidUsername(name))
 		return "Invalid username!";
-	auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
+	auto it = FindUsername(ctx.server->bannedUsernames, name);
 	if (it != ctx.server->bannedUsernames.end())
 		return "User is already banned!";
-	ctx.server->bannedUsernames.push_back(name);
+	ctx.server->bannedUsernames.push_back(NormalizeUsername(name));
 	if (!ctx.server->SaveBannedPlayers())
 		return "Failed to save banned players!";
 	// Boot them immediately if they're currently online.
@@ -62,7 +62,7 @@ std::string PardonPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!targetName)
 		return ERROR_PLAYER_NAME_REQUIRED;
 	std::string name = *targetName;
-	auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
+	auto it = FindUsername(ctx.server->bannedUsernames, name);
 	if (it == ctx.server->bannedUsernames.end())
 		return "User is not banned!";
 	ctx.server->bannedUsernames.erase(it);

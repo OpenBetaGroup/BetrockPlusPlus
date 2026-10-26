@@ -32,6 +32,7 @@ enum class Id {
 	NetherBedsExplode,
 	SpawnProtectionRadius,
 	SpawnChunks,
+	RespectUsernameCapitalization,
 	// Mobs
 	ForgiveDeadPlayers,
 	MobGriefing,

@@ -101,8 +101,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	_session.username = incoming.username;
 
 	// User is banned, reject
-	if (std::find(_server.bannedUsernames.begin(), _server.bannedUsernames.end(), incoming.username) !=
-	    _server.bannedUsernames.end()) {
+	if (ContainsUsername(_server.bannedUsernames, incoming.username)) {
 		DisconnectPlayer(_session, "You are banned from this server!", _server, false);
 		return;
 	}
@@ -115,8 +114,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	}
 
 	// User isn't whitelisted, reject
-	if (_server.useWhitelist && std::find(_server.whitelistedUsernames.begin(), _server.whitelistedUsernames.end(),
-	                                      incoming.username) == _server.whitelistedUsernames.end()) {
+	if (_server.useWhitelist && !ContainsUsername(_server.whitelistedUsernames, incoming.username)) {
 		DisconnectPlayer(_session, "You're not whitelisted!", _server, false);
 		return;
 	}
@@ -128,7 +126,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	// because the session with this username already exists when you're connecting to the server
 	auto it = std::find_if(players.begin(), players.end(),
 	                       [&incoming, &_session](const std::shared_ptr<PlayerSession>& _player) {
-		                       return _player && _player.get() != &_session && _player->username == incoming.username;
+		                       return _player && _player.get() != &_session && UsernameEquals(_player->username, incoming.username);
 	                       });
 
 	if (it != players.end()) {

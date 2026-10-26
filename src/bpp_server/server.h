@@ -32,6 +32,7 @@ extern std::atomic<bool> shutdownRequested;
 #include "runtime.h"
 #include "server_socket.h"
 #include "strings/ucs2.h"
+#include "username.h"
 #include "trackers/entity_tracker.h"
 #include "world/world_event_broadcaster.h"
 #include "tick_profiler.h"
@@ -97,9 +98,8 @@ public:
 
 	std::shared_ptr<PlayerSession> GetSessionByUsername(const std::string& _username) {
 		for (const auto& player : players) {
-			if (player->username == _username) {
+			if (UsernameEquals(player->username, _username))
 				return player;
-			}
 		}
 		return nullptr;
 	}

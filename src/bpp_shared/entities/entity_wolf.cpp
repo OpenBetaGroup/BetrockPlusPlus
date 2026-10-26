@@ -18,7 +18,7 @@ bool WolfEntity::TryDespawn() {
 void WolfEntity::OnPlayerInteract(PlayerEntity* _entity) {
 	if (!_entity)
 		return;
-	if (_entity->username == ownerUsername)
+	if (UsernameEquals(_entity->username, ownerUsername))
 		isSitting = !isSitting;
 }
 
@@ -60,11 +60,7 @@ bool WolfEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type
 		} else if (_entity && _entity != this) {
 			// Annoying!
 			std::string playerName = attackerWasPlayer ? attackerWasPlayer->username : "";
-			std::transform(ownerUsername.begin(), ownerUsername.end(), ownerUsername.begin(),
-			               [](unsigned char c) { return std::tolower(c); });
-			std::transform(playerName.begin(), playerName.end(), playerName.begin(),
-			               [](unsigned char c) { return std::tolower(c); });
-			if (this->IsTamed() && attackerWasPlayer && playerName == ownerUsername) {
+			if (this->IsTamed() && attackerWasPlayer && UsernameEquals(playerName, ownerUsername)) {
 				return true;
 			}
 			attackTarget = entityManager->GetEntityByIdShared(_entity->id);

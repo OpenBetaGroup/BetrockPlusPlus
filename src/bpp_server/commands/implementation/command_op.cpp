@@ -24,10 +24,10 @@ std::string OpPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 
 	if (!IsValidUsername(name))
 		return "Invalid username!";
-	auto it = std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name);
+	auto it = FindUsername(ctx.server->operatorUsernames, name);
 	if (it != ctx.server->operatorUsernames.end())
 		return "User is already an operator!";
-	ctx.server->operatorUsernames.push_back(name);
+	ctx.server->operatorUsernames.push_back(NormalizeUsername(name));
 	if (!ctx.server->SaveOperators())
 		return "Failed to save ops!";
 	SendFeedback(ctx, std::format("{} has been opped!", name));
@@ -40,7 +40,7 @@ std::string DeopPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!targetName) return ERROR_PLAYER_NAME_REQUIRED;
 	std::string name = *targetName;
 
-	auto it = std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name);
+	auto it = FindUsername(ctx.server->operatorUsernames, name);
 	if (it == ctx.server->operatorUsernames.end())
 		return "User is not an operator!";
 	ctx.server->operatorUsernames.erase(it);
