@@ -46,7 +46,7 @@ void RecipeManager::AddVanillaRecipes() {
 	AddShapedRecipe({ "###", "###", " X " }, { { '#', { BLOCK_PLANKS } }, { 'X', { Items::Id::STICK } } },
 	                { Items::Id::SIGN, 1 });
 	AddShapedRecipe({ "AAA", "BEB", "CCC" },
-	                { { 'A', { Items::Id::BUCKET_MILK } },
+	                { { 'A', { .id = Items::Id::BUCKET_MILK, .transformTo = { Items::Id::BUCKET, 1 } } },
 	                  { 'B', { Items::Id::SUGAR } },
 	                  { 'C', { Items::Id::WHEAT } },
 	                  { 'E', { Items::Id::EGG } } },

@@ -19,8 +19,15 @@
 struct ItemKey {
 	ItemId id = Items::Id::INVALID;
 	ItemDamage data = 0;
+	ItemStack transformTo{}; // Empty slot by default
 
-	auto operator<=>(const ItemKey&) const = default;
+	bool operator<(const ItemKey& _other) const {
+		return id != _other.id ? id < _other.id : data < _other.data;
+	}
+
+	bool operator==(const ItemKey& _other) const {
+		return id == _other.id && data == _other.data;
+	}
 };
 
 struct ShapedRecipeKey {
@@ -85,7 +92,8 @@ public:
 
 	void AddVanillaRecipes();
 
-	[[nodiscard]] const ItemStack MatchGrid(std::span<const ItemStack> _grid, UInt8_2 _size) const;
+	[[nodiscard]] const std::pair<const std::array<ItemKey, 9>, ItemStack> MatchGrid(std::span<const ItemStack> _grid,
+	                                                                                  UInt8_2 _size) const;
 
 private:
 	static ShapedRecipeKey MakeShapedKey(std::span<const ItemKey> _grid, UInt8_2 _size);
