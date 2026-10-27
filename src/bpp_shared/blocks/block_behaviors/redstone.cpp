@@ -464,7 +464,22 @@ void RegisterRedstoneBehaviors() {
 	blockBehaviors[BLOCK_REDSTONE].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                  Cardinal::Value _face, BlockType _blockId,
 	                                                  uint8_t _meta) -> bool {
-		if (!CanRedstoneComponentStay(_world, _pos) || !GenericPlace(_world, _pos, _placer, _face, _blockId, _meta))
+		BlockType existing = _world.GetBlockId(_pos);
+		Int3 sourceBlock = _pos.WithOffset(Cardinal::Opposite(_face));
+
+		// Check if we can replace snow
+		Int3 targetPos = _pos;
+		if (_world.GetBlockId(sourceBlock) == BLOCK_SNOW_LAYER) {
+			targetPos = sourceBlock;
+		} else {
+			// Check if this block is replaceable
+			bool replaceable = existing == BLOCK_AIR || existing == BLOCK_WATER_FLOWING ||
+			                   existing == BLOCK_WATER_STILL || existing == BLOCK_LAVA_FLOWING ||
+			                   existing == BLOCK_LAVA_STILL || existing == BLOCK_FIRE || existing == BLOCK_SNOW_LAYER;
+			if (!replaceable)
+				return false;
+		}
+		if (!CanRedstoneComponentStay(_world, targetPos) || !GenericPlace(_world, _pos, _placer, _face, _blockId, _meta))
 			return false;
 		return true;
 	};

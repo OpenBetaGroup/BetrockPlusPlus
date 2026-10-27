@@ -373,7 +373,8 @@ void RegisterMiscBehaviors() {
 	blockBehaviors[BLOCK_SIGN_STANDING].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                   Cardinal::Value _face, BlockType _blockId,
 	                                                   uint8_t _meta) -> bool {
-		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
+		Int3 clicked = _pos.WithOffset(Cardinal::Opposite(_face));
+		if (!_world.GetMaterial(clicked).isSolid || _face == Cardinal::Value::Down)
 			return false;
 		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
