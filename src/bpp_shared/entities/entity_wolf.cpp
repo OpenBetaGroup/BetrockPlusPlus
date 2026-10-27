@@ -216,8 +216,10 @@ void WolfEntity::UpdateAIState() {
 
 		EntityType sheepType = EntityType::SHEEP;
 		auto candidates = entityManager->GetEntitiesWithinAabbOfType(searchCollider, sheepType);
-		auto chosen = candidates[rand.NextInt(candidates.size())];
-		attackTarget = entityManager->GetEntityByIdShared(chosen->id);
+		if (candidates.size() > 0) {
+			auto chosen = candidates[rand.NextInt(candidates.size())];
+			attackTarget = entityManager->GetEntityByIdShared(chosen->id);
+		}
 	}
 
 	if (this->inWater)

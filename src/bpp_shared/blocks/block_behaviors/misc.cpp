@@ -342,11 +342,19 @@ void RegisterMiscBehaviors() {
 	};
 	blockBehaviors[BLOCK_SIGN_WALL].onTick = [](WorldManager& _world, Int3 _pos, uint8_t _meta,
 	                                         Java::Random& /*_random*/) -> void {
-		if (!IsSupported(_world, _pos, GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta))) {
-			Logger::Debug << _pos << " - " << int(_meta) << "\n";
+		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
+		if (!_world.GetMaterial(support).isSolid) {
 			BreakAndDropBlock(_world, _pos);
 		}
 	};
+	blockBehaviors[BLOCK_SIGN_WALL].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
+	                                                   Cardinal::Value _face, BlockType _blockId, uint8_t _meta) -> bool {
+		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
+		if (!_world.GetMaterial(support).isSolid)
+			return false;
+		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
+	};
+
 	blockBehaviors[BLOCK_SIGN_WALL].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
 	                                                        BlockType /*_blockId*/) -> void {
 		blockBehaviors[BLOCK_SIGN_WALL].onTick(_world, _pos, _world.GetMetadata(_pos), _world.rand);
@@ -361,6 +369,13 @@ void RegisterMiscBehaviors() {
 	                                         Java::Random& /*_random*/) -> void {
 		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
 			BreakAndDropBlock(_world, _pos);
+	};
+	blockBehaviors[BLOCK_SIGN_STANDING].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
+	                                                   Cardinal::Value _face, BlockType _blockId,
+	                                                   uint8_t _meta) -> bool {
+		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
+			return false;
+		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
 	blockBehaviors[BLOCK_SIGN_STANDING].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
 	                                                        BlockType /*_blockId*/) -> void {
