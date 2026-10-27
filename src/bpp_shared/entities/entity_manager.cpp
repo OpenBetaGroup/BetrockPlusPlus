@@ -45,6 +45,40 @@ std::shared_ptr<PlayerEntity> EntityManager::GetPlayerWithName(std::string _name
 	return nullptr;
 }
 
+void EntityManager::AlertWolves(PlayerEntity& _player, Entity& _target, bool _ignoreSitting) {
+	if (_target.type == EntityType::CREEPER || _target.type == EntityType::GHAST)
+		return;
+
+	auto wolf = dynamic_cast<WolfEntity*>(&_target);
+	if (wolf) {
+		if (wolf->IsTamed() && NormalizeUsername(_player.username) == NormalizeUsername(wolf->ownerUsername))
+			return;
+	}
+
+	auto searchCollider = AABB{ _player.position.x,       _player.position.y,       _player.position.z,
+		                        _player.position.x + 1.0, _player.position.y + 1.0, _player.position.z + 1.0 };
+	searchCollider = searchCollider.Expand(16.0, 4.0, 16.0);
+
+	EntityType wolfType = EntityType::WOLF;
+	auto candidates = GetEntitiesWithinAabbOfType(searchCollider, wolfType);
+
+	for (auto& candidate : candidates) {
+		auto wolfCandidate = dynamic_cast<WolfEntity*>(candidate);
+		if (!wolfCandidate)
+			continue;
+		if (!wolfCandidate->IsTamed())
+			continue;
+		if (wolfCandidate->attackTarget.lock())
+			continue;
+		if (NormalizeUsername(_player.username) != NormalizeUsername(wolfCandidate->ownerUsername))
+			continue;
+		if (_ignoreSitting && wolfCandidate->isSitting)
+			continue;
+		wolfCandidate->SetWolfSitting(false);
+		wolfCandidate->attackTarget = GetEntityByIdShared(_target.id);
+	}
+}
+
 void EntityManager::RemoveEntity(EntityId _id) {
 	// Find the entity for this ID
 	auto it = std::find_if(entities.begin(), entities.end(),

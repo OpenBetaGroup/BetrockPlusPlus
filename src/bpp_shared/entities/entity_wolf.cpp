@@ -18,8 +18,39 @@ bool WolfEntity::TryDespawn() {
 void WolfEntity::OnPlayerInteract(PlayerEntity* _entity) {
 	if (!_entity)
 		return;
-	if (UsernameEquals(_entity->username, ownerUsername))
-		isSitting = !isSitting;
+
+	auto heldItem = _entity->GetHeldItem();
+	if (!IsTamed()) {
+		if (heldItem && heldItem->id == Items::Id::BONE && !isAngry) {
+			heldItem->DecrementCount(1);
+			if (rand.NextInt(3) == 0) {
+				SetWolfTamed(_entity->username);
+				this->currentPath.clear();
+				SetWolfSitting(true);
+				SetMaxHealth(20);
+				QueueEvent(PacketData::EntityEvent::HEART_PARTICLES);
+			} else {
+				QueueEvent(PacketData::EntityEvent::SMOKE_PARTICLES);
+			}
+			return;
+		}
+		return;
+	}
+
+	// We aren't tamed so see if we can heal
+	if (heldItem && HeldItemInterestsWolf(heldItem->id)) {
+		if (this->health < 20) {
+			heldItem->DecrementCount(1);
+			Heal(Items::GetRegenerationAmount(Items::Id::PORKCHOP));
+			return;
+		}
+	}
+
+	if (NormalizeUsername(_entity->username) == NormalizeUsername(ownerUsername)) {
+		SetWolfSitting(!isSitting);
+		this->jumping = false;
+		this->currentPath.clear();
+	}
 }
 
 bool WolfEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
@@ -134,7 +165,7 @@ void WolfEntity::UpdateAIState() {
 		return;
 
 	// Only a couple mobs use this!
-	hasAttacked = IsMovementBlocked();
+	hasAttacked = isSitting || shakeActive;
 
 	auto currentTarget = attackTarget.lock();
 
@@ -188,9 +219,10 @@ void WolfEntity::UpdateAIState() {
 			input.y = std::cos(angleDiff) * forward;
 		}
 
-		if (currentTarget)
-			FaceEntity(dynamic_cast<MobileEntity&>(*currentTarget), isSitting ? 20.0f : 40.0f,
-			           isSitting ? 20.0f : 40.0f);
+		if (currentTarget) {
+			float turnSpeed = isSitting ? 20.0f : 40.0f;
+			FaceEntity(dynamic_cast<MobileEntity&>(*currentTarget), turnSpeed, turnSpeed);
+		}
 	} else {
 		UpdateState();
 	}
@@ -237,10 +269,41 @@ bool WolfEntity::IsTamed() {
 }
 
 void WolfEntity::Tick() {
-	// TODO: TEMP HACK TO PREVENT WOLVES FORM WALKING WHEN SITTING!!!!! REPLACE!!!!!
-	if (isSitting)
-		ticksToFollowTarget = 999;
 	MobEntity::Tick();
+
+	this->isInterested = false;
+	auto lookTarget = target.lock();
+	if (lookTarget && currentPath.empty() && !isAngry) {
+		auto isPlayer = dynamic_cast<PlayerEntity*>(lookTarget.get());
+		if (isPlayer) {
+			auto heldItem = isPlayer->GetHeldItem();
+			this->isInterested = heldItem && HeldItemInterestsWolf(heldItem->id);
+		}
+	}
+
+	if (this->needsShake && !shakeActive && currentPath.empty() && this->onGround) {
+		shakeActive = true;
+		shakeTime = 0.0f;
+		QueueEvent(PacketData::EntityEvent::START_SHAKING);
+	}
+
+	if (isInterested)
+		ticksToFollowTarget = 10;
+
+	if (this->IsWet()) {
+		needsShake = true;
+		shakeActive = false;
+		shakeTime = 0.0f;
+	} else if ((needsShake || shakeActive) && shakeActive) {
+		auto saveTimed = shakeTime;
+		shakeTime += 0.05f;
+
+		if (saveTimed >= 2.0f) {
+			needsShake = false;
+			shakeActive = false;
+			shakeTime = 0.0f;
+		}
+	}
 }
 
 void WolfEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
@@ -267,7 +330,6 @@ bool WolfEntity::DecodeMetadata(const std::vector<PacketData::EntityMetadata::Da
 	if (metaFlags && metaOwnerUsername && metaHealth) {
 		isSitting = (*metaFlags & 0b001) != 0;
 		isAngry = (*metaFlags & 0b010) != 0;
-		//isTamed = (*metaFlags & 0b100) != 0;
         ownerUsername = *metaOwnerUsername;
         health = *metaHealth;
 		return true;
@@ -276,12 +338,14 @@ bool WolfEntity::DecodeMetadata(const std::vector<PacketData::EntityMetadata::Da
 }
 
 void WolfEntity::LoadFromNbt(Tag& _nbt) {
-	AnimalEntity::LoadFromNbt(_nbt);
+	ownerUsername = _nbt.Has("Owner") ? _nbt.compound["Owner"].GetString() : "";
+	if (IsTamed())
+		SetMaxHealth(20);
 	isSitting = _nbt.Has("Sitting") ? _nbt.compound["Sitting"].GetByte() : false;
 	isAngry = _nbt.Has("Angry") ? _nbt.compound["Angry"].GetByte() : false;
-	ownerUsername = _nbt.Has("Owner") ? _nbt.compound["Owner"].GetString() : "";
+	AnimalEntity::LoadFromNbt(_nbt);
 }
-
+	
 std::optional<Tag> WolfEntity::SerializeToNbt() {
 	auto tag = AnimalEntity::SerializeToNbt();
 	if (!tag)

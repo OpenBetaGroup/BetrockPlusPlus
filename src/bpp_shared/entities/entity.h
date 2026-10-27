@@ -81,6 +81,9 @@ struct Entity {
 	WorldManager* world = nullptr;
 	EntityManager* entityManager = nullptr;
 
+	// For queueing events
+	std::vector<PacketData::EntityEvent> pendingEvents;
+
 	// Identity
 	EntityId id = -1; // -1 = not yet spawned
 	bool isDead = false;
@@ -221,6 +224,10 @@ struct Entity {
 
 	virtual Vec3 GetRiderSeatOffset() {
 		return { 0.0, 0.0, 0.0 };
+	}
+
+	void QueueEvent(PacketData::EntityEvent _e) {
+		this->pendingEvents.push_back(_e);
 	}
 
 	void RebuildCollider() {

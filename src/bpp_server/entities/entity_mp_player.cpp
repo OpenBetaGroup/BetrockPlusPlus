@@ -456,6 +456,10 @@ void EntityMPPlayer::OnEnterPortal() {
 	}
 }
 
+ItemStack* EntityMPPlayer::GetHeldItem() {
+	return session->inventory.GetHeldItem();
+}
+
 void EntityMPPlayer::Tick() {
 	if (!session)
 		return;

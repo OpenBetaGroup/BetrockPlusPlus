@@ -14,6 +14,10 @@ bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	auto success = MobileEntity::AttackEntityFrom(_entity, _damage, _type);
 	if (success && isSleeping)
 		WakeUp();
+	if (success && dynamic_cast<MobileEntity*>(_entity)) {
+		if (!_entity->isDead) 
+			this->entityManager->AlertWolves(*this, *_entity);
+	}
 	return success;
 }
 

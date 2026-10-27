@@ -670,40 +670,22 @@ void EntityTracker::UpdateEquipmentState(TrackedEntry& _trackedEntry) {
 	}
 }
 
-void EntityTracker::UpdateDamageState(TrackedEntry& _trackedEntry) {
-	MobileEntity& entity = dynamic_cast<MobileEntity&>(*_trackedEntry.entity);
+void EntityTracker::FlushEventQueue(Entity& _entity) {
+	auto isPlayer = dynamic_cast<EntityMPPlayer*>(&_entity);
 
-	// Send the death animation packet when the entity starts its death timer
-	if (entity.deathTime == 1) {
-		Packet::EntityEvent deathPkt;
-		deathPkt.entityId = entity.id;
-		deathPkt.action = PacketData::EntityEvent::DEATH;
+	while (_entity.pendingEvents.size() > 0) {
+		auto event = _entity.pendingEvents.back();
+		Packet::EntityEvent pkt;
+		pkt.action = event;
+		pkt.entityId = _entity.id;
 
-		SendPacketToPlayersInTrackedEntry(deathPkt, _trackedEntry);
-		return;
-	}
+		SendPacketToViewers(pkt, _entity.id);
 
-	// Send the hurt animation packet / death animation packet whenever that happens.
-	if (entity.lastHealth != entity.GetHeartsHealth() || entity.beenAttacked) {
-		if (entity.GetHeartsHealth() - entity.lastHealth < 0 || entity.beenAttacked) {
-			Packet::EntityEvent pkt;
-			pkt.entityId = entity.id;
-			pkt.action = PacketData::EntityEvent::HURT;
-
-			SendPacketToPlayersInTrackedEntry(pkt, _trackedEntry);
-
-			// If we are a player play the damage sound for ourselves too
-			if (entity.type == EntityType::PLAYER) {
-				auto session = server->GetSessionById(entity.id);
-				if (session) {
-					pkt.Serialize(session->stream);
-				}
-			}
-
-			entity.beenAttacked = false;
+		if (isPlayer) {
+			pkt.Serialize(isPlayer->session->stream);
 		}
 
-		entity.lastHealth = entity.GetHeartsHealth();
+		_entity.pendingEvents.pop_back();
 	}
 }
 
@@ -713,11 +695,10 @@ void EntityTracker::Update(TrackedEntry& _trackedEntry) {
 		return;
 	auto& entity = _trackedEntry.entity;
 
-	// If we are a mobile entity then send the damage state and update our equipment
+	// If we are a mobile entity then send our equipment
 	// TODO: Only send these if any of them have been updated
-	if (std::find(this->mobileEntities.begin(), this->mobileEntities.end(), entity->type) !=
-	    this->mobileEntities.end()) {
-		UpdateDamageState(_trackedEntry);
+	if (dynamic_cast<MobileEntity*>(entity)) {
+		FlushEventQueue(*entity);
 		UpdateEquipmentState(_trackedEntry);
 		UpdateMetadataState(_trackedEntry);
 	}

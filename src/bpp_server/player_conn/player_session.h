@@ -144,8 +144,6 @@ struct PlayerSession {
 		}
 
 		entity->LoadFromNbt(_nbt);
-		entity->lastHealth = entity->health;
-		entity->lastNotifiedHealth = entity->health;
 
 		dimension = _nbt.Has("Dimension") ? static_cast<Dimension>(_nbt.Get("Dimension").GetInt())
 		                                  : Dimension::Overworld;

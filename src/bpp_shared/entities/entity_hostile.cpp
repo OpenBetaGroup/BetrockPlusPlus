@@ -65,7 +65,7 @@ void HostileEntity::UpdateAIState() {
 		return;
 
 	// Only a couple mobs use this!
-	hasAttacked = IsMovementBlocked();
+	hasAttacked = false;
 
 	auto currentTarget = attackTarget.lock();
 

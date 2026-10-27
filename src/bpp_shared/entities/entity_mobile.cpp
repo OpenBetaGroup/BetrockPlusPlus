@@ -399,6 +399,7 @@ bool MobileEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	}
 
 	if (freshHit) {
+		QueueEvent(PacketData::EntityEvent::HURT);
 		if (_entity != nullptr) {
 			auto dx = _entity->position.x - position.x;
 			auto dz = _entity->position.z - position.z;
@@ -420,6 +421,7 @@ bool MobileEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	}
 
 	if (health <= 0) {
+		QueueEvent(PacketData::EntityEvent::DEATH);
 		OnDeath(_entity, _type);
 	}
 

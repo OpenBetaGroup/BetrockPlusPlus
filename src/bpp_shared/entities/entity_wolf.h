@@ -15,6 +15,8 @@ struct WolfEntity : public AnimalEntity {
 	bool isAngry : 1 = false;
 	bool hasAttacked : 1 = false;
 	bool shakeActive : 1 = false;
+	bool isInterested : 1 = false;
+	bool needsShake : 1 = false;
 	float shakeTime = 0.0f;
 	int previousSentHealth = -1;
 	WolfEntity() : AnimalEntity() {
@@ -39,13 +41,15 @@ struct WolfEntity : public AnimalEntity {
 	virtual void TryAttackEntity(Entity& _target, float _distance);
 	virtual void OnTargetLostSight(Entity& /*_target*/, float /*_distance*/) {}
 	void PathToOrTPToOwner(PlayerEntity& _owner, float _distance);
+
+	bool HeldItemInterestsWolf(ItemId _item) {
+		if (!IsTamed() && _item == Items::Id::BONE)
+			return true;
+		return IsTamed() && (_item == Items::Id::PORKCHOP || _item == Items::Id::PORKCHOP_COOKED);
+	}
 	
 	int GetAttackStrength() {
 		return IsTamed() ? 4 : 2;
-	}
-
-	bool IsMovementBlocked() override {
-		return health <= 0 || isSitting || shakeActive;
 	}
 
 	void SetWolfAngry(bool _angry) {

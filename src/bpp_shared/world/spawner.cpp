@@ -18,6 +18,7 @@
 #include "entities/entity_spider.h"
 #include "entities/entity_squid.h"
 #include "entities/entity_zombie.h"
+#include "entities/entity_wolf.h"
 #include "world.h"
 
 EntitySpawner::EntitySpawner() {
@@ -43,7 +44,7 @@ EntitySpawner::EntitySpawner() {
 		{ std::make_shared<CowEntity>(), []() { return std::make_shared<CowEntity>(); }, 8 },
 		{ std::make_shared<ChickenEntity>(), []() { return std::make_shared<ChickenEntity>(); }, 10 },
 		{ std::make_shared<SheepEntity>(), []() { return std::make_shared<SheepEntity>(); }, 12 },
-		// TODO: add wolf
+		{ std::make_shared<WolfEntity>(), []() { return std::make_shared<WolfEntity>(); }, 2 }
 	};
 	passive.cap = 15;
 	categories.push_back(passive);
@@ -74,7 +75,7 @@ EntitySpawner::EntitySpawner() {
 // Picks one entry from the weighted list
 static std::optional<SpawnEntry> PickWeighted(Java::Random& _rand, SpawnCategory& _category, Biome _biome) {
 	int total = 0;
-	auto spawnList = _category.GetSpawnSpawnListForBiome(_biome);
+	auto& spawnList = _category.GetSpawnSpawnListForBiome(_biome);
 
 	if (spawnList.size() == 0)
 		return std::nullopt;

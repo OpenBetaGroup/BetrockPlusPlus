@@ -162,4 +162,5 @@ public:
 
 	std::shared_ptr<PlayerEntity> GetPlayerWithName(std::string _name);
 	std::vector<Entity*> GetLivingEntitiesWithinAabb(const AABB& _box);
+	void AlertWolves(PlayerEntity& _player, Entity& _target, bool _ignoreSitting = false);
 };

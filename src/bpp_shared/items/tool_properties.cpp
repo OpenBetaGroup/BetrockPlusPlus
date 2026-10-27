@@ -257,6 +257,12 @@ void AttackWithItem(Entity& _targetEntity, Entity& _sourceEntity, ItemStack* _st
 		damage = CalculateDamage(toolProperties[_stack->id].type, MaterialToLevel(toolProperties[_stack->id].material));
 	InflictDamage(_targetEntity, _sourceEntity, damage, DamageType::Item);
 
+	// Players alert wolves
+	auto player = dynamic_cast<PlayerEntity*>(&_sourceEntity);
+	if (player) {
+		_sourceEntity.entityManager->AlertWolves(*player, _targetEntity, /*ignoreSitting=*/ true);
+	}
+
 	// ItemSword.hitEntity damages 1; ItemTool.hitEntity damages 2
 	int durabilityLoss = 1;
 	if (toolProperties.contains(_stack->id)) {
