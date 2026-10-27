@@ -545,7 +545,6 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 				_session.entity->DropItem(interaction->carried);
 				interaction->carried = ItemStack{ Items::Id::INVALID };
 			}
-			PacketUtilities::SendSlot(_session, -1, -1, &interaction->carried);
 		}
 		return;
 	}
