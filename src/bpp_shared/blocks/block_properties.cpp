@@ -373,7 +373,6 @@ void RegisterBlockProperties() {
 		.hardness = 0.2f,
 		.lightOpacity = 1,
 		.stepSound = StepSound::Grass,
-		.isOpaqueCube = false,
 		.ticksOnLoad = true,
 		.enableStats = false,
 	};
