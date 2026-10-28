@@ -344,6 +344,11 @@ void WolfEntity::LoadFromNbt(Tag& _nbt) {
 	isSitting = _nbt.Has("Sitting") ? _nbt.compound["Sitting"].GetByte() : false;
 	isAngry = _nbt.Has("Angry") ? _nbt.compound["Angry"].GetByte() : false;
 	AnimalEntity::LoadFromNbt(_nbt);
+
+	// So everything gets properly updated
+	SetWolfAngry(isAngry);
+	SetWolfSitting(isSitting);
+	SetWolfTamed(ownerUsername);
 }
 	
 std::optional<Tag> WolfEntity::SerializeToNbt() {
