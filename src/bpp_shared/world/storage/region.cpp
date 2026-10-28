@@ -16,9 +16,9 @@
 #include <cstdint>
 #include "helpers/endian_convert.h"
 #include <fstream>
-#include <libdeflate.h>
 #include <memory>
 #include <string>
+#include "helpers/deflate_pool.h"
 
 namespace {
 constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;
@@ -268,9 +268,14 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 	tileEntities.type = TAG_LIST;
 	tileEntities.name = "TileEntities";
 	tileEntities.listType = TAG_COMPOUND;
+	size_t teCount = 0;
+	for (auto& te : _chunk->tileEntities) {
+		if (te) teCount++;
+	}
+	tileEntities.list.reserve(teCount);
 	for (auto& te : _chunk->tileEntities) {
 		if (te)
-			tileEntities.list.push_back(te->Serialize());
+			tileEntities.list.emplace_back(te->Serialize());
 	}
 
 	// Assemble level compound
@@ -302,51 +307,24 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 	std::vector<uint8_t> raw;
 	NBTwriter writer(raw, root);
 	// Compress
-	thread_local std::unique_ptr<libdeflate_compressor, decltype(&libdeflate_free_compressor)> compressor(
-	    nullptr, libdeflate_free_compressor);
-	if (!compressor)
-		compressor.reset(libdeflate_alloc_compressor(1));
-	// If still no compressor, give up
-	if (!compressor)
-		return {};
-	size_t maxSize = libdeflate_zlib_compress_bound(compressor.get(), static_cast<size_t>(raw.size()));
-	std::vector<uint8_t> compressed(maxSize);
-	size_t actualSize = libdeflate_zlib_compress(compressor.get(), raw.data(), static_cast<size_t>(raw.size()),
-	                                             compressed.data(), maxSize);
-	if (actualSize == 0)
-		return {};
-	compressed.resize(actualSize);
+	std::vector<uint8_t> compressed(Deflate::CompressBound(Deflate::Format::Zlib, raw.size()));
+	size_t writtenSize = 0;
+	if (Deflate::Compress(Deflate::Format::Zlib, raw, compressed, writtenSize))
+		compressed.resize(writtenSize);
 	return compressed;
 }
 
 std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawData) {
-	// TODO: We allocate a decompressor per chunk! This is BAD
-	// We really need a pool of these...
-	libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-	if (!decompressor)
-		return std::make_shared<Chunk>();
 	size_t decompressedSize = InitialDecompressedSize();
 	std::vector<uint8_t> decompressed(decompressedSize);
 	while (true) {
-		size_t actualOutSize = 0;
-		libdeflate_result result = libdeflate_zlib_decompress(decompressor, _rawData.data(), _rawData.size(),
-		                                                      decompressed.data(), decompressed.size(), &actualOutSize);
-
-		if (result == LIBDEFLATE_SUCCESS) {
-			decompressed.resize(actualOutSize);
+		if (Deflate::Decompress(Deflate::Format::Zlib, _rawData, decompressed, decompressedSize))
 			break;
-		}
-
-		if (result != LIBDEFLATE_INSUFFICIENT_SPACE) {
-			Logger::Warning << "Decompression failed!\n";
-			libdeflate_free_decompressor(decompressor);
-			return std::make_shared<Chunk>();
-		}
-
 		decompressedSize += decompressedSize / 2;
 		decompressed.resize(decompressedSize);
 	}
-	libdeflate_free_decompressor(decompressor);
+	// Resize to final written size
+	decompressed.resize(decompressedSize);
 	return DecodeDecompressedNbtData(decompressed);
 }
 

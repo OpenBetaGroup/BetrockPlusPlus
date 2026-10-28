@@ -285,6 +285,7 @@ set(SHARED_SOURCES
     # Utilities
     src/bpp_utilities/utilities.cpp
     src/bpp_shared/helpers/explosion.cpp
+    src/bpp_shared/helpers/deflate_pool.cpp
     src/bpp_shared/helpers/direction_fixer.cpp
     src/bpp_shared/enums/biomes.cpp
     src/bpp_shared/strings/ucs2.cpp

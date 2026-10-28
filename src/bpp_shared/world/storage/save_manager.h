@@ -14,7 +14,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <libdeflate.h>
+#include "helpers/deflate_pool.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -172,15 +172,9 @@ struct SaveManager {
 		stream.read(reinterpret_cast<char*>(compressed.data()), fileSize);
 
 		// Decompress gzip
-		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
-			return false;
-		std::vector<uint8_t> raw(1024 * 1024); // 1MB should be plenty for level.dat
+		std::vector<uint8_t> raw(1024); // 1KB should be plenty for level.dat, unless the world name is SUPER huge
 		size_t actualSize = 0;
-		libdeflate_result result = libdeflate_gzip_decompress(decompressor, compressed.data(), compressed.size(),
-		                                                      raw.data(), raw.size(), &actualSize);
-		libdeflate_free_decompressor(decompressor);
-		if (result != LIBDEFLATE_SUCCESS)
+		if (!Deflate::Decompress(Deflate::Format::Gzip, compressed, raw, actualSize))
 			return false;
 		raw.resize(actualSize);
 
@@ -328,16 +322,10 @@ struct SaveManager {
 		std::vector<uint8_t> raw;
 		NBTwriter writer(raw, root);
 
-		libdeflate_compressor* compressor = libdeflate_alloc_compressor(6);
-		if (!compressor)
+		std::vector<uint8_t> compressed(Deflate::CompressBound(Deflate::Format::Zlib, raw.size()));
+		size_t writtenSize = 0;
+		if (!Deflate::Compress(Deflate::Format::Gzip, raw, compressed, writtenSize))
 			return false;
-		size_t maxSize = libdeflate_gzip_compress_bound(compressor, raw.size());
-		std::vector<uint8_t> compressed(maxSize);
-		size_t actualSize = libdeflate_gzip_compress(compressor, raw.data(), raw.size(), compressed.data(), maxSize);
-		libdeflate_free_compressor(compressor);
-		if (actualSize == 0)
-			return false;
-		compressed.resize(actualSize);
 
 		std::ofstream file(saveDirectory + "/level.dat", std::ios::binary);
 		if (!file.is_open())
@@ -381,19 +369,15 @@ struct SaveManager {
 
 		std::vector<uint8_t> compressed((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
-			return GetNewPlayerNbt();
-
+		// NOTE: 1MB is way too huge of a guess...
+		// Player inventories mostly get grown by holding items, so they have a finite size!
+		// TODO: Calculate a reasonable maximum!
 		std::vector<uint8_t> raw(1024 * 1024);
-		size_t actualSize = 0;
-		libdeflate_result result = libdeflate_gzip_decompress(decompressor, compressed.data(), compressed.size(),
-		                                                      raw.data(), raw.size(), &actualSize);
-		libdeflate_free_decompressor(decompressor);
-		if (result != LIBDEFLATE_SUCCESS)
+		size_t writtenSize = 0;
+		if (!Deflate::Decompress(Deflate::Format::Gzip, compressed, raw, writtenSize))
 			return GetNewPlayerNbt();
 
-		raw.resize(actualSize);
+		raw.resize(writtenSize);
 		NBTParser parser(raw.data(), raw.size());
 		return parser.root;
 	}
@@ -528,16 +512,11 @@ struct SaveManager {
 			std::vector<uint8_t> raw;
 			NBTwriter writer(raw, _playerData);
 
-			libdeflate_compressor* compressor = libdeflate_alloc_compressor(6);
-			if (!compressor)
+			std::vector<uint8_t> compressed(Deflate::CompressBound(Deflate::Format::Gzip, raw.size()));
+			size_t writtenSize = 0;
+			if (!Deflate::Compress(Deflate::Format::Gzip, raw, compressed, writtenSize, 6))
 				return false;
-			size_t maxSize = libdeflate_gzip_compress_bound(compressor, raw.size());
-			std::vector<uint8_t> compressed(maxSize);
-			size_t actualSize = libdeflate_gzip_compress(compressor, raw.data(), raw.size(), compressed.data(), maxSize);
-			libdeflate_free_compressor(compressor);
-			if (actualSize == 0)
-				return false;
-			compressed.resize(actualSize);
+			compressed.resize(writtenSize);
 
 			std::string finalPath = saveDirectory + "/players/" + _playerName + ".dat";
 			std::string tmpPath = finalPath + ".tmp";
