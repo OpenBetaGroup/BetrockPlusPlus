@@ -41,15 +41,10 @@ std::string BanPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!targetName)
 		return ERROR_PLAYER_NAME_REQUIRED;
 	if (!targetName->empty() && targetName->front() == '@') {
-		auto targets = ResolveCmdTargets(*targetName, ctx);
+		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Ban");
 		if (!targets) return targets.error();
 
 		for (const CommandTarget& target : *targets) {
-			if (!target.session) {
-				SendFeedback(ctx, "Ban Requires a player target; skipped non-player entity.");
-				continue;
-			}
-
 			auto& name = target.session->username;
 			auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
 			if (it != ctx.server->bannedUsernames.end()) {
@@ -86,14 +81,10 @@ std::string PardonPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!targetName)
 		return ERROR_PLAYER_NAME_REQUIRED;
 	if (!targetName->empty() && targetName->front() == '@') {
-		auto targets = ResolveCmdTargets(*targetName, ctx);
+		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Pardon");
 		if (!targets) return targets.error();
 
 		for (const CommandTarget& target : *targets) {
-			if (!target.session) {
-				SendFeedback(ctx, "Pardon Requires a player target; skipped non-player entity.");
-				continue;
-			}
 
 			const auto& name = target.session->username;
 			auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);

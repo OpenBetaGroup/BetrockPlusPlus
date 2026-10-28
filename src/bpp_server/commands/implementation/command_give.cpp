@@ -60,14 +60,10 @@ std::string ClearOtherInventory(const strategos::CmdNode& _cmd, void* _userData)
 	if (!playerName) return ERROR_REASON_PARAMETERS;
 	if (!IsOperator(ctx)) return ERROR_OPERATOR;
 	if (!playerName->empty() && playerName->front() == '@') {
-		auto targets = ResolveCmdTargets(*playerName, ctx);
+		auto targets = ResolveCmdPlayerTargets(*playerName, ctx, "Clear");
 		if (!targets) return targets.error();
 
 		for (const CommandTarget& resolved : *targets) {
-			if (!resolved.session) {
-				SendFeedback(ctx, "Clear Requires a player target; skipped non-player entity.");
-				continue;
-			}
 
 			auto& target = *resolved.session;
 			const auto count = target.inventory.Clear();
@@ -93,8 +89,11 @@ void RegisterGive(strategos::BrigadierContext& _dispatcher) {
 	                            .then(strategos::Node::string("item").executes(GiveItem).then(
 	                                strategos::Node::integer("amount").executes(GiveItem))));
 	_dispatcher.add_command(strategos::Node::literal("clear")
+	                            .describe("Clears your or another player's inventory")
 	                            .executes(ClearOwnInventory)
 	                            .then(strategos::Node::string("player")
+	                                      .describe("Target inventory to clear")
+	                                      .op()
 	                                      .suggests(strategos::SuggestionSource::Players)
 	                                      .executes(ClearOtherInventory)));
 }

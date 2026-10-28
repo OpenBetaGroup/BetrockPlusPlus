@@ -27,48 +27,6 @@
 
 namespace {
 
-EntityType GetEntityTypeFromString(std::string _name) {
-	if (_name == "creeper") {
-		return EntityType::CREEPER;
-	}
-	if (_name == "zombie") {
-		return EntityType::ZOMBIE;
-	}
-	if (_name == "skeleton") {
-		return EntityType::SKELETON;
-	}
-	if (_name == "spider") {
-		return EntityType::SPIDER;
-	}
-	if (_name == "sheep") {
-		return EntityType::SHEEP;
-	}
-	if (_name == "cow") {
-		return EntityType::COW;
-	}
-	if (_name == "pig") {
-		return EntityType::PIG;
-	}
-	if (_name == "chicken") {
-		return EntityType::CHICKEN;
-	}
-	if (_name == "squid") {
-		return EntityType::SQUID;
-	}
-	if (_name == "boat") {
-		return EntityType::BOAT;
-	}
-	if (_name == "minecart") {
-		return EntityType::MINECART;
-	}
-	if (_name == "painting") {
-		return EntityType::PAINTING;
-	}
-	if (_name == "slime") {
-		return EntityType::SLIME;
-	}
-	return EntityType::NONE;
-}
 
 std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 	switch (_type) {

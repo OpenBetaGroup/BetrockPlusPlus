@@ -119,27 +119,11 @@ std::string_view TrimSelector(std::string_view value) {
 }
 
 std::optional<EntityType> ParseSelectorEntityType(std::string_view _name) {
-	if (_name.starts_with("minecraft:")) _name.remove_prefix(10);
-	static constexpr std::pair<std::string_view, EntityType> types[] = {
-	    {"item", EntityType::ITEM}, {"player", EntityType::PLAYER}, {"fish", EntityType::FISH},
-	    {"fireball", EntityType::FIREBALL}, {"boat", EntityType::BOAT}, {"minecart", EntityType::MINECART},
-	    {"storage_minecart", EntityType::STORAGE_MINECART}, {"furnace_minecart", EntityType::FURNACE_MINECART},
-	    {"lit_tnt", EntityType::LIT_TNT}, {"arrow", EntityType::ARROW}, {"thrown_snowball", EntityType::THROWN_SNOWBALL},
-	    {"thrown_egg", EntityType::THROWN_EGG}, {"falling_sand", EntityType::FALLING_SAND},
-	    {"falling_gravel", EntityType::FALLING_GRAVEL}, {"fishing_bobber", EntityType::FISHING_BOBBER},
-	    {"creeper", EntityType::CREEPER}, {"skeleton", EntityType::SKELETON}, {"spider", EntityType::SPIDER},
-	    {"giant_zombie", EntityType::GIANT_ZOMBIE}, {"zombie", EntityType::ZOMBIE}, {"slime", EntityType::SLIME},
-	    {"ghast", EntityType::GHAST}, {"zombie_pigman", EntityType::ZOMBIE_PIGMAN}, {"pig", EntityType::PIG},
-	    {"sheep", EntityType::SHEEP}, {"cow", EntityType::COW}, {"chicken", EntityType::CHICKEN},
-	    {"squid", EntityType::SQUID}, {"wolf", EntityType::WOLF}, {"painting", EntityType::PAINTING},
-	    {"lightning_bolt", EntityType::LIGHTNING_BOLT},
-	};
-
-	for (const auto& [name, type] : types) if (name == _name) return type;
-	return std::nullopt;
+	const EntityType type = GetEntityTypeFromString(_name);
+	if (type == EntityType::NONE) return std::nullopt;
+	return type;
 }
 
-// LLM Disclosure (partial, validated)
 std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string_view _arguments) {
 	SelectorArguments result;
 	if (TrimSelector(_arguments).empty()) return result;
@@ -148,27 +132,37 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 	while (start < _arguments.size()) {
 		size_t end = start, equal = std::string_view::npos;
 		std::vector<char> closers;
-		char quote = 0;
+
+		enum class Quote : char { None, Single, Double };
+		Quote quote = Quote::None;
 		bool escaped = false;
 
 		for (; end < _arguments.size(); ++end) {
 			const char c = _arguments[end];
-			if (quote) {
+			switch (quote) {
+			case Quote::Single:
+			case Quote::Double:
 				if (escaped) escaped = false;
 				else if (c == '\\') escaped = true;
-				else if (c == quote) quote = 0;
-			} else if (c == '"' || c == '\'') quote = c;
-			else if (c == '[' || c == '{') closers.push_back(c == '[' ? ']' : '}');
-			else if (c == ']' || c == '}') {
-				if (closers.empty() || c != closers.back()) return std::unexpected("Malformed selector");
-				closers.pop_back();
-			} else if (closers.empty()) {
-				if (c == ',') break;
-				if (c == '=' && equal == std::string_view::npos) equal = end;
+				else if ((quote == Quote::Single && c == '\'') || (quote == Quote::Double && c == '"'))
+					quote = Quote::None;
+				break;
+			case Quote::None:
+				if (c == '"') quote = Quote::Double;
+				else if (c == '\'') quote = Quote::Single;
+				else if (c == '[' || c == '{') closers.push_back(c == '[' ? ']' : '}');
+				else if (c == ']' || c == '}') {
+					if (closers.empty() || c != closers.back()) return std::unexpected("Malformed selector");
+					closers.pop_back();
+				} else if (closers.empty()) {
+					if (c == ',') goto argument_end;
+					if (c == '=' && equal == std::string_view::npos) equal = end;
+				}
+				break;
 			}
 		}
-
-		if (quote || !closers.empty() || equal == std::string_view::npos)
+	argument_end:
+		if (quote != Quote::None || !closers.empty() || equal == std::string_view::npos)
 			return std::unexpected("Malformed selector");
 
 		auto key = TrimSelector(_arguments.substr(start, equal - start));
@@ -178,6 +172,8 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 		if (key == "type") {
 			if (result.type) return std::unexpected("Duplicate selector argument: type");
 			if (value.front() == '!') { result.negateType = true; value.remove_prefix(1); }
+			if (value.empty()) return std::unexpected("Malformed selector");
+
 			result.type = ParseSelectorEntityType(value);
 			if (!result.type) return std::unexpected("Unknown selector entity type: " + std::string(value));
 		} else if (key == "distance")
@@ -216,6 +212,10 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 		{
 			bool negate = value.front() == '!';
 			if (negate) value.remove_prefix(1);
+			if (value.empty() || (value.front() != '{' && value.front() != '[') ||
+			    (value.front() == '{' && value.back() != '}') ||
+			    (value.front() == '[' && value.back() != ']'))
+				return std::unexpected("Malformed selector");
 
 			try { result.nbt.emplace_back(TextNBTifier{}.Parse(std::string(value)), negate); }
 			catch (const std::runtime_error& error) { return std::unexpected("Invalid selector NBT: " + std::string(error.what()));}
@@ -226,9 +226,49 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 		if (TrimSelector(_arguments.substr(start)).empty()) return std::unexpected("Malformed selector");
 	}
 	return result;
-} // End LLM Disclosure
+}
 
 } // namespace
+
+
+EntityType GetEntityTypeFromString(std::string_view _name) {
+	if (_name.starts_with("minecraft:")) _name.remove_prefix(10);
+	static constexpr std::pair<std::string_view, EntityType> types[] = {
+	    {"item", EntityType::ITEM}, {"player", EntityType::PLAYER}, {"fish", EntityType::FISH},
+	    {"fireball", EntityType::FIREBALL}, {"boat", EntityType::BOAT}, {"minecart", EntityType::MINECART},
+	    {"storage_minecart", EntityType::STORAGE_MINECART}, {"furnace_minecart", EntityType::FURNACE_MINECART},
+	    {"lit_tnt", EntityType::LIT_TNT}, {"arrow", EntityType::ARROW}, {"thrown_snowball", EntityType::THROWN_SNOWBALL},
+	    {"thrown_egg", EntityType::THROWN_EGG}, {"falling_sand", EntityType::FALLING_SAND},
+	    {"falling_gravel", EntityType::FALLING_GRAVEL}, {"fishing_bobber", EntityType::FISHING_BOBBER},
+	    {"creeper", EntityType::CREEPER}, {"skeleton", EntityType::SKELETON}, {"spider", EntityType::SPIDER},
+	    {"giant_zombie", EntityType::GIANT_ZOMBIE}, {"zombie", EntityType::ZOMBIE}, {"slime", EntityType::SLIME},
+	    {"ghast", EntityType::GHAST}, {"zombie_pigman", EntityType::ZOMBIE_PIGMAN}, {"pig", EntityType::PIG},
+	    {"sheep", EntityType::SHEEP}, {"cow", EntityType::COW}, {"chicken", EntityType::CHICKEN},
+	    {"squid", EntityType::SQUID}, {"wolf", EntityType::WOLF}, {"painting", EntityType::PAINTING},
+	    {"lightning_bolt", EntityType::LIGHTNING_BOLT},
+	};
+	for (const auto& [name, type] : types) if (name == _name) return type;
+	return EntityType::NONE;
+}
+
+std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(
+    std::string_view _target, const CommandContext& _ctx, std::string_view _command) {
+	auto targets = ResolveCmdTargets(_target, _ctx);
+
+	if (!targets) return std::unexpected(targets.error());
+
+	std::vector<CommandTarget> players;
+	players.reserve(targets->size());
+
+	for (const CommandTarget& target : *targets) {
+		if (!target.session) {
+			SendFeedback(_ctx, std::string(_command) + " requires a player target; skipped non-player entity.");
+			continue;
+		}
+		players.push_back(target);
+	}
+	return players;
+}
 
 std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::string_view _target,
                                                                         const CommandContext& _ctx) {
@@ -245,9 +285,11 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 	std::string_view arguments;
 	const size_t bracket = selector.find('[');
 	if (bracket != std::string_view::npos) {
-		if (selector.back() != ']') return std::unexpected("Malformed selector");
+		if (bracket < 2 || selector.back() != ']')
+			return std::unexpected("Malformed selector");
 		arguments = selector.substr(bracket + 1, selector.size() - bracket - 2);
 		selector = selector.substr(0, bracket);
+		if (TrimSelector(arguments).empty()) return std::unexpected("Malformed selector");
 	} else if (selector.find(']') != std::string_view::npos || selector.find('{') != std::string_view::npos ||
 	           selector.find('}') != std::string_view::npos) return std::unexpected("Malformed selector");
 
@@ -284,10 +326,7 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 
 	const Vec3 origin = _ctx.executionEntity ? _ctx.executionEntity->position : Vec3{};
 	const auto distance = [&origin](Entity* entity) {
-		const double x = entity->position.x - origin.x;
-		const double y = entity->position.y - origin.y;
-		const double z = entity->position.z - origin.z;
-		return x * x + y * y + z * z;
+		return entity->position.DistanceSquared(origin);
 	};
 
 	const double squareLimit = std::sqrt(std::numeric_limits<double>::max());
@@ -341,6 +380,10 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 
 std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx,
                                               const strategos::Vec3& _position) {
+	if (!_ctx.executionEntity &&
+	    (_position.is_relative(strategos::Axis::X) || _position.is_relative(strategos::Axis::Y) ||
+	     _position.is_relative(strategos::Axis::Z)))
+		return std::unexpected(ERROR_RELATIVE_REQUIRES_PLAYER);
 	const Vec3 origin = _ctx.executionEntity ? _ctx.executionEntity->position : Vec3{};
 	return ResolveCmdVec3(_position, origin);
 }

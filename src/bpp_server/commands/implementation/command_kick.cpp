@@ -21,13 +21,9 @@ std::string KickPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!targetName) return ERROR_PLAYER_NAME_REQUIRED;
 	std::string name = *targetName;
 	if (!name.empty() && name.front() == '@') {
-		auto targets = ResolveCmdTargets(name, ctx);
+		auto targets = ResolveCmdPlayerTargets(name, ctx, "Kick");
 		if (!targets) return targets.error();
 		for (const CommandTarget& resolved : *targets) {
-			if (!resolved.session) {
-				SendFeedback(ctx, "Kick requires a player target; skipped non-player entity.");
-				continue;
-			}
 
 			auto* target = resolved.session;
 			ctx.server->DisconnectPlayer("Kicked by an operator", *target);

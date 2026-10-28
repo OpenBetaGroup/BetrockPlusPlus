@@ -55,8 +55,11 @@ ItemStack ParseItemStack(const std::string& _itemArg, std::optional<int> _count 
 void SendChunkedList(const CommandContext& _ctx, const std::string& _header,
                      const std::vector<std::string>& _entries);
 std::optional<std::string> ResolveCmdTargetName(const strategos::CmdNode& _cmd, const CommandContext& _ctx);
-std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::string_view _target,
-                                                                        const CommandContext& _ctx);
+std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(
+    std::string_view _target, const CommandContext& _ctx);
+std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(
+    std::string_view _target, const CommandContext& _ctx, std::string_view _command);
+EntityType GetEntityTypeFromString(std::string_view _name);
 std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx, const strategos::Vec3& _position);
 
 inline void SendChat(PlayerSession& _session, const std::string& _message) {

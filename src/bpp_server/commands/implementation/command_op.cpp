@@ -21,13 +21,9 @@ std::string OpPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
 	if (!targetName) return ERROR_PLAYER_NAME_REQUIRED;
 	if (!targetName->empty() && targetName->front() == '@') {
-		auto targets = ResolveCmdTargets(*targetName, ctx);
+		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Op");
 		if (!targets) return targets.error();
 		for (const CommandTarget& target : *targets) {
-			if (!target.session) {
-				SendFeedback(ctx, "Op requires a player target; skipped non-player entity.");
-				continue;
-			}
 
 			const auto& name = target.session->username;
 			if (std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name) !=
@@ -57,14 +53,9 @@ std::string DeopPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
 	if (!targetName) return ERROR_PLAYER_NAME_REQUIRED;
 	if (!targetName->empty() && targetName->front() == '@') {
-		auto targets = ResolveCmdTargets(*targetName, ctx);
+		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Deop");
 		if (!targets) return targets.error();
 		for (const CommandTarget& target : *targets) {
-			if (!target.session) {
-				SendFeedback(ctx, "Deop requires a player target; skipped non-player entity.");
-				continue;
-			}
-
 			const auto& name = target.session->username;
 			auto it = std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name);
 			if (it == ctx.server->operatorUsernames.end()) {
