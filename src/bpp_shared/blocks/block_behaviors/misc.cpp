@@ -57,6 +57,18 @@ static bool EatCake(WorldManager& _world, Int3 _pos, PlayerSession* _triggeringS
 }
 
 void RegisterMiscBehaviors() {
+	// Vanilla sponge removal notifies every position in a 5x5x5 region.
+	blockBehaviors[BLOCK_SPONGE].onBlockRemoval = [](WorldManager& _world, Int3 _pos) {
+		for (int x = _pos.x - 2; x <= _pos.x + 2; ++x) {
+			for (int y = _pos.y - 2; y <= _pos.y + 2; ++y) {
+				for (int z = _pos.z - 2; z <= _pos.z + 2; ++z) {
+					Int3 pos{ x, y, z };
+					_world.NotifyNeighborsOfUpdate(pos, _world.GetBlockId(pos));
+				}
+			}
+		}
+	};
+
 	blockBehaviors[BlockType::BLOCK_COBWEB] = {
 		.getCollider = EmptyCollider,
 	};
