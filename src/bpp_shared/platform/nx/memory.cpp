@@ -24,5 +24,10 @@ double GetActiveMemoryUsage(const MemoryUnit _unit) {
 	return static_cast<double>(mi.uordblks) / BytesPerUnit(_unit);
 }
 
+// These targets allocate in 4 KiB units
+size_t GetPageSize() {
+	return 4096;
+}
+
 void TrimMemory() {}
 #endif

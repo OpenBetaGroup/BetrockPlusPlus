@@ -10,13 +10,32 @@
 #include "chunk.h"
 #include "logger.h"
 #include "nbt/nbt.h"
+#include "platform/memory.h"
 #include "tile_entities/tile_entity.h"
+#include <algorithm>
 #include <cstdint>
 #include "helpers/endian_convert.h"
 #include <fstream>
 #include <libdeflate.h>
 #include <memory>
 #include <string>
+
+namespace {
+constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;
+constexpr size_t HEIGHT_MAP_DATA_SIZE = 16 * 16;
+// * 1.1 for a bit of headroom for entities, tile entities, storage contents, etc.
+constexpr size_t BASE_MEMORY_ALLOCATION_GUESS = CHUNK_DATA_SIZE + HEIGHT_MAP_DATA_SIZE * 1.1;
+
+// First guess for how big a chunk's decompressed NBT is,
+// rounded up to a whole number of memory pages
+size_t InitialDecompressedSize() {
+	static const size_t size = []() -> size_t {
+		const size_t page = std::max<size_t>(GetPageSize(), 1);
+		return ((BASE_MEMORY_ALLOCATION_GUESS + page - 1) / page) * page;
+	}();
+	return size;
+}
+}
 
 void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
                       std::shared_ptr<const std::vector<Tag>> _entities) {
@@ -259,13 +278,13 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 	level.compound["zPos"] = zPos;
 	level.compound["TerrainPopulated"] = populated;
 	level.compound["LastUpdate"] = lastUpdate;
-	level.compound["Blocks"] = blocksTag;
-	level.compound["Data"] = dataTag;
-	level.compound["BlockLight"] = blockLightTag;
-	level.compound["SkyLight"] = skyLightTag;
-	level.compound["HeightMap"] = heightMap;
-	level.compound["Entities"] = entitiesTag;
-	level.compound["TileEntities"] = tileEntities;
+	level.compound["Blocks"] = std::move(blocksTag);
+	level.compound["Data"] = std::move(dataTag);
+	level.compound["BlockLight"] = std::move(blockLightTag);
+	level.compound["SkyLight"] = std::move(skyLightTag);
+	level.compound["HeightMap"] = std::move(heightMap);
+	level.compound["Entities"] = std::move(entitiesTag);
+	level.compound["TileEntities"] = std::move(tileEntities);
 
 	// Only include this tag if we need to reseed lighting
 	if (_chunk->refreshLighting) {
@@ -277,7 +296,7 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 		level.compound["RefreshLighting"] = refreshLighting;
 	}
 
-	root.compound["Level"] = level;
+	root.compound["Level"] = std::move(level);
 
 	// Serialize to bytes
 	std::vector<uint8_t> raw;
@@ -301,13 +320,14 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 }
 
 std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawData) {
+	// TODO: We allocate a decompressor per chunk! This is BAD
+	// We really need a pool of these...
 	libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
 	if (!decompressor)
 		return std::make_shared<Chunk>();
-	size_t decompressedSize = (16 * 128 * 16) * 2.5;
+	size_t decompressedSize = InitialDecompressedSize();
 	std::vector<uint8_t> decompressed(decompressedSize);
 	while (true) {
-		decompressed.resize(decompressedSize);
 		size_t actualOutSize = 0;
 		libdeflate_result result = libdeflate_zlib_decompress(decompressor, _rawData.data(), _rawData.size(),
 		                                                      decompressed.data(), decompressed.size(), &actualOutSize);
@@ -323,7 +343,8 @@ std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawDat
 			return std::make_shared<Chunk>();
 		}
 
-		decompressedSize *= 1.5;
+		decompressedSize += decompressedSize / 2;
+		decompressed.resize(decompressedSize);
 	}
 	libdeflate_free_decompressor(decompressor);
 	return DecodeDecompressedNbtData(decompressed);
