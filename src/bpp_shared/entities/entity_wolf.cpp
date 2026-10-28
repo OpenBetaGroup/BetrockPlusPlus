@@ -19,10 +19,10 @@ void WolfEntity::OnPlayerInteract(PlayerEntity* _entity) {
 	if (!_entity)
 		return;
 
-	auto heldItem = _entity->GetHeldItem();
+	auto playerHeldItem = _entity->GetHeldItem();
 	if (!IsTamed()) {
-		if (heldItem && heldItem->id == Items::Id::BONE && !isAngry) {
-			heldItem->DecrementCount(1);
+		if (playerHeldItem && playerHeldItem->id == Items::Id::BONE && !isAngry) {
+			playerHeldItem->DecrementCount(1);
 			if (rand.NextInt(3) == 0) {
 				SetWolfTamed(_entity->username);
 				this->currentPath.clear();
@@ -38,9 +38,9 @@ void WolfEntity::OnPlayerInteract(PlayerEntity* _entity) {
 	}
 
 	// We aren't tamed so see if we can heal
-	if (heldItem && HeldItemInterestsWolf(heldItem->id)) {
+	if (playerHeldItem && HeldItemInterestsWolf(playerHeldItem->id)) {
 		if (this->health < 20) {
-			heldItem->DecrementCount(1);
+			playerHeldItem->DecrementCount(1);
 			Heal(Items::GetRegenerationAmount(Items::Id::PORKCHOP));
 			return;
 		}
@@ -276,8 +276,8 @@ void WolfEntity::Tick() {
 	if (lookTarget && currentPath.empty() && !isAngry) {
 		auto isPlayer = dynamic_cast<PlayerEntity*>(lookTarget.get());
 		if (isPlayer) {
-			auto heldItem = isPlayer->GetHeldItem();
-			this->isInterested = heldItem && HeldItemInterestsWolf(heldItem->id);
+			auto playerHeldItem = isPlayer->GetHeldItem();
+			this->isInterested = playerHeldItem && HeldItemInterestsWolf(playerHeldItem->id);
 		}
 	}
 

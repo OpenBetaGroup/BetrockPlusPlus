@@ -45,13 +45,16 @@ struct RegionManager {
 	bool Release();
 
 	// Does this region file exist on the disk?
-	bool RegionExists(Int32_2 _rpos);
+	bool RegionExistsOnDisk(const Int32_2 _rpos);
+
+	// Does this region exist in memory or on the disk?
+	bool RegionExists(const Int32_2 _rpos);
 
 	// Has this chunk been saved to a region file yet?
-	bool ChunkExists(Int32_2 _cpos);
+	bool ChunkExists(const Int32_2 _cpos);
 
 	// Creates a new region file
-	bool CreateRegion(Int32_2 _rpos);
+	bool CreateRegion(const Int32_2 _rpos);
 
 	// Serialize and save a chunk to a region
 	void SaveChunk(const std::shared_ptr<Chunk> _chunk, bool _unloadEntities = false);
@@ -60,10 +63,10 @@ struct RegionManager {
 	void LoadChunk(const Int32_2 _cpos);
 
 	// Returns nullptr until chunk is done loading
-	std::shared_ptr<Chunk> GetChunk(Int32_2 _cpos);
+	std::shared_ptr<Chunk> GetChunk(const Int32_2 _cpos);
 
 	// Drop a pending/finished load result (e.g. chunk left the load radius).
-	void DiscardChunk(Int32_2 _cpos);
+	void DiscardChunk(const Int32_2 _cpos);
 
 	// Pop and clear any load failures since the last call.
 	std::vector<Int32_2> TakeFailedLoads();
@@ -74,12 +77,12 @@ struct RegionManager {
 	void FlushAll();
 
 	// Loads a region into cache, creating the file if needed
-	std::shared_ptr<Region> LoadRegion(Int32_2 _rpos);
+	std::shared_ptr<Region> LoadRegion(const Int32_2 _rpos);
 
 private:
 	bool TryMergePendingRegion(std::shared_ptr<Region>& _region);
-	bool CreateRegionOnCache(Int2 _rpos);
-	void MarkLoadFailed(Int32_2 _cpos);
+	bool CreateRegionOnCache(const Int2 _rpos);
+	void MarkLoadFailed(const Int32_2 _cpos);
 
 	std::vector<std::shared_ptr<Region>> pendingRegions;
 	std::shared_ptr<Region> regionCache[8];

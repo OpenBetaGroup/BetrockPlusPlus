@@ -64,7 +64,7 @@ bool RegionManager::Release() {
 	return true;
 }
 
-void RegionManager::MarkLoadFailed(Int32_2 _cpos) {
+void RegionManager::MarkLoadFailed(const Int32_2 _cpos) {
 	std::lock_guard lk(failedLoadsMutex);
 	failedLoads.insert(_cpos);
 }
@@ -76,7 +76,7 @@ std::vector<Int32_2> RegionManager::TakeFailedLoads() {
 	return out;
 }
 
-void RegionManager::DiscardChunk(Int32_2 _cpos) {
+void RegionManager::DiscardChunk(const Int32_2 _cpos) {
 	{
 		std::lock_guard lk(outChunksMutex);
 		outChunks.erase(_cpos);
@@ -87,11 +87,26 @@ void RegionManager::DiscardChunk(Int32_2 _cpos) {
 	}
 }
 
-bool RegionManager::RegionExists(Int32_2 _rpos) {
+bool RegionManager::RegionExistsOnDisk(const Int32_2 _rpos) {
 	return std::filesystem::exists(mFolderPath + "/" + RegionPositionToFileName(_rpos));
 }
 
-bool RegionManager::ChunkExists(Int32_2 _cpos) {
+bool RegionManager::RegionExists(const Int32_2 _rpos) {
+	// Check regionCache first
+	for (int i = 0; i < 8; i++) {
+		if (regionCache[i] && regionCache[i]->rpos == _rpos)
+			return true;
+	}
+	// Also check regions awaiting merge
+	for (auto& pending : pendingRegions) {
+		if (pending->rpos == _rpos)
+			return true;
+	}
+	// Then check disk
+	return RegionExistsOnDisk(_rpos);
+}
+
+bool RegionManager::ChunkExists(const Int32_2 _cpos) {
 	if (!RegionExists({ _cpos.x >> 5, _cpos.z >> 5 }))
 		return false;
 	auto region = LoadRegion({ _cpos.x >> 5, _cpos.z >> 5 });
@@ -100,7 +115,7 @@ bool RegionManager::ChunkExists(Int32_2 _cpos) {
 	return region->ChunkExists({ _cpos.x & 31, _cpos.z & 31 });
 }
 
-bool RegionManager::CreateRegion(Int32_2 _rpos) {
+bool RegionManager::CreateRegion(const Int32_2 _rpos) {
 	std::string path = mFolderPath + "/" + RegionPositionToFileName(_rpos);
 	std::filesystem::create_directories(mFolderPath);
 	std::ofstream file(path, std::ios::binary);
@@ -232,7 +247,7 @@ void RegionManager::FlushAll() {
 	iopool.wait();
 }
 
-std::shared_ptr<Region> RegionManager::LoadRegion(Int32_2 _rpos) {
+std::shared_ptr<Region> RegionManager::LoadRegion(const Int32_2 _rpos) {
 	// Check cache first
 	for (int i = 0; i < 8; i++) {
 		if (regionCache[i] && regionCache[i]->rpos == _rpos)
@@ -245,7 +260,7 @@ std::shared_ptr<Region> RegionManager::LoadRegion(Int32_2 _rpos) {
 			return pending;
 	}
 
-	if (!RegionExists(_rpos)) {
+	if (!RegionExistsOnDisk(_rpos)) {
 		if (!CreateRegion(_rpos)) {
 			Logger::Error << "Failed to create region file for " << _rpos.x << "," << _rpos.z << "\n";
 			return nullptr;
@@ -281,7 +296,7 @@ bool RegionManager::TryMergePendingRegion(std::shared_ptr<Region>& _region) {
 	return false; // all 8 slots actively in use
 }
 
-bool RegionManager::CreateRegionOnCache(Int2 _rpos) {
+bool RegionManager::CreateRegionOnCache(const Int2 _rpos) {
 	auto region = std::make_shared<Region>(_rpos, mFolderPath);
 	if (!TryMergePendingRegion(region)) {
 		if (pendingRegions.size() >= MAX_PENDING_REGIONS)
