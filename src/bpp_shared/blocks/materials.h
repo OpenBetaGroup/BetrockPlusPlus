@@ -88,11 +88,12 @@ enum class MaterialType : uint8_t {
 	Piston,
 };
 
+// NOTE: This way it fits nicely into 2 bits!
 enum PushabilityFlag : int8_t {
-	Normal = 0,
-	NoPush = 1,
-	Immovable = 2,
-	Invalid = -1
+	Invalid = 0,
+	Normal = 1,
+	NoPush = 2,
+	Immovable = 3,
 };
 
 struct Material {
