@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2026, Aidan <JcbbcEnjoyer>
+ * Copyright (c) 2026, Anya Rihtarshich <vesui@proton.me>
  *
  * SPDX-License-Identifier: AGPL-3.0-only
  *
@@ -18,6 +19,7 @@
 #include "enums/items.h"
 #include "generator/overworld/tree_gen.h"
 #include "helpers/direction_fixer.h"
+#include "helpers/block_volume.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
 #include "items/item_properties.h"
@@ -57,6 +59,13 @@ static bool EatCake(WorldManager& _world, Int3 _pos, PlayerSession* _triggeringS
 }
 
 void RegisterMiscBehaviors() {
+	// Vanilla sponge removal notifies every position in a 5x5x5 region. Like coral!
+	blockBehaviors[BLOCK_SPONGE].onBlockRemoval = [](WorldManager& _world, Int3 _pos) {
+		ForEachBlockInVolume(_pos, 2, [&](Int3 _blockPos) {
+			_world.NotifyNeighborsOfUpdate(_blockPos, _world.GetBlockId(_blockPos));
+		});
+	};
+
 	blockBehaviors[BlockType::BLOCK_COBWEB] = {
 		.getCollider = EmptyCollider,
 	};
