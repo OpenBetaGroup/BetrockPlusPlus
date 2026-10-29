@@ -5,7 +5,6 @@
  *
 */
 
-#ifdef EXPERIMENTAL
 #include "item_map.h"
 #include "../enums/network/packet_data.h"
 #include "../logger/logger.h"
@@ -41,5 +40,33 @@ void PlaceMarkers(std::vector<uint8_t>& _mapData, const std::vector<MarkerPlacem
 		_mapData.push_back(m.position.z);
 	}
 }
+
+// Held item maps
+std::map<int16_t, Item> mapItems = {};
+static int16_t globalId = 0;
+
+void InitMaps() {
+	// TODO: Find the highest map value from files (this can wrap around)
+	globalId = 0;
+}
+void CreateMap(const Int32_2 _origin) {
+	globalId++;
+	auto newMap = Item();
+	newMap.Init(_origin);
+	maps[globalId] = std::move(newMap);
+}
+
+void Item::Init(const Int32_2 _origin) {
+	// TODO: Check file for existing map
+	// Nope, this is a new map, so lets go
+	origin = _origin;
+	dirty = true;
+	for (uint16_t i = 0; i < MAP_ITEM_AREA; i++)
+		data[i] = MaterialType::Grass;
+}
+
+void Item::Tick() {
+	if (!dirty)
+		return;
+}
 }; // namespace Map
-#endif
