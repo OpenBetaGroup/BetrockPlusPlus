@@ -306,34 +306,12 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 }
 
 std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawData) {
-	// TODO: We allocate a decompressor per chunk! This is BAD
-	// We really need a pool of these...
-	libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-	if (!decompressor)
+	auto decompressed = Deflate::Decompress(Deflate::Format::Zlib, _rawData, InitialDecompressedSize());
+	if (!decompressed) {
+		Logger::Warning << "Decompression failed!\n";
 		return std::make_shared<Chunk>();
-	size_t decompressedSize = InitialDecompressedSize();
-	std::vector<uint8_t> decompressed(decompressedSize);
-	while (true) {
-		size_t actualOutSize = 0;
-		libdeflate_result result = libdeflate_zlib_decompress(decompressor, _rawData.data(), _rawData.size(),
-		                                                      decompressed.data(), decompressed.size(), &actualOutSize);
-
-		if (result == LIBDEFLATE_SUCCESS) {
-			decompressed.resize(actualOutSize);
-			break;
-		}
-
-		if (result != LIBDEFLATE_INSUFFICIENT_SPACE) {
-			Logger::Warning << "Decompression failed!\n";
-			libdeflate_free_decompressor(decompressor);
-			return std::make_shared<Chunk>();
-		}
-
-		decompressedSize += decompressedSize / 2;
-		decompressed.resize(decompressedSize);
 	}
-	libdeflate_free_decompressor(decompressor);
-	return DecodeDecompressedNbtData(decompressed);
+	return DecodeDecompressedNbtData(*decompressed);
 }
 
 std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _decompressedData) {
