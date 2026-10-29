@@ -7,6 +7,7 @@
 #include "utilities.h"
 #include "blocks/block_properties_behaviors.h"
 #include "helpers/file_handle.h"
+#include "helpers/deflate_pool.h"
 #include "nbt/nbt.h"
 #include "world/storage/region_manager.h"
 #include "world/storage/save_manager.h"
@@ -80,29 +81,18 @@ bool isAlphaLevel(const std::string& _dir) {
 }
 
 bool convertAlphaLevel(std::string& _dir) {
-	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize,
-	                          size_t& _decompressedSize) -> std::unique_ptr<char[]> {
-		struct libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
-			return nullptr;
-
-		size_t capacity = _decompressedSize > 0 ? _decompressedSize : 81920;
-		for (int attempt = 0; attempt < 6; attempt++) {
-			auto decompressedData = std::make_unique<char[]>(capacity);
-			size_t actualSize = 0;
-			int32_t result = libdeflate_gzip_decompress(decompressor, _compressedData, _compressedSize,
-			                                            decompressedData.get(), capacity, &actualSize);
-			if (result == LIBDEFLATE_SUCCESS) {
-				_decompressedSize = actualSize;
-				libdeflate_free_decompressor(decompressor);
-				return decompressedData;
-			}
-			if (result != LIBDEFLATE_INSUFFICIENT_SPACE)
-				break;     // real error, don't keep retrying
-			capacity *= 2; // grow and try again
-		}
-		libdeflate_free_decompressor(decompressor);
-		return nullptr;
+	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize, size_t& _decompressedSize) -> std::unique_ptr<char[]> {
+		// TODO: Where does 81920 come from??? Who wrote this? Keeping it just because it seems to not have fucked up thus far...
+		auto r = Deflate::Decompress(
+			Deflate::Format::Gzip,
+			{ reinterpret_cast<const uint8_t*>(_compressedData), _compressedSize },
+			_decompressedSize ? _decompressedSize : 81920
+		);
+		if (!r) return nullptr;
+		auto out = std::make_unique<char[]>(r->size());
+		std::memcpy(out.get(), r->data(), r->size());
+		_decompressedSize = r->size();
+		return out;
 	};
 
 	// Are we a chunk?
@@ -408,29 +398,18 @@ bool convertBetrockServerLevel(std::string& _dir) {
 		return pos;
 	};
 
-	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize,
-	                          size_t& _decompressedSize) -> std::unique_ptr<char[]> {
-		struct libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
-			return nullptr;
-
-		size_t capacity = _decompressedSize > 0 ? _decompressedSize : 81920;
-		for (int attempt = 0; attempt < 6; attempt++) {
-			auto decompressedData = std::make_unique<char[]>(capacity);
-			size_t actualSize = 0;
-			int32_t result = libdeflate_zlib_decompress(decompressor, _compressedData, _compressedSize,
-			                                            decompressedData.get(), capacity, &actualSize);
-			if (result == LIBDEFLATE_SUCCESS) {
-				_decompressedSize = actualSize;
-				libdeflate_free_decompressor(decompressor);
-				return decompressedData;
-			}
-			if (result != LIBDEFLATE_INSUFFICIENT_SPACE)
-				break;     // real error, don't keep retrying
-			capacity *= 2; // grow and try again
-		}
-		libdeflate_free_decompressor(decompressor);
-		return nullptr;
+	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize, size_t& _decompressedSize) -> std::unique_ptr<char[]> {
+		// TODO: Where does 81920 come from??? Who wrote this? Keeping it just because it seems to not have fucked up thus far...
+		auto r = Deflate::Decompress(
+			Deflate::Format::Gzip,
+			{ reinterpret_cast<const uint8_t*>(_compressedData), _compressedSize },
+			_decompressedSize ? _decompressedSize : 81920
+		);
+		if (!r) return nullptr;
+		auto out = std::make_unique<char[]>(r->size());
+		std::memcpy(out.get(), r->data(), r->size());
+		_decompressedSize = r->size();
+		return out;
 	};
 
 	auto loadOldFormat = [&](FileHandle& _cFile) -> std::shared_ptr<Chunk> {

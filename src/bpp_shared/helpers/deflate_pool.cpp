@@ -14,8 +14,8 @@
 
 namespace {
 
-constexpr int K_MIN_LEVEL = 0;
-constexpr int K_MAX_LEVEL = 12;
+constexpr int K_MIN_LEVEL = 1;
+constexpr int K_MAX_LEVEL = 6;
 
 // Upper limit for automatically grown decompression buffers, 16MB
 constexpr size_t K_MAX_DECOMPRESSED_SIZE = 16ull * 1024 * 1024;

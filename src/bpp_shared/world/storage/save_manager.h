@@ -15,7 +15,6 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <libdeflate.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -173,7 +172,7 @@ struct SaveManager {
 		stream.read(reinterpret_cast<char*>(compressed.data()), fileSize);
 
 		// Decompress gzip
-		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed, 4096 /* even 4K is probably overkill lol */);
+		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed);
 		if (!raw)
 			return false;
 
@@ -365,7 +364,7 @@ struct SaveManager {
 			return GetNewPlayerNbt();
 
 		std::vector<uint8_t> compressed((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed, 1024 * 4);
+		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed);
 		if (!raw)
 			return GetNewPlayerNbt();
 		NBTParser parser(raw->data(), raw->size());

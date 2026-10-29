@@ -190,7 +190,7 @@ void InitCrashHandler(std::string _platformString) {
 }
 #endif
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
 	// Platform-specific Init
 	Platform::Init();
 	Logger::Init();

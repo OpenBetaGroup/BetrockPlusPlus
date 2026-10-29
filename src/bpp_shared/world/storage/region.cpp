@@ -16,7 +16,7 @@
 #include <cstdint>
 #include "helpers/endian_convert.h"
 #include <fstream>
-#include <libdeflate.h>
+#include "helpers/deflate_pool.h"
 #include <memory>
 #include <string>
 
@@ -24,6 +24,9 @@ namespace {
 constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;
 constexpr size_t HEIGHT_MAP_DATA_SIZE = 16 * 16;
 // * 1.1 for a bit of headroom for entities, tile entities, storage contents, etc.
+// TODO: Calculate a more accurate baseline that takes into account
+// - The NBT Tag bytes themselves
+// - Any always-existing NBT labels
 constexpr size_t BASE_MEMORY_ALLOCATION_GUESS = CHUNK_DATA_SIZE + HEIGHT_MAP_DATA_SIZE * 1.1;
 
 // First guess for how big a chunk's decompressed NBT is,
@@ -39,10 +42,12 @@ size_t InitialDecompressedSize() {
 
 void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
                       std::shared_ptr<const std::vector<Tag>> _entities) {
-	std::lock_guard<std::mutex> lock(mutex);
 	auto compressed = EncodeNbtData(_chunk, _timestamp, _entities);
 	if (compressed.empty())
 		return;
+
+	// Only lock after encoding (hehe)
+	std::lock_guard<std::mutex> lock(mutex);
 
 	// Chunk header: 4 bytes length + 1 byte compression type
 	uint32_t payloadLength = uint32_t(compressed.size()) + 1; // +1 for the format byte

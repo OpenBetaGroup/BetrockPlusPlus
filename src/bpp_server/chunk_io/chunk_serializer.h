@@ -9,7 +9,7 @@
 #pragma once
 #include "chunk.h"
 #include "subchunk.h"
-#include <libdeflate.h>
+#include "helpers/deflate_pool.h"
 #include <vector>
 
 namespace ChunkSerializer {
@@ -23,7 +23,13 @@ inline std::vector<uint8_t> Serialize(const Chunk& _chunk, int _xmin = 0, int _x
 	const int nibbles = (blocks + 1) / 2;
 	const int total = blocks + nibbles * 3;
 
-	std::vector<uint8_t> raw(size_t(total), 0);
+	// NOTE: This means each per-thread chunk serializer grows as big as its biggest allocation.
+	// So for a long-running server, which gets abused to the max (via explosions, for example),
+	// this'd be ~5MB in the worst case (128x128x128) per thread.
+	// TODO: Maybe shrink these after a few ticks?
+	// Most chunk serializations should only take a few KB on average!
+	thread_local std::vector<uint8_t> raw;
+	raw.assign(size_t(total), 0);
 	uint8_t* blockData = raw.data();
 	uint8_t* metaData = blockData + blocks;
 	uint8_t* blockLight = metaData + nibbles;
