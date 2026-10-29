@@ -53,7 +53,7 @@ void CreateMap(const Int32_2 _origin) {
 	globalId++;
 	auto newMap = Item();
 	newMap.Init(_origin);
-	maps[globalId] = std::move(newMap);
+	//maps[globalId] = std::move(newMap);
 }
 
 void Item::Init(const Int32_2 _origin) {
