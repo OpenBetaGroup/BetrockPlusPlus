@@ -6,6 +6,7 @@
 */
 #pragma once
 #include "helpers/file_handle.h"
+#include "helpers/deflate_pool.h"
 #include "java_math.h"
 #include "nbt/nbt.h"
 #include "platform/fs_compat.h"
@@ -172,20 +173,12 @@ struct SaveManager {
 		stream.read(reinterpret_cast<char*>(compressed.data()), fileSize);
 
 		// Decompress gzip
-		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
+		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed, 4096 /* even 4K is probably overkill lol */);
+		if (!raw)
 			return false;
-		std::vector<uint8_t> raw(1024 * 1024); // 1MB should be plenty for level.dat
-		size_t actualSize = 0;
-		libdeflate_result result = libdeflate_gzip_decompress(decompressor, compressed.data(), compressed.size(),
-		                                                      raw.data(), raw.size(), &actualSize);
-		libdeflate_free_decompressor(decompressor);
-		if (result != LIBDEFLATE_SUCCESS)
-			return false;
-		raw.resize(actualSize);
 
 		// Parse NBT
-		NBTParser parser(raw.data(), raw.size());
+		NBTParser parser(raw->data(), raw->size());
 		Tag data = parser.root.Get("Data");
 
 		auto CheckAndAssignDefault = [&](std::string tagName, TagType type, auto defaultValue) {
@@ -327,17 +320,9 @@ struct SaveManager {
 
 		std::vector<uint8_t> raw;
 		NBTwriter writer(raw, root);
-
-		libdeflate_compressor* compressor = libdeflate_alloc_compressor(6);
-		if (!compressor)
+		std::vector<uint8_t> compressed = Deflate::Compress(Deflate::Format::Gzip, raw);
+		if (compressed.size() <= 0)
 			return false;
-		size_t maxSize = libdeflate_gzip_compress_bound(compressor, raw.size());
-		std::vector<uint8_t> compressed(maxSize);
-		size_t actualSize = libdeflate_gzip_compress(compressor, raw.data(), raw.size(), compressed.data(), maxSize);
-		libdeflate_free_compressor(compressor);
-		if (actualSize == 0)
-			return false;
-		compressed.resize(actualSize);
 
 		std::ofstream file(saveDirectory + "/level.dat", std::ios::binary);
 		if (!file.is_open())
@@ -380,21 +365,10 @@ struct SaveManager {
 			return GetNewPlayerNbt();
 
 		std::vector<uint8_t> compressed((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
+		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed, 1024 * 4);
+		if (!raw)
 			return GetNewPlayerNbt();
-
-		std::vector<uint8_t> raw(1024 * 1024);
-		size_t actualSize = 0;
-		libdeflate_result result = libdeflate_gzip_decompress(decompressor, compressed.data(), compressed.size(),
-		                                                      raw.data(), raw.size(), &actualSize);
-		libdeflate_free_decompressor(decompressor);
-		if (result != LIBDEFLATE_SUCCESS)
-			return GetNewPlayerNbt();
-
-		raw.resize(actualSize);
-		NBTParser parser(raw.data(), raw.size());
+		NBTParser parser(raw->data(), raw->size());
 		return parser.root;
 	}
 
@@ -527,17 +501,9 @@ struct SaveManager {
 			}
 			std::vector<uint8_t> raw;
 			NBTwriter writer(raw, _playerData);
-
-			libdeflate_compressor* compressor = libdeflate_alloc_compressor(6);
-			if (!compressor)
+			auto compressed = Deflate::Compress(Deflate::Format::Gzip, raw);
+			if (compressed.size() <= 0)
 				return false;
-			size_t maxSize = libdeflate_gzip_compress_bound(compressor, raw.size());
-			std::vector<uint8_t> compressed(maxSize);
-			size_t actualSize = libdeflate_gzip_compress(compressor, raw.data(), raw.size(), compressed.data(), maxSize);
-			libdeflate_free_compressor(compressor);
-			if (actualSize == 0)
-				return false;
-			compressed.resize(actualSize);
 
 			std::string finalPath = saveDirectory + "/players/" + _playerName + ".dat";
 			std::string tmpPath = finalPath + ".tmp";

@@ -302,21 +302,7 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 	std::vector<uint8_t> raw;
 	NBTwriter writer(raw, root);
 	// Compress
-	thread_local std::unique_ptr<libdeflate_compressor, decltype(&libdeflate_free_compressor)> compressor(
-	    nullptr, libdeflate_free_compressor);
-	if (!compressor)
-		compressor.reset(libdeflate_alloc_compressor(1));
-	// If still no compressor, give up
-	if (!compressor)
-		return {};
-	size_t maxSize = libdeflate_zlib_compress_bound(compressor.get(), static_cast<size_t>(raw.size()));
-	std::vector<uint8_t> compressed(maxSize);
-	size_t actualSize = libdeflate_zlib_compress(compressor.get(), raw.data(), static_cast<size_t>(raw.size()),
-	                                             compressed.data(), maxSize);
-	if (actualSize == 0)
-		return {};
-	compressed.resize(actualSize);
-	return compressed;
+	return Deflate::Compress(Deflate::Format::Zlib, raw, 1);
 }
 
 std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawData) {
