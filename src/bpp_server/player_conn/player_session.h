@@ -69,6 +69,11 @@ struct PlayerSession {
 	// rotation.x = yaw, rotation.y = pitch
 	Float2 rotation = { 0.0f, 0.0f };
 
+	// Held map rendering: next column to send, and the last marker data sent (so we only resend on change)
+	int16_t mapRenderedId = 0; // Which map mapNextColumn is for
+	uint8_t mapNextColumn = 0;
+	std::vector<uint8_t> lastMapIcons;
+
 	// Bed respawn point. Only meaningful when hasBedSpawn is true.
 	Int3 spawnPosition;
 	bool hasBedSpawn = false;

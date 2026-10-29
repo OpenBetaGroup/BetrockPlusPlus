@@ -13,6 +13,7 @@
 #include "items.h"
 #include "server.h"
 #include "tool_properties.h"
+#include <algorithm>
 
 namespace Items {
 
@@ -385,52 +386,79 @@ void RegisterAll() {
 	// TODO: Implement maps properly
 	itemBehavior[MAP].onStartHolding = [](ItemStack* _stack, PlayerSession& _session) {
 		Logger::Debug << "Started holding a map!\n";
+		// Start drawing from scratch, and make sure the markers get sent again
+		_session.mapNextColumn = 0;
+		_session.lastMapIcons.clear();
 	};
 
 	itemBehavior[MAP].whileHeld = [](ItemStack* _stack, PlayerSession& _session, Server& _server) {
-		auto pos = _session.position.GetBlockPos();
-		std::vector<Map::MarkerPlacement> markers = {
-			// TODO: Evil fuck-ass offset magic???
-			Map::MakeMarker(Map::Icon::WhiteArrow, _session.rotation.x,
-			                Byte2{ static_cast<int8_t>(pos.x), static_cast<int8_t>(pos.z) })
-		};
+		// A map's origin is wherever it was first created, so a new map is made here, the first time it's held.
+		// The id is stored in the stack's data, which syncs to the client like any other item damage
+		const auto blockPos = _session.position.GetBlockPos();
+		const int16_t mapId = Map::ResolveMap(_stack->data, Int32_2{ blockPos.x, blockPos.z });
+		_stack->data = mapId;
+		const Map::Item& map = *Map::GetMap(mapId);
+		const uint8_t scale = map.scale;
+		const Int32_2 center = map.GetCenter();
+
+		// Switched to a different map, so start drawing it from scratch
+		if (_session.mapRenderedId != mapId) {
+			_session.mapRenderedId = mapId;
+			_session.mapNextColumn = 0;
+			_session.lastMapIcons.clear();
+		}
+
+		// Markers: only send them when they've actually changed, not every tick.
+		// Marker coordinates are relative to the map's centre, unlike the pixels (top-left)
+		std::vector<Map::MarkerPlacement> markers;
+		if (auto markerPos = Map::WorldToMarker(_session.position.pos.x, _session.position.pos.z, center, scale))
+			markers.push_back(Map::MakeMarker(Map::Icon::WhiteArrow, _session.rotation.x, *markerPos));
 		std::vector<uint8_t> mapIcons;
-		PlaceMarkers(mapIcons, markers);
-		Packet::ItemData pkt;
-		pkt.itemId = MAP;
-		pkt.mapId = 0;
-		pkt.data = mapIcons;
-		pkt.Serialize(_session.stream);
+		Map::PlaceMarkers(mapIcons, markers);
+		if (mapIcons != _session.lastMapIcons) {
+			Packet::ItemData pkt;
+			pkt.itemId = MAP;
+			pkt.mapId = mapId;
+			pkt.data = mapIcons;
+			pkt.Serialize(_session.stream);
+			_session.lastMapIcons = std::move(mapIcons);
+		}
 
-		static int8_t x = 0;
-		if (x >= INT8_MAX - 1)
+		// Graphics: one column per tick, progress is tracked per player
+		if (_session.mapNextColumn >= Map::Item::MAP_ITEM_WIDTH)
 			return;
+		const int x = _session.mapNextColumn;
 
-		// TODO: Maps are 1:8 in B1.7.3
-		// TODO: Maps were centered on the point they were crafted in B1.7.3
 		auto world = _server.GetWorldForDimension(_session.dimension);
 		std::vector<uint8_t> mapData;
-		Map::InitGraphics(mapData, Byte2{ x, 0 });
+		mapData.reserve(3 + Map::Item::MAP_ITEM_WIDTH);
+		Map::InitGraphics(mapData, Byte2{ static_cast<int8_t>(x), 0 });
+		// Pixel column x/row z -> world coordinates, relative to the map's top-left corner
+		const int wx = Map::PixelToWorld(x, center.x, scale);
 
-		for (int z = 0; z < INT8_MAX; z++) {
-			int8_t northY = world->GetHeightValue(x, z - 1);
-			int8_t y = world->GetHeightValue(x, z);
-			Int3 bpos{ x, y - 1, z };
+		// Heights can reach 128, which doesn't fit in an int8_t. Also each pixel's height is the next one's
+		// "north" height, so only look each one up once
+		int northY = world->GetHeightValue(wx, Map::PixelToWorld(-1, center.z, scale));
+		for (int z = 0; z < Map::Item::MAP_ITEM_WIDTH; z++) {
+			const int wz = Map::PixelToWorld(z, center.z, scale);
+			const int y = world->GetHeightValue(wx, wz);
+			Int3 bpos{ wx, std::clamp(y - 1, 0, 127), wz };
 			BlockType block = world->GetBlockId(bpos);
-			int8_t brightness = 1;
+			uint8_t brightness = 1;
 			if (northY > y)
 				brightness--;
 			if (northY < y)
 				brightness++;
 			Map::AppendPixel(mapData, (Blocks::blockProperties[block].material.mapColor.index << 2) | brightness);
+			northY = y;
 		}
 
 		Packet::ItemData gfxPkt;
 		gfxPkt.itemId = MAP;
-		gfxPkt.mapId = 0;
-		gfxPkt.data = mapData;
+		gfxPkt.mapId = mapId;
+		gfxPkt.data = std::move(mapData);
 		gfxPkt.Serialize(_session.stream);
-		x++;
+		_session.mapNextColumn = (_session.mapNextColumn + 3) % Map::Item::MAP_ITEM_WIDTH;
 	};
 
 	itemBehavior[MAP].onStopHolding = [](ItemStack* _stack) {
