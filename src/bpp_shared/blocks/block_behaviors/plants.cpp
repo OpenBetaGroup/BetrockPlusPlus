@@ -296,7 +296,10 @@ void RegisterPlantBehaviors() {
 
 	auto onPlantPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face, BlockType _blockId,
 	                       uint8_t _meta) -> bool {
-		if (CanGenericPlantSurviveAt(_world, _pos)) {
+		auto position = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (position == Int3{ -1, -1, -1 })
+			return false;
+		if (CanGenericPlantSurviveAt(_world, position)) {
 			return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		}
 		return false;
@@ -304,7 +307,10 @@ void RegisterPlantBehaviors() {
 
 	auto onCactusPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face,
 	                        BlockType _blockId, uint8_t _meta) -> bool {
-		if (CanCactusSurviveAt(_world, _pos)) {
+		auto position = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (position == Int3{ -1, -1, -1 })
+			return false;
+		if (CanCactusSurviveAt(_world, position)) {
 			return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		}
 		return false;
