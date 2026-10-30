@@ -5,10 +5,15 @@
  *
 */
 #include "region_manager.h"
+#include "helpers/deflate_pool.h"
 #include "world/world.h" // Full WorldManager definition needed here for world->elapsed_ticks etc.
 #include <filesystem>
 #include <fstream>
-#include "helpers/deflate_pool.h"
+#include <csignal>
+#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__)
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -22,6 +27,20 @@
 
 RegionManager::~RegionManager() {
 	Release();
+}
+
+void RegionManager::FatalIo(const std::string& _what, Int32_2 _cpos) {
+	if (ioFatal.exchange(true))
+		return; // Only report the first failure
+	Logger::Error << "FATAL IO ERROR at chunk (" << _cpos.x << ", " << _cpos.z << "): " << _what
+	              << "\nStopping server to prevent world corruption.\n";
+	Logger::Flush();
+
+#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__)
+	kill(getpid(), SIGTERM);
+#else
+	std::raise(SIGTERM);
+#endif
 }
 
 bool RegionManager::Initialize(const std::string& _folderPath) {
@@ -109,9 +128,12 @@ bool RegionManager::RegionExists(const Int32_2 _rpos) {
 bool RegionManager::ChunkExists(const Int32_2 _cpos) {
 	if (!RegionExists({ _cpos.x >> 5, _cpos.z >> 5 }))
 		return false;
-	auto region = LoadRegion({ _cpos.x >> 5, _cpos.z >> 5 });
-	if (!region)
+	LoadState state = LoadState::FAILED;
+	auto region = LoadRegion({ _cpos.x >> 5, _cpos.z >> 5 }, state);
+	if (state == LoadState::FAILED)
 		return false;
+	if (state == LoadState::CACHE_BUSY)
+		return true;
 	return region->ChunkExists({ _cpos.x & 31, _cpos.z & 31 });
 }
 
@@ -172,19 +194,32 @@ void RegionManager::LoadChunk(const Int32_2 _cpos) {
 		MarkLoadFailed(_cpos);
 		return;
 	}
-	auto region = LoadRegion(rpos); // shared_ptr keeps Region alive for the task
+	LoadState state = LoadState::FAILED;
+	auto region = LoadRegion(rpos, state); // shared_ptr keeps Region alive for the task
 	if (!region) {
 		MarkLoadFailed(_cpos);
 		return;
 	}
+
 	iopool.detach_task([_cpos, region, this]() {
-		auto chunk = region->GetChunk(_cpos); // blocks until region is free
-		if (!chunk) {
-			MarkLoadFailed(_cpos);
-			return;
+		try {
+			Region::ReadStatus status = Region::ReadStatus::Error;
+			auto chunk = region->GetChunk(_cpos, status);
+			if (status == Region::ReadStatus::Missing) {
+				FatalIo("GetChunk failed (missing chunk data)", _cpos);
+				return;
+			}
+			if (status == Region::ReadStatus::Error || !chunk) {
+				FatalIo("GetChunk failed", _cpos);
+				return;
+			}
+			std::lock_guard lk(outChunksMutex);
+			outChunks[_cpos] = std::move(chunk);
+		} catch (const std::exception& e) {
+			FatalIo(std::string("load threw: ") + e.what(), _cpos);
+		} catch (...) {
+			FatalIo("load threw unknown exception", _cpos);
 		}
-		std::lock_guard lk(outChunksMutex);
-		outChunks[_cpos] = std::move(chunk);
 	});
 }
 
@@ -210,20 +245,34 @@ void RegionManager::PumpPipeline() {
 	std::vector<SnapshotContainer> requeue;
 	for (auto& snapshot : toSave) {
 		auto& chunk = snapshot.chunkSnapshot;
-		auto entitySnapshot = snapshot.entitySnapshot; // shared_ptr copy
+		std::shared_ptr<const std::vector<Tag>> entitySnapshot = snapshot.entitySnapshot; // shared_ptr copy
 		Int32_2 rpos{ chunk->cpos.x >> 5, chunk->cpos.z >> 5 };
 		if (!RegionExists(rpos))
 			CreateRegion(rpos);
-		auto region = LoadRegion(rpos); // shared_ptr keeps Region alive for the task
+		LoadState state = LoadState::FAILED;
+		auto region = LoadRegion(rpos, state); // shared_ptr keeps Region alive for the task
 		if (!region) {
-			requeue.push_back(std::move(snapshot)); // keep chunk + entities together
+			if (state == LoadState::CACHE_BUSY) {
+				requeue.push_back(std::move(snapshot)); // keep chunk + entities together
+			} else {
+				FatalIo("Region failed to load!", chunk->cpos);
+			}
 			continue;
-		}
+		} 
 		auto currentTime = 0;
 		if (world)
-			currentTime = world->elapsedTicks;
-		iopool.detach_task([chunk, region, currentTime, entitySnapshot]() {
-			region->AddChunk(chunk, currentTime, entitySnapshot); // Region stays alive via shared_ptr capture
+			currentTime = world->tickScheduler.currentTick;
+		iopool.detach_task([chunk, region, currentTime, entitySnapshot, this]() {
+			try {
+				if (ioFatal.load())
+					return;                                                // Don't write anything after a failure
+				if (!region->AddChunk(chunk, currentTime, entitySnapshot))
+					FatalIo("AddChunk failed", chunk->cpos);
+			} catch (const std::exception& e) {
+				FatalIo(std::string("save threw: ") + e.what(), chunk->cpos);
+			} catch (...) {
+				FatalIo("save threw unknown exception", chunk->cpos);
+			}
 		});
 	}
 
@@ -243,38 +292,55 @@ void RegionManager::PumpPipeline() {
 }
 
 void RegionManager::FlushAll() {
-	PumpPipeline();
-	iopool.wait();
+	if (ioFatal.load()) {
+		iopool.wait();
+		return;
+	}
+	for (int pass = 0; pass < 64; pass++) {
+		PumpPipeline();
+		iopool.wait();
+		std::lock_guard lk(saveQueueMutex);
+		if (saveQueue.empty())
+			return;
+	}
+	Logger::Error << "FlushAll: save queue not empty after 64 passes\n";
 }
 
-std::shared_ptr<Region> RegionManager::LoadRegion(const Int32_2 _rpos) {
+std::shared_ptr<Region> RegionManager::LoadRegion(const Int32_2 _rpos, LoadState& _state) {
 	// Check cache first
 	for (int i = 0; i < 8; i++) {
-		if (regionCache[i] && regionCache[i]->rpos == _rpos)
+		if (regionCache[i] && regionCache[i]->rpos == _rpos) {
+			_state = LoadState::SUCCESS;
 			return regionCache[i];
+		}
 	}
 
 	// Also check regions awaiting merge
 	for (auto& pending : pendingRegions) {
-		if (pending->rpos == _rpos)
+		if (pending->rpos == _rpos) {
+			_state = LoadState::SUCCESS;
 			return pending;
+		}
 	}
 
 	if (!RegionExistsOnDisk(_rpos)) {
 		if (!CreateRegion(_rpos)) {
 			Logger::Error << "Failed to create region file for " << _rpos.x << "," << _rpos.z << "\n";
+			_state = LoadState::FAILED;
 			return nullptr;
 		}
 	}
 
 	if (CreateRegionOnCache(_rpos)) {
 		for (int i = 0; i < 8; i++) {
-			if (regionCache[i] && regionCache[i]->rpos == _rpos)
+			if (regionCache[i] && regionCache[i]->rpos == _rpos) {
+				_state = LoadState::SUCCESS;
 				return regionCache[i];
+			}
 		}
 	}
-
-	return nullptr; // all 8 slots still busy
+	_state = LoadState::CACHE_BUSY;
+	return nullptr;
 }
 
 bool RegionManager::TryMergePendingRegion(std::shared_ptr<Region>& _region) {
@@ -300,7 +366,7 @@ bool RegionManager::CreateRegionOnCache(const Int2 _rpos) {
 	auto region = std::make_shared<Region>(_rpos, mFolderPath);
 	if (!TryMergePendingRegion(region)) {
 		if (pendingRegions.size() >= MAX_PENDING_REGIONS)
-			return false; // all cache slots busy and pending is full — caller retries later
+			return false; // all cache slots busy and pending is full
 		pendingRegions.push_back(std::move(region));
 		return false;
 	}

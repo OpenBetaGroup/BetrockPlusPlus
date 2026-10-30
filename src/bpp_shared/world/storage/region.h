@@ -43,14 +43,26 @@ public:
 		// Cache our header
 		ReadHeaderFromFile();
 	}
+	
+	enum class ReadStatus {
+		Ok,
+		Missing,
+		Error
+	};
+
+	std::shared_ptr<Chunk> GetChunk(Int32_2 _cpos, ReadStatus& _status);
+
+	bool AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp, std::shared_ptr<const std::vector<Tag>> _entities);
+	std::vector<uint8_t> EncodeNbtData(const std::shared_ptr<Chunk>& _chunk, int64_t _timestamp,
+	                                   std::shared_ptr<const std::vector<Tag>> _entities);
+	std::shared_ptr<Chunk> DecodeNbtData(const std::vector<uint8_t>& _rawData);
+	std::shared_ptr<Chunk> DecodeDecompressedNbtData(std::vector<uint8_t>& _decompressedData);
+
 	bool ChunkExists(Int2 _localcpos) {
 		int index = _localcpos.x + _localcpos.z * 32;
 		auto* rHeader = &regionHeader[index];
 		return (rHeader->numberOfSectors != 0 && rHeader->offset != 0);
 	}
-
-	void AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp, std::shared_ptr<const std::vector<Tag>> _entities);
-	std::shared_ptr<Chunk> GetChunk(Int32_2 _cpos);
 
 	// Read our header data into the "regionHeader"
 	void ReadHeaderFromFile() {
@@ -64,12 +76,6 @@ public:
 			regionHeader[i].offset = entry >> 8;            // top 3 bytes
 		}
 	}
-
-	std::vector<uint8_t> EncodeNbtData(const std::shared_ptr<Chunk>& _chunk, int64_t _timestamp,
-	                                   std::shared_ptr<const std::vector<Tag>> _entities);
-	std::shared_ptr<Chunk> DecodeNbtData(const std::vector<uint8_t>& _rawData);
-	std::shared_ptr<Chunk> DecodeDecompressedNbtData(std::vector<uint8_t>& _decompressedData);
-
 private:
 	//std::array<std::shared_ptr<Chunk>, REGION_AREA> chunks;
 	std::string GetPath();

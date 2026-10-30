@@ -77,12 +77,24 @@ struct RegionManager {
 	void FlushAll();
 
 	// Loads a region into cache, creating the file if needed
-	std::shared_ptr<Region> LoadRegion(const Int32_2 _rpos);
+	enum LoadState : uint8_t {
+		FAILED,
+		CACHE_BUSY,
+		SUCCESS
+	};
+	std::shared_ptr<Region> LoadRegion(const Int32_2 _rpos, LoadState& _state);
+
+	void FatalIo(const std::string& _what, Int32_2 _cpos);
+	bool HasFatalIo() const {
+		return ioFatal.load();
+	}
 
 private:
 	bool TryMergePendingRegion(std::shared_ptr<Region>& _region);
 	bool CreateRegionOnCache(const Int2 _rpos);
 	void MarkLoadFailed(const Int32_2 _cpos);
+
+	std::atomic<bool> ioFatal{ false };
 
 	std::vector<std::shared_ptr<Region>> pendingRegions;
 	std::shared_ptr<Region> regionCache[8];

@@ -40,11 +40,19 @@ size_t InitialDecompressedSize() {
 }
 }
 
-void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
+bool Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
                       std::shared_ptr<const std::vector<Tag>> _entities) {
+	if (!_chunk) {
+		Logger::Error << "Region::AddChunk: null chunk\n";
+		return false;
+	}
+
 	auto compressed = EncodeNbtData(_chunk, _timestamp, _entities);
-	if (compressed.empty())
-		return;
+	if (compressed.empty()) {
+		Logger::Error << "Region::AddChunk: failed to encode chunk (" << _chunk->cpos.x << ", " << _chunk->cpos.z
+		              << ")\n";
+		return false;
+	}
 
 	// Only lock after encoding (hehe)
 	std::lock_guard<std::mutex> lock(mutex);
@@ -52,6 +60,13 @@ void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
 	// Chunk header: 4 bytes length + 1 byte compression type
 	uint32_t payloadLength = uint32_t(compressed.size()) + 1; // +1 for the format byte
 	uint32_t sectorsNeeded = (payloadLength + 4 + SECTOR_SIZE - 1) / SECTOR_SIZE;
+
+	// The header stores the sector count in a single byte
+	if (sectorsNeeded > 255) {
+		Logger::Error << "Region::AddChunk: chunk (" << _chunk->cpos.x << ", " << _chunk->cpos.z << ") needs "
+		              << sectorsNeeded << " sectors (max 255)\n";
+		return false;
+	}
 
 	// Find a free run of sectors in the file
 	// Build an occupancy set from the header
@@ -82,9 +97,26 @@ void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
 		}
 	}
 
-	// Write chunk data at the chosen sector
+	// The header stores the offset in 3 bytes
+	if (chosenOffset > 0xFFFFFF) {
+		Logger::Error << "Region::AddChunk: sector offset " << chosenOffset << " does not fit in 24 bits\n";
+		return false;
+	}
+
 	auto& file = regionFile.Get();
+
+	// Don't write anything if the stream is already in a failed state
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: region stream already in a failed state\n";
+		return false;
+	}
+
+	// Write chunk data at the chosen sector
 	file.seekp(chosenOffset * SECTOR_SIZE);
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: seek to chunk data failed\n";
+		return false;
+	}
 
 	// 4-byte big-endian length
 	uint32_t lengthBE = ToBigEndian(payloadLength);
@@ -105,31 +137,49 @@ void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
 		file.write(pad.data(), pad.size());
 	}
 
-	// Update header entry
-	Int2 local{ _chunk->cpos.x & 31, _chunk->cpos.z & 31 };
-	int index = local.x + local.z * 32;
-	regionHeader[index].offset = chosenOffset;
-	regionHeader[index].numberOfSectors = uint8_t(sectorsNeeded);
+	// Make sure the data is on its way to disk BEFORE the header points at it
+	file.flush();
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: writing chunk data failed (disk full or I/O error?)\n";
+		return false;
+	}
 
 	// Write updated header entry to file
+	Int2 local{ _chunk->cpos.x & 31, _chunk->cpos.z & 31 };
+	int index = local.x + local.z * 32;
+
 	file.seekp(index * 4);
 	uint32_t entry = (chosenOffset << 8) | uint8_t(sectorsNeeded);
 	entry = ToBigEndian(entry);
 	file.write(reinterpret_cast<char*>(&entry), 4);
 	file.flush();
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: writing header entry failed\n";
+		return false;
+	}
+
+	// Only update the in-memory header once the file is fully written
+	regionHeader[index].offset = chosenOffset;
+	regionHeader[index].numberOfSectors = uint8_t(sectorsNeeded);
+	return true;
 }
 
-std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos) {
+std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos, ReadStatus& _status) {
+	_status = ReadStatus::Error;
 	std::lock_guard<std::mutex> lock(mutex);
 	Int2 local{ _cpos.x & 31, _cpos.z & 31 };
 	int index = local.x + local.z * 32;
 
-	if (!ChunkExists(local))
+	if (!ChunkExists(local)) {
+		_status = ReadStatus::Missing;
 		return nullptr;
+	}
 
 	uint32_t offset = regionHeader[index].offset;
-	if (offset == 0)
+	if (offset == 0) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 
 	auto& file = regionFile.Get();
 	file.seekg(static_cast<std::streamoff>(offset) * SECTOR_SIZE);
@@ -137,34 +187,44 @@ std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos) {
 	// Read 4-byte length
 	uint32_t length = 0;
 	file.read(reinterpret_cast<char*>(&length), 4);
-	if (file.fail())
+	if (file.fail()) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 	length = FromBigEndian(length);
 
 	// Guard against corrupt/zero length before subtracting
 	if (length < 1) {
 		Logger::Warning << "Invalid chunk length: " << length << "\n";
+		_status = ReadStatus::Error;
 		return nullptr;
 	}
 
 	// Read compression type
 	CompressorFormat format = CompressorFormat::REGION_INVALID;
 	file.read(reinterpret_cast<char*>(&format), 1);
-	if (file.fail())
+	if (file.fail()) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 
 	if (format != CompressorFormat::REGION_ZLIB) {
 		Logger::Warning << "Unsupported compression format: " << int(format) << "\n";
+		_status = ReadStatus::Error;
 		return nullptr;
 	}
 
 	// Read compressed data (length includes the format byte, so actual data is length-1)
 	std::vector<uint8_t> compressed(length - 1);
 	file.read(reinterpret_cast<char*>(compressed.data()), length - 1);
-	if (file.fail())
+	if (file.fail()) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 
-	return DecodeNbtData(compressed);
+	auto result = DecodeNbtData(compressed);
+	if (result) _status = ReadStatus::Ok;
+	return result;
 }
 
 std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk, int64_t _timestamp,
@@ -314,7 +374,7 @@ std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawDat
 	auto decompressed = Deflate::Decompress(Deflate::Format::Zlib, _rawData, InitialDecompressedSize());
 	if (!decompressed) {
 		Logger::Warning << "Decompression failed!\n";
-		return std::make_shared<Chunk>();
+		return nullptr;
 	}
 	return DecodeDecompressedNbtData(*decompressed);
 }
