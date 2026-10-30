@@ -33,6 +33,7 @@ enum class Id {
 	SpawnProtectionRadius,
 	SpawnChunks,
 	RespectUsernameCapitalization,
+	AutosaveInterval,
 	// Mobs
 	ForgiveDeadPlayers,
 	MobGriefing,

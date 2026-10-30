@@ -44,12 +44,10 @@ public:
 		_other.readPos = 0;
 	}
 	bool NewClient();
-	// NOTE: This is a limitation of the Vanilla Beta 1.7.3 Client,
-	// as it can only process 100 Packets per tick
-	static constexpr uint8_t MAX_PACKETS_PER_TICK = 100;
-	uint8_t packetsInQueue = 0;
-	void IncrementPacketCount(PacketId _id);
-	void ResetPacketCount();
+	void Discard() {
+		readPos = readBuffer.size();
+		shortRead = false;
+	}
 
 	// NOTE: if CheckAndClearShortRead()/IsShortRead() ends up true after this
 	// call, the returned value is not meaningful, it was built from a
@@ -172,6 +170,7 @@ private:
 
 	std::vector<uint8_t> writeBuffer;
 
-	static constexpr size_t MAX_READ_BUFFER = 1u << 20; // 1 MiB
+	static constexpr size_t MAX_READ_BUFFER = 1u << 20;  // 1 MiB
+	static constexpr size_t MAX_WRITE_BUFFER = 8u << 20; // 8 MiB
 	static constexpr size_t MAX_METADATA_ENTRIES = 256;
 };

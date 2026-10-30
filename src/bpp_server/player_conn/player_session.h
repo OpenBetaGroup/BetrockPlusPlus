@@ -52,6 +52,7 @@ struct PlayerSession {
 	// Nether spawn finding
 	bool pendingPortalPlacement = false;
 	bool portalAreaLoaded = false;
+	int lastLoggedSpawnChunkCount = -1; // so spawn-chunk progress is only logged when it changes
 
 	// What block we are currently breaking, if any
 	std::optional<PendingBlockBreak> pendingBlockBreak = std::nullopt;

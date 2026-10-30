@@ -26,6 +26,7 @@
 #include "server.h"
 #include "tile_entities/tile_entity.h"
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <iomanip>
 #include <memory>
@@ -56,14 +57,24 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 	if (!_session.entity)
 		return;
 
-	{
-		bp_player_chat_event event{ .player = &_session.apiPlayer, .message = _pkt.message.c_str(), .cancel = false };
-		_server.GetAddonManager().Broadcast(&bp_addon_events::playerChat, event);
-
-		if (event.cancel)
+	// Vanilla caps chat at 100 characters
+	constexpr size_t K_MAX_CHAT_LENGTH = 100;
+	if (_pkt.message.size() > K_MAX_CHAT_LENGTH * 3 || ToUCS2(_pkt.message).size() > K_MAX_CHAT_LENGTH) {
+		_server.DisconnectPlayer("Chat message too long!", _session);
+		return;
+	}
+	// Control characters and the colour-code character (U+00A7, UTF-8 C2 A7) are not allowed from players
+	for (size_t i = 0; i < _pkt.message.size(); ++i) {
+		const auto c = static_cast<unsigned char>(_pkt.message[i]);
+		const bool colorCode = c == 0xC2 && i + 1 < _pkt.message.size() &&
+		                       static_cast<unsigned char>(_pkt.message[i + 1]) == 0xA7;
+		if (c < 32 || c == 127 || colorCode) {
+			_server.DisconnectPlayer("Illegal characters in chat", _session);
 			return;
+		}
 	}
 
+	// Rate limit before doing any real work (addons, commands, broadcast)
 	const auto now = std::chrono::steady_clock::now();
 	if (_session.recentChatMessageCount == _session.recentChatMessageTimes.size() &&
 	    now - _session.recentChatMessageTimes[_session.nextChatMessageTime] < std::chrono::seconds(1)) {
@@ -75,6 +86,14 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 	    (_session.nextChatMessageTime + 1) % _session.recentChatMessageTimes.size();
 	if (_session.recentChatMessageCount < _session.recentChatMessageTimes.size())
 		++_session.recentChatMessageCount;
+
+	{
+		bp_player_chat_event event{ .player = &_session.apiPlayer, .message = _pkt.message.c_str(), .cancel = false };
+		_server.GetAddonManager().Broadcast(&bp_addon_events::playerChat, event);
+
+		if (event.cancel)
+			return;
+	}
 
 	Logger::Message << "<" << _session.username << "> " << _pkt.message << "\n";
 	if (!_pkt.message.empty() && _pkt.message.front() == '/') {
@@ -107,10 +126,25 @@ void PlayerMovement(Packet::PlayerMovement& _pkt, PlayerSession& _session) {
 }
 
 static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server) {
+	// A vanilla client never sends these. NaN/inf/huge values would make the movement
+	// simulation sweep (or loop over) an unbounded area, so reject them before anything else.
+	constexpr double K_MAX_HORIZONTAL = double(INT32_MAX);
+	constexpr double K_MAX_VERTICAL = 1.0e4;
+	if (!std::isfinite(_to.x) || !std::isfinite(_to.y) || !std::isfinite(_to.z)) {
+		_server.DisconnectPlayer("Invalid move player packet received", _session);
+		return false;
+	}
+
 	// We are in a vehicle!
 	if (_to.y == -999.0 || (_session.entity && !_session.entity->vehicle.expired())) {
 		_session.pendingPosition = _to;
 		return true;
+	}
+
+	if (std::abs(_to.x) > K_MAX_HORIZONTAL || std::abs(_to.z) > K_MAX_HORIZONTAL ||
+	    std::abs(_to.y) > K_MAX_VERTICAL) {
+		_server.DisconnectPlayer("Illegal position", _session);
+		return false;
 	}
 
 	if (_session.entity)

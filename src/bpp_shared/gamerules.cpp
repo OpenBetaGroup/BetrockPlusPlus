@@ -44,6 +44,7 @@ struct Registry {
         Register(Id::AccurateDespawnRules, "accurate_despawn_rules", "If squids, ghasts and slimes should never despawn", false); // Vanilla: true
         Register(Id::SpawnChunks, "spawn_chunks", "If spawn chunks should be and remain loaded (requires restart to take effect)", true); // Vanilla: true
         Register(Id::RespectUsernameCapitalization, "respect_username_capitalization", "If the capitalization of a username should be respected (forces to lowercase otherwise)", false); // Vanilla: false
+        Register(Id::AutosaveInterval, "autosave_interval", "Time in seconds between autosaves", 2.0); // Vanilla: 2.0
         // Player
         Register(Id::AllowEnteringNetherUsingPortals, "allow_entering_nether_using_portals", "If players should be able to travel to the Nether via a Portal from the Overworld", true); // Vanilla: true
         Register(Id::DrowningDamage, "drowning_damage", "If players should take drowning damage", true); // Vanilla: true

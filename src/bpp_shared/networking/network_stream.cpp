@@ -11,6 +11,7 @@
 #include "packet_data.h"
 #include "packet_labels.h"
 #include "ucs2.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -68,7 +69,6 @@ void NetworkStream::FlushWriteBufferBlocking() {
 		sent += static_cast<size_t>(result);
 	}
 	writeBuffer.clear();
-	ResetPacketCount();
 
 	// We close here so the client can get the packet data we just sent out before we disconnect
 #if defined(_WIN32) || defined(_WIN64)
@@ -81,22 +81,12 @@ void NetworkStream::FlushWriteBufferBlocking() {
 	clientSocket = INVALID_SOCKET;
 }
 
-void NetworkStream::IncrementPacketCount(PacketId /*_id*/) {
-	packetsInQueue++;
-	if (packetsInQueue > MAX_PACKETS_PER_TICK)
-		return;
-}
-
-void NetworkStream::ResetPacketCount() {
-	packetsInQueue = 0;
-}
-
 // String-8 Handling
 void NetworkStream::WriteString8(const std::string& _str) {
-	uint16_t length = static_cast<uint16_t>(_str.size());
-	Write(length);
-	std::vector<uint8_t> data(_str.begin(), _str.end());
-	WriteBytes(data.data(), data.size());
+	// Clamp so the length prefix always matches the body that follows
+	const size_t length = std::min<size_t>(_str.size(), UINT16_MAX);
+	Write(static_cast<uint16_t>(length));
+	WriteBytes(reinterpret_cast<const uint8_t*>(_str.data()), length);
 }
 
 std::string NetworkStream::ReadString8() {
@@ -109,14 +99,22 @@ std::string NetworkStream::ReadString8() {
 // String-16 Handling
 void NetworkStream::WriteString16(const std::string& _str) {
 	std::u16string str16 = ToUCS2(_str);
-	uint16_t length = static_cast<uint16_t>(str16.size());
-	Write(length);
-	std::vector<uint8_t> data(length * 2);
-	for (size_t i = 0; i < str16.size(); i++) {
-		data[i * 2] = (static_cast<uint8_t>((str16[i] >> 8) & 0xFF));
-		data[i * 2 + 1] = (static_cast<uint8_t>(str16[i] & 0xFF));
+	const size_t length = std::min<size_t>(str16.size(), UINT16_MAX);
+	Write(static_cast<uint16_t>(length));
+	if (!connected)
+		return;
+	if (writeBuffer.size() + length * 2 > MAX_WRITE_BUFFER) {
+		Logger::Warning << "NetworkStream: write buffer limit exceeded, dropping client\n";
+		connected = false;
+		return;
 	}
-	WriteBytes(data.data(), data.size());
+	// Encode big-endian UTF-16 straight into the write buffer (no temporary)
+	const size_t old = writeBuffer.size();
+	writeBuffer.resize(old + length * 2);
+	for (size_t i = 0; i < length; i++) {
+		writeBuffer[old + i * 2] = static_cast<uint8_t>((str16[i] >> 8) & 0xFF);
+		writeBuffer[old + i * 2 + 1] = static_cast<uint8_t>(str16[i] & 0xFF);
+	}
 }
 
 std::string NetworkStream::ReadString16() {
@@ -152,7 +150,13 @@ size_t NetworkStream::ReadBytes(uint8_t* _buf, size_t _len) {
 
 void NetworkStream::WriteBytes(const uint8_t* _buf, size_t _len) {
 	// Session was kicked or closed, skip
-	if (!connected) return;
+	if (!connected)
+		return;
+	if (writeBuffer.size() + _len > MAX_WRITE_BUFFER) {
+		Logger::Warning << "NetworkStream: write buffer limit exceeded, dropping client\n";
+		connected = false;
+		return;
+	}
 	writeBuffer.insert(writeBuffer.end(), _buf, _buf + _len);
 }
 
@@ -215,9 +219,12 @@ void NetworkStream::ReadEntityMetadata(std::vector<PacketData::EntityMetadata::D
 			break;
 		}
 		default:
+			// We don't know how many bytes this entry occupies, so the stream is
+			// desynchronised. Drop the client instead of parsing garbage.
 			Logger::Warning << "NetworkStream::ReadEntityMetadata: Unknown metadata type "
-			                    << static_cast<int>(type);
-			break;
+			                << static_cast<int>(type) << "\n";
+			connected = false;
+			return;
 		}
 		// Read in the next value
 		val = Read<uint8_t>();
@@ -296,8 +303,6 @@ bool NetworkStream::FlushWriteBuffer() {
 		writeBuffer.erase(writeBuffer.begin(),
 		                  writeBuffer.begin() + static_cast<std::vector<unsigned char>::difference_type>(sent));
 	}
-	// TODO: Probably not right
-	ResetPacketCount();
 	return connected;
 }
 
@@ -307,7 +312,10 @@ void NetworkStream::DrainToBuffer() {
 
 	// Compact away bytes that were consumed (and NOT rolled back) last
 	// Tick, so the buffer doesn't grow unbounded.
-	if (readPos > 0) {
+	if (readPos == readBuffer.size()) {
+		readBuffer.clear(); // fully consumed: O(1), keeps capacity
+		readPos = 0;
+	} else if (readPos > 0) {
 		readBuffer.erase(readBuffer.begin(),
 		                 readBuffer.begin() + static_cast<std::vector<uint8_t>::difference_type>(readPos));
 		readPos = 0;

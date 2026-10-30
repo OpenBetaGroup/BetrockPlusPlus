@@ -383,11 +383,11 @@ void RegisterAll() {
 	};
 
 	// TODO: Implement maps properly
-	itemBehavior[MAP].onStartHolding = [](ItemStack* _stack, PlayerSession& _session) {
+	itemBehavior[MAP].onStartHolding = [](ItemStack* /*_stack*/, PlayerSession& /*_session*/) {
 		Logger::Debug << "Started holding a map!\n";
 	};
 
-	itemBehavior[MAP].whileHeld = [](ItemStack* _stack, PlayerSession& _session, Server& _server) {
+	itemBehavior[MAP].whileHeld = [](ItemStack* /*_stack*/, PlayerSession& _session, Server& _server) {
 		auto pos = _session.position.GetBlockPos();
 		std::vector<Map::MarkerPlacement> markers = {
 			// TODO: Evil fuck-ass offset magic???
@@ -433,7 +433,7 @@ void RegisterAll() {
 		x++;
 	};
 
-	itemBehavior[MAP].onStopHolding = [](ItemStack* _stack) {
+	itemBehavior[MAP].onStopHolding = [](ItemStack* /*_stack*/) {
 		Logger::Debug << "No longer holding a map!\n";
 	};
 };

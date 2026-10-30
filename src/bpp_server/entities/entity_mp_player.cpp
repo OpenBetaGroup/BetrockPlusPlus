@@ -172,7 +172,9 @@ void EntityMPPlayer::HandlePositionChecks() {
 	this->velocity = {};
 	if (this->vehicle.lock().get()) {
 		// Vehicles are weird!
-		Vec3 pos = session->pendingPosition.value();
+		if (!session->pendingPosition)
+			return;
+		Vec3 pos = *session->pendingPosition;
 		session->pendingPosition.reset();
 		if (pos.x <= -1 || pos.x > 1 || pos.z <= -1 || pos.z > 1)
 			return;
@@ -258,9 +260,13 @@ void EntityMPPlayer::HandlePositionChecks() {
 		// How far the client claims to have moved this tick
 		double claimedTravelDistSq = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
 		if (claimedTravelDistSq > 100.0) {
+			// Impossible distance for one tick. Don't simulate it (Move() sweeps the whole
+			// path, so this would be a cheap way to stall the server), just roll the player back.
 			movedWrong = true;
+			delta = {};
+		} else {
+			Move(delta);
 		}
-		Move(delta);
 		movedThisTick = true;
 
 		// Simulate our own fall distance / on ground

@@ -13,6 +13,7 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <cstdlib>
 #include <cstdint>
 #include <format>
 #include <fstream>
@@ -31,7 +32,6 @@
 #include <signal.h>
 #endif
 
-#include "quick_arg_parser.hpp"
 #ifdef CRASH_LOGGING
 #include "CrashCatch.hpp"
 #endif
@@ -59,7 +59,6 @@
 #include "bpp_client/client.h"
 #endif
 
-#include "nbt/nbt_textifier.h" // FOR TESTING
 
 // Globals
 std::atomic<bool> shutdownRequested{ false };
@@ -67,35 +66,7 @@ std::atomic<bool> shutdownRequested{ false };
 static Server* server = nullptr;
 #endif
 
-// Command line arguments
-// TODO: Actually make use of these!!!
-struct Args : MainArguments<Args> {
-	inline static const std::string Version() noexcept {
-		return std::string(PROJECT_FULL_VERSION_LABEL);
-	}
-
-	// --- Network / players ---
-	uint16_t port = Option("port", 'p', "Port the server will run on (25565)") = 25565;
-	int32_t maxPlayers = Option("max_players", '\0',
-	                            "Maximum number of players. Anything less than 0 removes the cap (-1)") = -1;
-	bool enableWhitelist = (Option("whitelist", 'w', "Enables usage of the whitelist") = false);
-
-	// --- World ---
-	int64_t seed = Option("seed", 's', "Overwrites the worlds current seed") = 0;
-	bool disablePortals = (Option("no_portals", '\0', "Disables Portal-travel") = false);
-	bool forceNetherSpawn = (Option("force_nether_spawn", '\0', "Makes players spawn in the Nether") = false);
-	uint32_t pregenRadius = Option("pregen_radius", '\0',
-	                               "Generates chunks around 0,0 until the desired radius is met") = 5;
-
-	// --- Radii ---
-	uint32_t chunkRenderRadius = Option(
-	    "chunk_render_radius", '\0',
-	    "Radius within which chunks are rendered for clients. On Vanilla clients this caps out at about 13 Chunks") = 5;
-	uint32_t chunkGenRadius = Option("chunk_gen_radius", '\0', "Radius within which chunks are generated") = 5;
-	uint32_t chunkTickRadius = Option("chunk_tick_radius", '\0', "Radius within which chunks are randomly ticked") = 5;
-	uint32_t entityRenderRadius = Option("entity_render_radius", '\0', "Radius within which entities are shown") = 5;
-	uint32_t entityTickRadius = Option("entity_tick_radius", '\0', "Radius within which entities are ticked") = 5;
-};
+// TODO: command line arguments
 
 // Shutdown / Signal handling
 static void SignalHandler(int /*sig*/) {
@@ -140,6 +111,9 @@ static void SignalWatchThread() {
 	int sig = 0;
 	if (sigwait(&set, &sig) == 0)
 		shutdownRequested.store(true);
+	// Don't block repeated Ctrl + C for force-shutdown in case save gets stuck
+	if (sigwait(&set, &sig) == 0)
+		std::_Exit(128 + sig);
 }
 #endif
 

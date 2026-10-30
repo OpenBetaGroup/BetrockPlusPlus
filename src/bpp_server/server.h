@@ -71,16 +71,22 @@ public:
 	ChunkSender chunkSender;
 	int flushChunkCount = 10;
 
+	void SavePlayer(PlayerSession& _session) {
+		if (!_session.entity) {
+			Logger::Error << "Failed to save player data for " << _session.username << ": no entity!\n";
+			return;
+		}
+		auto savedNbt = _session.SerializeToNbt();
+		gameRuntime.saveManager.SavePlayerNbt(_session.username, savedNbt);
+	}
+
 	void SavePlayer(const std::string& _username) {
-		auto PlayerSession = GetSessionByUsername(_username);
-		if (!PlayerSession) {
+		auto session = GetSessionByUsername(_username);
+		if (!session) {
 			Logger::Error << "Failed to save player data for " << _username << "!\n";
 			return;
 		}
-
-		auto savedNbt = PlayerSession->SerializeToNbt();
-		gameRuntime.saveManager.SavePlayerNbt(
-		    std::string(PlayerSession->username.begin(), PlayerSession->username.end()), savedNbt);
+		SavePlayer(*session);
 	}
 
 	void DisconnectPlayer(const std::string& _reason, PlayerSession& _session) {
@@ -146,6 +152,7 @@ public:
 		return _dim == Dimension::Nether ? &this->gameRuntime.worldHell : &this->gameRuntime.world;
 	}
 
+	uint16_t GetMaxPlayers() const noexcept { return maximumPlayers; }
 	bool CanExecuteCommands() const noexcept;
 	bool ExecuteCommand(std::string_view _command, PlayerSession* _sender = nullptr) noexcept;
 

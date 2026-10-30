@@ -326,6 +326,15 @@ void Entity::ApplyInput(float _acceleration) {
 }
 
 void Entity::Move(Vec3& _velocity) {
+	// Never simulate garbage. NaN would spin forever in the sneak-clamp loops below
+	// (NaN != 0 and neither branch changes it), and a huge velocity makes the collision
+	// query sweep a gigantic area. No legitimate entity moves anywhere near 128 blocks/tick.
+	static constexpr double K_MAX_STEP = 128.0;
+	auto sanitize = [](double _v) { return std::isfinite(_v) ? std::clamp(_v, -K_MAX_STEP, K_MAX_STEP) : 0.0; };
+	_velocity.x = sanitize(_velocity.x);
+	_velocity.y = sanitize(_velocity.y);
+	_velocity.z = sanitize(_velocity.z);
+
 	ySize *= 0.4f;
 
 	bool clearMotionAfterMove = false;

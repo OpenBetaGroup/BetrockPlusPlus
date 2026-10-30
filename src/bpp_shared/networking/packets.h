@@ -39,7 +39,6 @@ struct KeepAlive : BasePacket {
 
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
-		_stream.IncrementPacketCount(id);
 	}
 
 	// NOTE: Reading the packet id is enough to deserialize it
@@ -50,13 +49,13 @@ struct KeepAlive : BasePacket {
 struct Login : BasePacket {
 	Login() : BasePacket{ PacketId::Login } {}
 	// NOTE: This assumes that EntityId is always an int32_t
-	EntityId entityId;
-	EntityId& protocolVersion = entityId;
-	EntityId& entityIdProtocolVersion = entityId;
+	// Client -> server: this field carries the protocol version.
+	// Server -> client: this field carries the entity id.
+	EntityId entityIdProtocolVersion = 0;
 
 	std::string username;
-	int64_t worldSeed;
-	Dimension dimension;
+	int64_t worldSeed = 0;
+	Dimension dimension{};
 
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
@@ -64,7 +63,6 @@ struct Login : BasePacket {
 		_stream.WriteString16(username);
 		_stream.Write(worldSeed);
 		_stream.Write(dimension);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -78,14 +76,12 @@ struct Login : BasePacket {
 // Used to initialize to connection
 struct PreLogin : BasePacket {
 	PreLogin() : BasePacket{ PacketId::PreLogin } {}
-	std::string username;
-	std::string& serverId = username;
-	std::string& usernameServerId = username;
+	// Client -> server: username. Server -> client: server id (auth hash, or "-").
+	std::string usernameServerId;
 
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.WriteString16(usernameServerId);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -101,7 +97,6 @@ struct ChatMessage : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.WriteString16(message);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -117,7 +112,6 @@ struct SetTime : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(time);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -139,7 +133,6 @@ struct SetEquipment : BasePacket {
 		_stream.Write(inventorySlot);
 		_stream.Write(itemId);
 		_stream.Write(itemMetadata);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -160,7 +153,6 @@ struct SetSpawnPosition : BasePacket {
 		_stream.Write(position.x);
 		_stream.Write(position.y);
 		_stream.Write(position.z);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -182,7 +174,6 @@ struct InteractWithEntity : BasePacket {
 		_stream.Write(sourceEntityId);
 		_stream.Write(targetEntityId);
 		_stream.Write(attack);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -200,7 +191,6 @@ struct SetHealth : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(health);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -216,7 +206,6 @@ struct Respawn : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(dimension);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -232,7 +221,6 @@ struct PlayerMovement : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(onGround);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -262,7 +250,6 @@ struct PlayerPosition : BasePacket {
 		_stream.Write(cameraY);
 		_stream.Write(position.z);
 		_stream.Write(onGround);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -290,7 +277,6 @@ struct PlayerRotation : BasePacket {
 		_stream.Write(yaw);
 		_stream.Write(pitch);
 		_stream.Write(onGround);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -322,7 +308,6 @@ struct PlayerPositionAndRotation : BasePacket {
 		_stream.Write(yaw);
 		_stream.Write(pitch);
 		_stream.Write(onGround);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -350,7 +335,6 @@ struct MineBlock : BasePacket {
 		_stream.Write(position.y);
 		_stream.Write(position.z);
 		_stream.Write(face);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -378,7 +362,6 @@ struct PlaceBlock : BasePacket {
 		_stream.Write(item.id);
 		_stream.Write(item.count);
 		_stream.Write(item.data);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -423,7 +406,6 @@ struct InteractWithBlock : BasePacket {
 		_stream.Write(position.x);
 		_stream.Write(position.y);
 		_stream.Write(position.z);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -445,7 +427,6 @@ struct Animation : BasePacket {
 		_stream.Write(id);
 		_stream.Write(entityId);
 		_stream.Write(animation);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -464,7 +445,6 @@ struct PlayerAction : BasePacket {
 		_stream.Write(id);
 		_stream.Write(entityId);
 		_stream.Write(action);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -497,7 +477,6 @@ struct SpawnPlayer : BasePacket {
 		_stream.Write(qYaw);
 		_stream.Write(qPitch);
 		_stream.Write(heldItemId);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -532,7 +511,6 @@ struct SpawnItem : BasePacket {
 		_stream.Write(qVelocity.x);
 		_stream.Write(qVelocity.y);
 		_stream.Write(qVelocity.z);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -559,7 +537,6 @@ struct CollectItem : BasePacket {
 		_stream.Write(id);
 		_stream.Write(itemEntityId);
 		_stream.Write(collectorEntityId);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -590,7 +567,6 @@ struct SpawnObject : BasePacket {
 			_stream.Write(qVelocity.y);
 			_stream.Write(qVelocity.z);
 		}
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -632,7 +608,6 @@ struct SpawnMob : BasePacket {
 		_stream.Write(qYaw);
 		_stream.Write(qPitch);
 		_stream.WriteEntityMetadata(metadata);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -663,7 +638,6 @@ struct SpawnPainting : BasePacket {
 		_stream.Write(qPosition.y);
 		_stream.Write(qPosition.z);
 		_stream.Write(direction);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -702,7 +676,6 @@ struct PlayerInput : BasePacket {
 		_stream.Write(yaw);
 		_stream.Write(jumping);
 		_stream.Write(sneaking);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -727,7 +700,6 @@ struct EntityVelocity : BasePacket {
 		_stream.Write(velocity.x);
 		_stream.Write(velocity.y);
 		_stream.Write(velocity.z);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -746,7 +718,6 @@ struct DespawnEntity : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(entityId);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -760,7 +731,6 @@ struct EntityMovement : BasePacket {
 
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& /*_stream*/) override {}
@@ -778,7 +748,6 @@ struct EntityPosition : BasePacket {
 		_stream.Write(qrPosition.x);
 		_stream.Write(qrPosition.y);
 		_stream.Write(qrPosition.z);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -805,7 +774,6 @@ struct EntityRotation : BasePacket {
 		_stream.Write(entityId);
 		_stream.Write(qYaw);
 		_stream.Write(qPitch);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -835,7 +803,6 @@ struct EntityPositionAndRotation : BasePacket {
 		_stream.Write(qrPosition.z);
 		_stream.Write(qYaw);
 		_stream.Write(qPitch);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -868,7 +835,6 @@ struct TeleportEntity : BasePacket {
 		_stream.Write(qPosition.z);
 		_stream.Write(qYaw);
 		_stream.Write(qPitch);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -891,7 +857,6 @@ struct EntityEvent : BasePacket {
 		_stream.Write(id);
 		_stream.Write(entityId);
 		_stream.Write(action);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -910,7 +875,6 @@ struct AddPassenger : BasePacket {
 		_stream.Write(id);
 		_stream.Write(passengerEntityId);
 		_stream.Write(vehicleEntityId);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -933,7 +897,6 @@ struct EntityMetadata : BasePacket {
 		_stream.Write(id);
 		_stream.Write(entityId);
 		_stream.WriteEntityMetadata(metadata);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -953,7 +916,6 @@ struct SetChunkVisibility : BasePacket {
 		_stream.Write(pos.x);
 		_stream.Write(pos.z);
 		_stream.Write(visible);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -980,7 +942,6 @@ struct ChunkData : BasePacket {
 		_stream.Write(size.z);
 		_stream.Write(static_cast<int32_t>(compressedData.size()));
 		_stream.WriteBytes(compressedData.data(), compressedData.size());
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1016,7 +977,6 @@ struct SetMultipleBlocks : BasePacket {
 			_stream.Write(blockTypes[static_cast<size_t>(i)]);
 		for (int16_t i = 0; i < numberOfBlocks; i++)
 			_stream.Write(blockMetadata[static_cast<size_t>(i)]);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1048,7 +1008,6 @@ struct SetBlock : BasePacket {
 		_stream.Write(position.z);
 		_stream.Write(block.type);
 		_stream.Write(block.data);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1074,7 +1033,6 @@ struct BlockEvent : BasePacket {
 		_stream.Write(position.z);
 		_stream.Write(instrumentState);
 		_stream.Write(pitchDirection);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1118,7 +1076,6 @@ struct Explosion : BasePacket {
 		_stream.Write(radius);
 		_stream.Write(static_cast<int32_t>(numberOfDestroyedBlocks));
 		_stream.WriteBytes(reinterpret_cast<const uint8_t*>(destroyedBlocks.data()), destroyedBlocks.size());
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1147,7 +1104,6 @@ struct WorldEvent : BasePacket {
 		_stream.Write(position.y);
 		_stream.Write(position.z);
 		_stream.Write(data);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1167,7 +1123,6 @@ struct GameEvent : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(eventId);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1190,7 +1145,6 @@ struct LightningBolt : BasePacket {
 		_stream.Write(position.x);
 		_stream.Write(position.y);
 		_stream.Write(position.z);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1216,7 +1170,6 @@ struct OpenContainer : BasePacket {
 		_stream.Write(windowType);
 		_stream.WriteString8(title);
 		_stream.Write(slotCount);
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1234,7 +1187,6 @@ struct CloseContainer : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.Write(windowId);
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1263,7 +1215,6 @@ struct ClickSlot : BasePacket {
 			_stream.Write(item.count);
 			_stream.Write(item.data);
 		}
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1295,7 +1246,6 @@ struct SetSlot : BasePacket {
 			_stream.Write(item.count);
 			_stream.Write(item.data);
 		}
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1326,7 +1276,6 @@ struct FillContainer : BasePacket {
 				_stream.Write(item.data);
 			}
 		}
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1356,7 +1305,6 @@ struct ContainerData : BasePacket {
 		_stream.Write(windowId);
 		_stream.Write(containerData.type);
 		_stream.Write(containerData.value);
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1377,7 +1325,6 @@ struct ContainerTransaction : BasePacket {
 		_stream.Write(windowId);
 		_stream.Write(transactionId);
 		_stream.Write(accepted);
-		_stream.IncrementPacketCount(id);
 	}
 	void Deserialize(NetworkStream& _stream) override {
 		windowId = _stream.Read<WindowId>();
@@ -1401,7 +1348,6 @@ struct UpdateSign : BasePacket {
 		_stream.WriteString16(lines[1]);
 		_stream.WriteString16(lines[2]);
 		_stream.WriteString16(lines[3]);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1428,7 +1374,6 @@ struct ItemData : BasePacket {
 		_stream.Write(mapId);
 		_stream.Write(uint8_t(data.size()));
 		_stream.WriteBytes(data.data(), data.size());
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1450,7 +1395,6 @@ struct IncrementStatistic : BasePacket {
 		_stream.Write(id);
 		_stream.Write(statisticId);
 		_stream.Write(amount);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
@@ -1467,7 +1411,6 @@ struct Disconnect : BasePacket {
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
 		_stream.WriteString16(reason);
-		_stream.IncrementPacketCount(id);
 	}
 
 	void Deserialize(NetworkStream& _stream) override {

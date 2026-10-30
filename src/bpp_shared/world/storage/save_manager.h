@@ -236,9 +236,10 @@ struct SaveManager {
 
 	bool SaveLevelFile(const LevelData& _levelData) {
 		// Back up existing level.dat if present
-		if (std::filesystem::exists(saveDirectory + "/level.dat")) {
+		if (!levelBackupDone && std::filesystem::exists(saveDirectory + "/level.dat")) {
 			if (!Platform::FS::CopyFileOverwrite(saveDirectory + "/level.dat", saveDirectory + "/level.dat_old"))
 				Logger::Warning << "Couldn't back up level.dat to level.dat_old.\n";
+			levelBackupDone = true;
 		}
 
 		Tag root;
@@ -323,16 +324,32 @@ struct SaveManager {
 		if (compressed.size() <= 0)
 			return false;
 
-		std::ofstream file(saveDirectory + "/level.dat", std::ios::binary);
-		if (!file.is_open())
-			return false;
-		file.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
-		if (!file.good())
-			return false;
+		// Write to a temp file and rename it into place
+		const std::string finalPath = saveDirectory + "/level.dat";
+		const std::string tmpPath = finalPath + ".tmp";
+		{
+			std::ofstream file(tmpPath, std::ios::binary | std::ios::trunc);
+			if (!file.is_open())
+				return false;
+			file.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
+			file.flush();
+			if (!file.good())
+				return false;
+		}
+
+		// Release our handle first, an open file can't be replaced on Windows
+		worldFile.reset();
+		const bool replaced = Platform::FS::ReplaceFile(tmpPath, finalPath);
+		if (!replaced)
+			Logger::Error << "Failed to move " << tmpPath << " into place.\n";
 
 		// Reopen as FileHandle for future use
-		worldFile = std::make_unique<FileHandle>(saveDirectory + "/level.dat");
-		return true;
+		try {
+			worldFile = std::make_unique<FileHandle>(finalPath);
+		} catch (const std::exception& e) {
+			Logger::Error << "Couldn't reopen level.dat: " << e.what() << "\n";
+		}
+		return replaced;
 	}
 
 	static int64_t SeedFromString(const std::string& _input) {
@@ -541,6 +558,7 @@ struct SaveManager {
 private:
 	std::string saveDirectory;
 	std::unique_ptr<FileHandle> worldFile;
+	bool levelBackupDone = false;
 	SessionLock sessionLock;
 	LevelData currentLevelData;
 };
