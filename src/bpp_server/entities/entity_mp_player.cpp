@@ -145,17 +145,18 @@ bool EntityMPPlayer::PickupItem(ItemStack& _stack, EntityId _entityId) {
 	if (!this->EntityAlive())
 		return false;
 
-	if (this->session->inventory.PickupItem(_stack)) {
-		Packet::CollectItem pkt;
-		pkt.collectorEntityId = this->id;
-		pkt.itemEntityId = _entityId;
-		if (this->session->entityTracker)
-			this->session->entityTracker->SendPacketToViewers(pkt, this->id);
-		pkt.Serialize(this->session->stream);
-		return true;
-	}
+	auto countBefore = _stack.count;
+	this->session->inventory.PickupItem(_stack);
+	if (_stack.count == countBefore)
+		return false; // Nothing moved
 
-	return false;
+	Packet::CollectItem pkt;
+	pkt.collectorEntityId = this->id;
+	pkt.itemEntityId = _entityId;
+	if (this->session->entityTracker)
+		this->session->entityTracker->SendPacketToViewers(pkt, this->id);
+	pkt.Serialize(this->session->stream);
+	return true;
 }
 
 static constexpr double CLEAR_CHECK_TOLERANCE = 0.05;

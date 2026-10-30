@@ -13,7 +13,7 @@
 #include "blocks/block_properties_behaviors.h"
 
 // For redstone!
-struct WorldManager;
+class WorldManager;
 struct ComponentProfile {
 	// These are for purely whether we can power other components / dust
 	// NOT if we can power that block!

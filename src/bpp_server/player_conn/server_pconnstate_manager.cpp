@@ -252,9 +252,15 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 
 void PlayerConnStateManager::DisconnectPlayer(PlayerSession& _session, const std::string& _reason, Server& _server,
                                               bool _doSave) {
+	// Force close inventory
+	if (_session.entity)
+		_session.inventoryInteraction.OnInteractionClosed(*_session.entity);
+
 	// Force close our window
-	if (_session.activeInteraction)
+	if (_session.activeInteraction && _session.entity)
 		_session.activeInteraction->OnInteractionClosed(*_session.entity);
+
+	// Save our player data
 	if (_doSave) {
 		if (_session.entity)
 			_session.entity->UnmountEntity();

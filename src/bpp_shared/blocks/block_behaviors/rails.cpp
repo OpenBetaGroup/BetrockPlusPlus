@@ -98,7 +98,10 @@ void RegisterRailBehaviors() {
 	// Rail
 	blockBehaviors[BLOCK_RAIL].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                              Cardinal::Value _face, BlockType _blockId, uint8_t _meta) -> bool {
-		if (!CanRailStay(_world, _pos, BLOCK_RAIL))
+		auto newPos = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (newPos == Int3{ -1, -1, -1 })
+			return false;
+		if (!CanRailStay(_world, newPos, BLOCK_RAIL))
 			return false;
 		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
@@ -119,7 +122,10 @@ void RegisterRailBehaviors() {
 	blockBehaviors[BLOCK_RAIL_DETECTOR].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                       Cardinal::Value _face, BlockType _blockId,
 	                                                       uint8_t _meta) -> bool {
-		if (!CanRailStay(_world, _pos, BLOCK_RAIL_DETECTOR))
+		auto newPos = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (newPos == Int3{ -1, -1, -1 })
+			return false;
+		if (!CanRailStay(_world, newPos, BLOCK_RAIL_DETECTOR))
 			return false;
 		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
@@ -154,7 +160,10 @@ void RegisterRailBehaviors() {
 	blockBehaviors[BLOCK_RAIL_POWERED].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                      Cardinal::Value _face, BlockType _blockId,
 	                                                      uint8_t _meta) -> bool {
-		if (!CanRailStay(_world, _pos, BLOCK_RAIL_POWERED))
+		auto newPos = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (newPos == Int3{ -1, -1, -1 })
+			return false;
+		if (!CanRailStay(_world, newPos, BLOCK_RAIL_POWERED))
 			return false;
 		bool canPlace = GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		if (canPlace) {
