@@ -89,7 +89,7 @@ enum class MaterialType : uint8_t {
 };
 
 // NOTE: This way it fits nicely into 2 bits!
-enum PushabilityFlag : int8_t {
+enum PushabilityFlag : uint8_t {
 	Invalid = 0,
 	Normal = 1,
 	NoPush = 2,
