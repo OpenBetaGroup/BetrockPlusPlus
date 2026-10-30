@@ -166,8 +166,11 @@ void RegionManager::SaveChunk(const std::shared_ptr<Chunk> _chunk, bool _unloadE
 	snapshot->inUse.store(false);
 	snapshot->CopyStorageFrom(*_chunk);
 	std::memcpy(snapshot->heightMap, _chunk->heightMap, sizeof(_chunk->heightMap));
-	std::memcpy(snapshot->temperature, _chunk->temperature, sizeof(_chunk->temperature));
-	std::memcpy(snapshot->humidity, _chunk->humidity, sizeof(_chunk->humidity));
+	if (_chunk->climate) {
+		snapshot->climate = std::make_unique<ClimateChunk>();
+		std::memcpy(snapshot->climate->temperature, _chunk->climate->temperature, sizeof(_chunk->climate->temperature));
+		std::memcpy(snapshot->climate->humidity, _chunk->climate->humidity, sizeof(_chunk->climate->humidity));
+	}
 	snapshot->tileEntities = _chunk->tileEntities;
 
 	// Entities are wrapped in a shared_ptr<const vector>

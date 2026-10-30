@@ -24,7 +24,7 @@ struct SmallerItemStruct {
 };
 
 // NOTE: There's probably better ways to do this, but this one's easy to manage for now.
-const std::unordered_map<std::string, SmallerItemStruct> IDENTIFIER_TO_ID = {
+inline const std::unordered_map<std::string, SmallerItemStruct> IDENTIFIER_TO_ID = {
 	{ "air", { BLOCK_AIR, 0 } },
 	{ "stone", { BLOCK_STONE, 0 } },
 	{ "grass_block", { BLOCK_GRASS, 0 } },

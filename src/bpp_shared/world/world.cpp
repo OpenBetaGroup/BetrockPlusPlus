@@ -35,12 +35,12 @@ Biome WorldManager::GetBiome(Int2 _wpos) {
 
 	const int32_t localX = _wpos.x & 15;
 	const int32_t localZ = _wpos.z & 15;
-	return static_cast<Biome>(chunk->biomes.Get(localX * CHUNK_WIDTH + localZ));
+	return static_cast<Biome>(chunk->climate->biomes.Get(localX * CHUNK_WIDTH + localZ));
 }
 
 void WorldManager::EnsureClimate(Chunk& _chunk) {
-	// The Nether has no climate
-	if (isHell || _chunk.climateBaked)
+	// The Nether has no climate or the chunk already has climate
+	if (isHell || _chunk.climate)
 		return;
 
 	thread_local std::unique_ptr<BiomeGenerator> tlBiomeGen;
@@ -49,20 +49,20 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 		tlBiomeGen = std::make_unique<BiomeGenerator>(this->seed);
 		tlBiomeSeed = this->seed;
 	}
+	_chunk.climate = std::make_unique<ClimateChunk>();
 	thread_local std::unique_ptr<double[]> climateBuffer;
 	if (!climateBuffer)
 		climateBuffer = std::make_unique<double[]>(size_t(CHUNK_AREA) * 3);
 	double* temp = climateBuffer.get();
 	double* humi = temp + CHUNK_AREA;
 	double* weird = humi + CHUNK_AREA;
-	tlBiomeGen->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
+	tlBiomeGen->GenerateBiomeMap(_chunk.climate->biomes, std::span<double>(temp, CHUNK_AREA),
 	                             std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
 	                            Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
 	for (int i = 0; i < CHUNK_AREA; ++i) {
-		_chunk.temperature[i] = float(temp[i]);
-		_chunk.humidity[i] = float(humi[i]);
+		_chunk.climate->temperature[i] = float(temp[i]);
+		_chunk.climate->humidity[i] = float(humi[i]);
 	}
-	_chunk.climateBaked = true;
 }
 
 int WorldManager::GetBlockLightValue(Int3 _wpos, bool _offsetNonFullBlocks) {

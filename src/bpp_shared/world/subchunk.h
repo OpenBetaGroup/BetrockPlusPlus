@@ -20,11 +20,11 @@ struct SubChunk {
 	using NibbleLayer = PackedArray<VOLUME, 4>;
 
 	// Null = uniform, see the matching fill below
-	std::unique_ptr<BlockLayer> blocks;
+	std::unique_ptr<BlockLayer> blocks = nullptr;
 	// Invariant: non-null exactly when blocks is non-null
-	std::unique_ptr<NibbleLayer> meta;
-	std::unique_ptr<NibbleLayer> blockLight;
-	std::unique_ptr<NibbleLayer> skyLight;
+	std::unique_ptr<NibbleLayer> meta = nullptr;
+	std::unique_ptr<NibbleLayer> blockLight = nullptr;
+	std::unique_ptr<NibbleLayer> skyLight = nullptr;
 
 	// What a null layer reads as. Defaults to air, no meta, no block light and full sky light.
 	BlockType blockFill = BLOCK_AIR;

@@ -75,6 +75,12 @@ enum class ChunkState : uint8_t {
 	Unloading
 };
 
+struct ClimateChunk {
+	float temperature[CHUNK_AREA] = {};
+	float humidity[CHUNK_AREA] = {};
+	PackedArray<CHUNK_AREA, 4> biomes;
+};
+
 // TODO: Check viability of "full chunks", for faster access.
 // Basically how stuff worked before SubChunks,
 // for those that prefer that system for the performance gain.
@@ -84,24 +90,20 @@ struct Chunk {
 	static_assert(CHUNK_HEIGHT % SUB_CHUNK_SIZE == 0, "CHUNK_HEIGHT must be a multiple of SUB_CHUNK_SIZE");
 	static_assert(SUB_CHUNK_SIZE == CHUNK_WIDTH, "SubChunk indexing assumes SUB_CHUNK_SIZE == CHUNK_WIDTH");
 
+	uint8_t heightMap[CHUNK_AREA] = {};
 	Int32_2 cpos;
 	std::atomic_bool inUse{ false };
 
 	// Block, light and metadata storage, bottom to top. Every slice is always present, but the layers
 	// inside it (blocks, meta, block light, sky light) are only allocated once they need to hold data.
 	std::array<SubChunk, SUB_CHUNK_COUNT> subChunks;
-
+	std::unique_ptr<ClimateChunk> climate = nullptr;
 	std::atomic<ChunkState> state{ ChunkState::Unloaded };
-	uint8_t heightMap[CHUNK_AREA] = {};
-	float temperature[CHUNK_AREA] = {};
-	float humidity[CHUNK_AREA] = {};
-	PackedArray<CHUNK_AREA, 4> biomes;
 
 	bool isTerrainPopulated : 1 = false;
 	bool isModified : 1 = false;
 	bool spawnChunk : 1 = false;
 	bool refreshLighting : 1 = false;
-	bool climateBaked : 1 = false;
 
 	// Tile entities
 	std::vector<std::shared_ptr<TileEntity>> tileEntities;
@@ -136,10 +138,16 @@ struct Chunk {
 		return (_byte >> 4) & 0x0Fu;
 	}
 	inline float GetTemperature(Int2 _pos) const {
-		return temperature[(_pos.x << 4) | _pos.y];
+		// NOTE: This should never happen!!
+		if (!climate)
+			return 1.0f;
+		return climate->temperature[(_pos.x << 4) | _pos.y];
 	}
 	inline float GetHumidity(Int2 _pos) const {
-		return humidity[(_pos.x << 4) | _pos.y];
+		// NOTE: This should never happen!!
+		if (!climate)
+			return 1.0f;
+		return climate->humidity[(_pos.x << 4) | _pos.y];
 	}
 	inline uint8_t GetHeightValue(Int2 _pos) const {
 		return heightMap[(_pos.y << 4) | _pos.x];

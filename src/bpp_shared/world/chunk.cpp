@@ -93,12 +93,10 @@ void Chunk::RecalculateSkyLightColumn(Int2 _pos) {
 void Chunk::Clear() {
 	isTerrainPopulated = false;
 	isModified = false;
-	climateBaked = false;
+	climate.reset();
 	for (auto& sub : subChunks)
 		sub.Reset();
 	std::memset(heightMap, 0, sizeof(heightMap));
-	std::memset(temperature, 0, sizeof(temperature));
-	std::memset(humidity, 0, sizeof(humidity));
 }
 
 namespace {
