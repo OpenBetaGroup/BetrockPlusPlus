@@ -75,10 +75,10 @@ enum class ChunkState : uint8_t {
 	Unloading
 };
 
+// This isn't super optimal, since each of these is just 2KB
 struct ClimateChunk {
 	float temperature[CHUNK_AREA] = {};
 	float humidity[CHUNK_AREA] = {};
-	PackedArray<CHUNK_AREA, 4> biomes;
 };
 
 // TODO: Check viability of "full chunks", for faster access.
@@ -91,6 +91,7 @@ struct Chunk {
 	static_assert(SUB_CHUNK_SIZE == CHUNK_WIDTH, "SubChunk indexing assumes SUB_CHUNK_SIZE == CHUNK_WIDTH");
 
 	uint8_t heightMap[CHUNK_AREA] = {};
+	PackedArray<CHUNK_AREA, 4> biomes;
 	Int32_2 cpos;
 	std::atomic_bool inUse{ false };
 

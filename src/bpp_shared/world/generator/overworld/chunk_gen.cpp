@@ -55,7 +55,7 @@ void OverworldGenerator::GenerateChunk(Chunk& _chunk) {
 	for (size_t i = 0; i < CHUNK_AREA; ++i) {
 		_chunk.climate->temperature[i] = float(temperature[i]);
 		_chunk.climate->humidity[i] = float(humidity[i]);
-		_chunk.climate->biomes.Set(i, biomeMap.Get(i));
+		_chunk.biomes.Set(i, biomeMap.Get(i));
 	}
 
 	// Generate the Terrain, minus any caves, as just stone
@@ -745,5 +745,10 @@ bool OverworldGenerator::PopulateChunk(Chunk& _chunk, WorldWrapper& _world) {
 			}
 		}
 	}
+	// TODO: Maybe just have this as a reusable scratch buffer for the generator?
+	#ifdef BUILD_SERVER
+	// Now we don't need these anymore, at least as a server
+	_chunk.climate.reset();
+	#endif
 	return true;
 }

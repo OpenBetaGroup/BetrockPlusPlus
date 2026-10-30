@@ -35,7 +35,7 @@ Biome WorldManager::GetBiome(Int2 _wpos) {
 
 	const int32_t localX = _wpos.x & 15;
 	const int32_t localZ = _wpos.z & 15;
-	return static_cast<Biome>(chunk->climate->biomes.Get(localX * CHUNK_WIDTH + localZ));
+	return static_cast<Biome>(chunk->biomes.Get(localX * CHUNK_WIDTH + localZ));
 }
 
 void WorldManager::EnsureClimate(Chunk& _chunk) {
@@ -56,7 +56,7 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 	double* temp = climateBuffer.get();
 	double* humi = temp + CHUNK_AREA;
 	double* weird = humi + CHUNK_AREA;
-	tlBiomeGen->GenerateBiomeMap(_chunk.climate->biomes, std::span<double>(temp, CHUNK_AREA),
+	tlBiomeGen->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
 	                             std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
 	                            Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
 	for (int i = 0; i < CHUNK_AREA; ++i) {
