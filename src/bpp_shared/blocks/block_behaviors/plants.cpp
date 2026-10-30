@@ -299,7 +299,9 @@ void RegisterPlantBehaviors() {
 		auto position = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		if (position == Int3{ -1, -1, -1 })
 			return false;
-		if (CanGenericPlantSurviveAt(_world, position)) {
+		auto belowBlock = _world.GetBlockId({ _pos.x, _pos.y - 1, _pos.z });
+		bool canGrowOnBlock = belowBlock == BLOCK_FARMLAND || belowBlock == BLOCK_DIRT || belowBlock == BLOCK_GRASS;
+		if (canGrowOnBlock) {
 			return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		}
 		return false;
