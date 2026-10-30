@@ -52,7 +52,7 @@ static bool CanPushBlock(WorldManager& _world, BlockType _block, Int3 _pos, bool
 
 	auto props = Blocks::blockProperties[_block];
 	// TODO: Turn this into an enum
-	PushabilityFlag mobilityFlag = props.pushMobilityOverride >= 0 ? props.pushMobilityOverride
+	PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
 	                                                               : props.material.mobilityFlag;
 	if (props.hardness == -1.0f || mobilityFlag == PushabilityFlag::Immovable ||
 	    (!_allowBreakable && mobilityFlag == PushabilityFlag::NoPush))
@@ -81,7 +81,7 @@ static bool CanExtend(WorldManager& _world, Int3 _pos) {
 				return false;
 
 			auto props = Blocks::blockProperties[blockId];
-			PushabilityFlag mobilityFlag = props.pushMobilityOverride >= 0 ? props.pushMobilityOverride
+			PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
 			                                                      : props.material.mobilityFlag;
 			if (mobilityFlag != PushabilityFlag::NoPush) {
 				if (pushCount >= MAX_PUSH_COUNT)
@@ -133,7 +133,7 @@ static bool TryExtend(WorldManager& _world, Int3 _pos) {
 			if (!CanPushBlock(_world, blockId, endPos))
 				return false;
 			auto props = Blocks::blockProperties[blockId];
-			PushabilityFlag mobilityFlag = props.pushMobilityOverride >= 0 ? props.pushMobilityOverride
+			PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
 			                                                      : props.material.mobilityFlag;
 			if (mobilityFlag != PushabilityFlag::NoPush) {
 				if (pushCount >= MAX_PUSH_COUNT)
@@ -200,7 +200,7 @@ static void Retract(WorldManager& _world, Int3 _pos) {
 			}
 		}
 		auto props = Blocks::blockProperties[pullId];
-		PushabilityFlag mobilityFlag = props.pushMobilityOverride >= 0 ? props.pushMobilityOverride
+		PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
 		                                                      : props.material.mobilityFlag;
 		bool cantPull = wasMoving || pullId == BLOCK_AIR || !CanPushBlock(_world, pullId, pullPos, false) ||
 		                (mobilityFlag != PushabilityFlag::Normal && pullId != BLOCK_PISTON &&
