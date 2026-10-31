@@ -139,7 +139,7 @@ public:
 	float GetCelestialAngle();
 	int GetBlockLightValue(Int3 _wpos, bool _offsetNonFullBlocks = true);
 	Biome GetBiome(Int2 _wpos);
-	void EnsureClimate(Chunk& _chunk);
+	void EnsureClimate(Chunk& _chunk, bool _onlyBiome = true);
 	BlockType GetBlockId(Int3 _wpos) override;
 	uint8_t GetMetadata(Int3 _wpos);
 	void RemoveTileEntity(Int3 _pos);

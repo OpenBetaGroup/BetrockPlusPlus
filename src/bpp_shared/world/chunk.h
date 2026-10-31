@@ -275,6 +275,7 @@ struct Chunk {
 	// Approximate heap + inline footprint. Prefer this over sizeof(Chunk) now that storage is lazy.
 	inline size_t GetMemoryUsage() const {
 		size_t bytes = sizeof(Chunk);
+		bytes += climate ? sizeof(ChunkAreaClimate) : 0;
 		for (const auto& sub : subChunks)
 			bytes += sub.GetHeapUsage();
 		return bytes;

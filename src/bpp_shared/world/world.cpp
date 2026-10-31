@@ -31,14 +31,14 @@ Biome WorldManager::GetBiome(Int2 _wpos) {
 	auto chunk = GetChunkShared(Int32_2{ _wpos.x >> 4, _wpos.z >> 4 });
 	if (!chunk || chunk->state.load() < ChunkState::Generated)
 		return biomeGenerator.GetBiomeAtPoint(_wpos);
-	EnsureClimate(*chunk);
+	EnsureClimate(*chunk, true);
 
 	const int32_t localX = _wpos.x & 15;
 	const int32_t localZ = _wpos.z & 15;
 	return static_cast<Biome>(chunk->biomes.Get(localX * CHUNK_WIDTH + localZ));
 }
 
-void WorldManager::EnsureClimate(Chunk& _chunk) {
+void WorldManager::EnsureClimate(Chunk& _chunk, bool _onlyBiome) {
 	// The Nether has no climate or the chunk already has climate
 	if (isHell || _chunk.climate)
 		return;
@@ -49,7 +49,6 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 		tlBiomeGen = std::make_unique<BiomeGenerator>(this->seed);
 		tlBiomeSeed = this->seed;
 	}
-	_chunk.climate = std::make_unique<ChunkAreaClimate>();
 	thread_local std::unique_ptr<double[]> climateBuffer;
 	if (!climateBuffer)
 		climateBuffer = std::make_unique<double[]>(size_t(CHUNK_AREA) * 3);
@@ -59,9 +58,13 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 	tlBiomeGen->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
 	                             std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
 	                            Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
-	for (int i = 0; i < CHUNK_AREA; ++i) {
-		_chunk.climate->temperature[i] = float(temp[i]);
-		_chunk.climate->humidity[i] = float(humi[i]);
+	// If we only need a biome, we can skip this
+	if (!_onlyBiome) {
+		_chunk.climate = std::make_unique<ChunkAreaClimate>();
+		for (int i = 0; i < CHUNK_AREA; ++i) {
+			_chunk.climate->temperature[i] = float(temp[i]);
+			_chunk.climate->humidity[i] = float(humi[i]);
+		}
 	}
 }
 
