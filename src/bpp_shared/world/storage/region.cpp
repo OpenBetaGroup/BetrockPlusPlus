@@ -223,7 +223,15 @@ std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos, ReadStatus& _status) {
 	}
 
 	auto result = DecodeNbtData(compressed);
-	if (result) _status = ReadStatus::Ok;
+	if (result) {
+		if (result->cpos != _cpos) {
+			Logger::Error << "Expected chunk " << _cpos << " at offset " << offset << "; Got " << result->cpos << "\n";
+			result->cpos = _cpos;
+			_status = ReadStatus::Missing;
+		} else {
+			_status = ReadStatus::Ok;
+		}
+	}
 	return result;
 }
 

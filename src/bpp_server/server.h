@@ -66,6 +66,7 @@ public:
 #endif
 #ifdef BETACRAFT_HEARTBEAT
 	BetacraftHeartbeat betacraftHeartbeat;
+	std::chrono::steady_clock::time_point nextHeartbeatSnapshot{};
 #endif
 	Runtime gameRuntime;
 	ChunkSender chunkSender;
