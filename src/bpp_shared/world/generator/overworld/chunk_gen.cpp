@@ -51,7 +51,7 @@ void OverworldGenerator::GenerateChunk(Chunk& _chunk) {
 	// (which runs on a different thread_local OverworldGenerator) can reconstruct the
 	// biome map via GetBiomeFromLookup without re-running the noise generators.
 	if (!_chunk.climate)
-		_chunk.climate = std::make_unique<ClimateChunk>();
+		_chunk.climate = std::make_unique<ChunkAreaClimate>();
 	for (size_t i = 0; i < CHUNK_AREA; ++i) {
 		_chunk.climate->temperature[i] = float(temperature[i]);
 		_chunk.climate->humidity[i] = float(humidity[i]);

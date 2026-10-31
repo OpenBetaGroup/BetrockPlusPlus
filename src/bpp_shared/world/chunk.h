@@ -75,10 +75,12 @@ enum class ChunkState : uint8_t {
 	Unloading
 };
 
-// This isn't super optimal, since each of these is just 2KB
-struct ClimateChunk {
+// This isn't super optimal, since this totals to 2K.
+// If they were doubles they'd be 4K, but that's just kinda unnecessary lol
+struct ChunkAreaClimate {
 	float temperature[CHUNK_AREA] = {};
 	float humidity[CHUNK_AREA] = {};
+	// Possibly we could store some other metadata here in the future?
 };
 
 // TODO: Check viability of "full chunks", for faster access.
@@ -98,7 +100,7 @@ struct Chunk {
 	// Block, light and metadata storage, bottom to top. Every slice is always present, but the layers
 	// inside it (blocks, meta, block light, sky light) are only allocated once they need to hold data.
 	std::array<SubChunk, SUB_CHUNK_COUNT> subChunks;
-	std::unique_ptr<ClimateChunk> climate = nullptr;
+	std::unique_ptr<ChunkAreaClimate> climate = nullptr;
 	std::atomic<ChunkState> state{ ChunkState::Unloaded };
 
 	bool isTerrainPopulated : 1 = false;

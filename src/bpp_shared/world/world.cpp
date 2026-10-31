@@ -49,7 +49,7 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 		tlBiomeGen = std::make_unique<BiomeGenerator>(this->seed);
 		tlBiomeSeed = this->seed;
 	}
-	_chunk.climate = std::make_unique<ClimateChunk>();
+	_chunk.climate = std::make_unique<ChunkAreaClimate>();
 	thread_local std::unique_ptr<double[]> climateBuffer;
 	if (!climateBuffer)
 		climateBuffer = std::make_unique<double[]>(size_t(CHUNK_AREA) * 3);

@@ -167,7 +167,7 @@ void RegionManager::SaveChunk(const std::shared_ptr<Chunk> _chunk, bool _unloadE
 	snapshot->CopyStorageFrom(*_chunk);
 	std::memcpy(snapshot->heightMap, _chunk->heightMap, sizeof(_chunk->heightMap));
 	if (_chunk->climate) {
-		snapshot->climate = std::make_unique<ClimateChunk>();
+		snapshot->climate = std::make_unique<ChunkAreaClimate>();
 		std::memcpy(snapshot->climate->temperature, _chunk->climate->temperature, sizeof(_chunk->climate->temperature));
 		std::memcpy(snapshot->climate->humidity, _chunk->climate->humidity, sizeof(_chunk->climate->humidity));
 	}
