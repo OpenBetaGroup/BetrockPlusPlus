@@ -67,7 +67,7 @@ std::optional<Tag> MobileEntity::SerializeToNbt() {
 	return tag;
 }
 
-bool MobileEntity::OnLadder() {
+bool MobileEntity::IsOnLadder() {
 	auto fd = MathHelper::FloorDouble;
 	return world->GetBlockId({ fd(position.x), fd(collider.minY), fd(position.z) }) == BLOCK_LADDER;
 }
@@ -223,7 +223,7 @@ void MobileEntity::TickPhysics() {
 
 		// Clamp our velocity if we are touching a ladder
 		// Also make sure we stop if we sneak
-		if (OnLadder()) {
+		if (IsOnLadder()) {
 			double maxLadderVelocity = 0.15;
 			velocity.x = std::min(maxLadderVelocity, std::max(-maxLadderVelocity, velocity.x));
 			velocity.z = std::min(maxLadderVelocity, std::max(-maxLadderVelocity, velocity.z));
@@ -242,7 +242,7 @@ void MobileEntity::TickPhysics() {
 
 		// Our entity is pushing itself into the wall the ladder is on
 		// So apply an upwards nudge
-		if (collidedHorizontally && OnLadder()) {
+		if (collidedHorizontally && IsOnLadder()) {
 			velocity.y = 0.2;
 		}
 
