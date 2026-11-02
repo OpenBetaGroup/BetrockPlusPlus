@@ -170,7 +170,10 @@ void EntityMPPlayer::HandlePositionChecks() {
 	if (!Gamerule::Get<bool>(Gamerule::Id::PlayerMovementCheck))
 		return;
 
-	this->velocity = {};
+	// Only wipe our velocity if we dont have a pending velocity to send
+	if (!this->forceVelocityUpdate)
+		this->velocity = {};
+
 	if (this->vehicle.lock().get()) {
 		// Vehicles are weird!
 		if (!session->pendingPosition)

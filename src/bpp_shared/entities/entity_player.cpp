@@ -11,9 +11,18 @@
 #include "logger/logger.h"
 
 bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
-	auto success = MobileEntity::AttackEntityFrom(_entity, _damage, _type);
-	if (success && isSleeping)
+	if (health <= 0)
+		return false;
+
+	if (isSleeping)
 		WakeUp();
+
+	// TODO: difficulty scaling
+
+	if (_damage == 0)
+		return false;
+
+	auto success = MobileEntity::AttackEntityFrom(_entity, _damage, _type);
 	if (success && dynamic_cast<MobileEntity*>(_entity)) {
 		if (!_entity->isDead)
 			this->entityManager->AlertWolves(*this, *_entity);
