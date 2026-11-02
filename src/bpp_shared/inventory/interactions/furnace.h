@@ -34,5 +34,5 @@ struct FurnaceInventoryInteraction : InventoryInteraction {
 	void OnRightClick(int _slot) override;
 	void OnShiftClick(int _slot) override;
 	void ShiftClickResult();
-	void TakeResult();
+	void TakeResult(bool _isRightClick = false);
 };

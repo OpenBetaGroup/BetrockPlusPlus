@@ -555,6 +555,23 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 	_session.pendingWindowId = _pkt.windowId;
 	_session.pendingTransactionId = _pkt.transactionId;
 
+	auto SendSuccess = [&]() {
+		Packet::ContainerTransaction ct;
+		ct.accepted = true;
+		ct.transactionId = _session.pendingTransactionId;
+		ct.windowId = _pkt.windowId;
+		ct.Serialize(_session.stream);
+	};
+
+	auto SendFailAndLock = [&]() {
+		Packet::ContainerTransaction ct;
+		ct.accepted = false;
+		ct.transactionId = _session.pendingTransactionId;
+		ct.windowId = _pkt.windowId;
+		ct.Serialize(_session.stream);
+		_session.inventoryLocked = true;
+	};
+
 	// Clicked outside the window
 	if (_pkt.slotId == -999) {
 		InventoryInteraction* interaction = nullptr;
@@ -580,74 +597,49 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 				interaction->carried = ItemStack{ Items::Id::INVALID };
 			}
 		}
+		SendSuccess();
 		return;
 	}
 
-	// The player's inventory is handled separate
-	if (_pkt.windowId == 0) {
-		// Make sure what the client thinks and what we have line up
+	auto HandleInventory = [&](InventoryInteraction* _interaction) {
 		ItemStack empty{ Items::Id::INVALID };
-		auto expected = _session.inventory.GetStackInSlot(_pkt.slotId);
+		if (!_interaction || !_interaction->inventory)
+			return;
+		auto expected = _interaction->inventory->GetStackInSlot(_pkt.slotId);
 		ItemStack& slotItem = expected ? *expected : empty;
-
-		// Clicked inside the window
 		if (slotItem.id != _pkt.item.id || slotItem.data != _pkt.item.data || slotItem.count != _pkt.item.count) {
-			Packet::ContainerTransaction ct;
-			ct.accepted = false;
-			ct.transactionId = _session.pendingTransactionId;
-			ct.windowId = _pkt.windowId;
-			ct.Serialize(_session.stream);
-			_session.inventoryLocked = true;
+			SendFailAndLock();
 
 			// Reset the held cursor
-			PacketUtilities::SendSlot(_session, -1, -1, &_session.inventoryInteraction.carried);
-
-			PacketUtilities::SendInventory(_session, _pkt.windowId, _session.inventory);
+			PacketUtilities::SendSlot(_session, -1, -1, &_interaction->carried);
+			PacketUtilities::SendInventory(_session, _pkt.windowId, *_interaction->inventory);
 			return;
 		}
 
 		// Everything lined up so go as normal
 		if (_pkt.shift) {
-			_session.inventoryInteraction.OnShiftClick(_pkt.slotId);
+			_interaction->OnShiftClick(_pkt.slotId);
+			_interaction->InitSnapshot();
+			SendSuccess();
 			return;
 		}
 		if (_pkt.rightClick) {
-			_session.inventoryInteraction.OnRightClick(_pkt.slotId);
+			_interaction->OnRightClick(_pkt.slotId);
+			_interaction->InitSnapshot();
+			SendSuccess();
 			return;
 		}
-		_session.inventoryInteraction.OnLeftClick(_pkt.slotId);
+		_interaction->OnLeftClick(_pkt.slotId);
+		_interaction->InitSnapshot();
+		SendSuccess();
 		return;
-	}
-	ItemStack empty{ Items::Id::INVALID };
-	if (!_session.activeInteraction || !_session.activeInteraction->inventory)
-		return;
-	auto expected = _session.activeInteraction->inventory->GetStackInSlot(_pkt.slotId);
-	ItemStack& slotItem = expected ? *expected : empty;
-	if (slotItem.id != _pkt.item.id || slotItem.data != _pkt.item.data || slotItem.count != _pkt.item.count) {
-		Packet::ContainerTransaction ct;
-		ct.accepted = false;
-		ct.transactionId = _session.pendingTransactionId;
-		ct.windowId = _pkt.windowId;
-		ct.Serialize(_session.stream);
-		_session.inventoryLocked = true;
+	};
 
-		// Reset the held cursor
-		PacketUtilities::SendSlot(_session, -1, -1, &_session.activeInteraction->carried);
-		PacketUtilities::SendInventory(_session, _pkt.windowId, *_session.activeInteraction->inventory);
+	if (_pkt.windowId == 0) {
+		HandleInventory(&_session.inventoryInteraction);
 		return;
 	}
-
-	// Everything lined up so go as normal
-	if (_pkt.shift) {
-		_session.activeInteraction->OnShiftClick(_pkt.slotId);
-		return;
-	}
-	if (_pkt.rightClick) {
-		_session.activeInteraction->OnRightClick(_pkt.slotId);
-		return;
-	}
-	_session.activeInteraction->OnLeftClick(_pkt.slotId);
-	return;
+	HandleInventory(_session.activeInteraction.get());
 }
 
 void CloseContainer(Packet::CloseContainer& _pkt, PlayerSession& _session) {

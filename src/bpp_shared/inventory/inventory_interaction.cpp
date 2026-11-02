@@ -53,7 +53,7 @@ void InventoryInteraction::OnLeftClick(int _slot) {
 	}
 
 	// Same item; merge
-	if (targetSlot->id == carried.id && targetSlot->data == carried.data) {
+	if (targetSlot->id == carried.id && (Items::HasSubtypes(carried.id) ? targetSlot->data == carried.data : true)) {
 		int maxStack = Items::GetMaxStack(targetSlot->id);
 		int space = maxStack - targetSlot->count;
 		int toMove = std::min(space, int(carried.count));
@@ -87,7 +87,7 @@ void InventoryInteraction::OnRightClick(int _slot) {
 		}
 
 		// If we right click on the same item we are carrying just add one
-		if (targetSlot->id == carried.id && targetSlot->data == carried.data) {
+		if (targetSlot->id == carried.id && (Items::HasSubtypes(carried.id) ? targetSlot->data == carried.data : true)) {
 			int maxStack = Items::GetMaxStack(targetSlot->id);
 			int space = maxStack - targetSlot->count;
 			if (space >= 1) {

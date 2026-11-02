@@ -57,6 +57,10 @@ ItemDamage GetMaxDurability(const ItemId _id);
 // Returns regen amount
 EntityHealth GetRegenerationAmount(const ItemId _id);
 
+constexpr bool HasSubtypes(ItemId _id) {
+	return (_id == Id::DYE || _id == BLOCK_LEAVES || _id == BLOCK_WOOL || _id == BLOCK_LOG);
+}
+
 constexpr bool IsItem(ItemId _id) {
 	return (_id >= Id::SHOVEL_IRON && _id < Id::MAX) || (_id >= Id::RECORD_13 && _id < Id::RECORD_MAX);
 }
@@ -70,7 +74,7 @@ constexpr bool IsValidId(ItemId _id) {
 }
 
 constexpr bool IsArmor(ItemId _id) {
-	return (_id >= Items::HELMET_LEATHER && _id <= Items::BOOTS_GOLD);
+	return (_id >= Items::HELMET_LEATHER && _id <= Items::BOOTS_GOLD) || _id == BLOCK_PUMPKIN;
 }
 
 constexpr bool IsThrowable(ItemId _id) {
@@ -82,7 +86,7 @@ bool IsStackable(ItemId _id);
 bool IsFood(ItemId _id);
 
 constexpr int GetArmorDamageReduction(ItemId _id) {
-	if (!IsArmor(_id))
+	if (!IsArmor(_id) || _id == BLOCK_PUMPKIN)
 		return 0;
 
 	int damageReduceAmounts[4] = { 3, 8, 6, 3 };
@@ -96,6 +100,9 @@ constexpr int GetArmorDamageReduction(ItemId _id) {
 constexpr Items::ArmorPiece GetArmorPiece(ItemId _id) {
 	if (!IsArmor(_id))
 		return ArmorPiece::INVALID_PIECE;
+
+	if (_id == BLOCK_PUMPKIN)
+		return ArmorPiece::HELMET;
 
 	int pieceIndex = (_id - Items::Id::HELMET_LEATHER) % 4;
 	Items::ArmorPiece type[4] = { Items::ArmorPiece::HELMET, Items::ArmorPiece::CHESTPLATE, Items::ArmorPiece::LEGGING,
