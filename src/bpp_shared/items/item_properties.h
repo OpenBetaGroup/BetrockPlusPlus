@@ -58,7 +58,7 @@ ItemDamage GetMaxDurability(const ItemId _id);
 EntityHealth GetRegenerationAmount(const ItemId _id);
 
 constexpr bool HasSubtypes(ItemId _id) {
-	return (_id == Id::DYE || _id == BLOCK_LEAVES || _id == BLOCK_WOOL || _id == BLOCK_LOG);
+	return (_id == Id::DYE || _id == BLOCK_SAPLING || _id == BLOCK_LEAVES || _id == BLOCK_WOOL || _id == BLOCK_LOG);
 }
 
 constexpr bool IsItem(ItemId _id) {
