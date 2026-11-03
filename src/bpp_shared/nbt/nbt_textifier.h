@@ -10,13 +10,14 @@
 #include <cctype>
 
 struct NBTTextifier {
+public:
 	enum Mode : uint8_t {
 		FULL,
 		REDUCED
 	};
 
 	// Converts an NBT compound to a string
-	std::string Parse(Tag& _tag, Mode /*_mode*/) {
+	std::string Parse(const Tag& _tag, Mode /*_mode*/) {
 		std::string parsed;
 
 		if (_tag.type != TAG_COMPOUND)
@@ -26,9 +27,9 @@ struct NBTTextifier {
 
 		return parsed;
 	}
-
+private:
 	// Parse a singular tag into text
-	void ParseTag(Tag& _tag, std::string& _string, std::string _name, bool inList = false, bool inCompound = false,
+	void ParseTag(const Tag& _tag, std::string& _string, std::string _name, bool inList = false, bool inCompound = false,
 	              bool writeName = true, bool forceComma = false) {
 		// Write the name of our tag
 		if (_tag.type != TAG_COMPOUND) {
@@ -183,7 +184,6 @@ struct NBTTextifier {
 		}
 	}
 
-private:
 	// Escapes characters that would break a quoted literal
 	static std::string EscapeString(const std::string& _in) {
 		std::string out;

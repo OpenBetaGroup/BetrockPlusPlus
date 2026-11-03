@@ -18,4 +18,5 @@ struct TileEntitySign : TileEntity {
 	TileEntitySign(Int3 _pPosition) : TileEntity(TileType::SIGN, _pPosition) {};
 
 	Tag Serialize() override;
+	void Deserialize(const Tag& _tag) override;
 };

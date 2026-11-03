@@ -9,6 +9,11 @@
 
 #include "tile_entity_jukebox.h"
 
+void TileEntityJukebox::Deserialize(const Tag& _tag) {
+	// no-op
+	return;
+}
+
 Tag TileEntityJukebox::Serialize() {
 	auto root = TileEntity::Serialize();
 	root.compound["Record"] = Tag{ .type = TAG_INT, .name = "Record", .intValue = static_cast<int32_t>(recordItemId) };

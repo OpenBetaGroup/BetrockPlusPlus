@@ -8,6 +8,17 @@
 
 #include "tile_entity_sign.h"
 
+void TileEntitySign::Deserialize(const Tag& _tag) {
+	if (_tag.Has("Text1"))
+		this->text1 = _tag.Get("Text1").GetString();
+	if (_tag.Has("Text2"))
+		this->text2 = _tag.Get("Text2").GetString();
+	if (_tag.Has("Text3"))
+		this->text3 = _tag.Get("Text3").GetString();
+	if (_tag.Has("Text4"))
+		this->text4 = _tag.Get("Text4").GetString();
+}
+
 Tag TileEntitySign::Serialize() {
 	auto root = TileEntity::Serialize();
 

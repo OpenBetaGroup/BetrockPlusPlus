@@ -12,6 +12,21 @@ static constexpr int PISTON_DX[6] = { 0, 0, 0, 0, -1, 1 };
 static constexpr int PISTON_DY[6] = { -1, 1, 0, 0, 0, 0 };
 static constexpr int PISTON_DZ[6] = { 0, 0, -1, 1, 0, 0 };
 
+void TileEntityPistonMoving::Deserialize(const Tag& _tag) {
+	if (_tag.Has("blockId"))
+		this->storedBlock = BlockType(_tag.Get("blockId").GetInt());
+	if (_tag.Has("blockData"))
+		this->storedMeta = uint8_t(_tag.Get("blockData").GetInt());
+	if (_tag.Has("facing"))
+		this->orientation = _tag.Get("facing").GetInt();
+	if (_tag.Has("progress"))
+		this->lastProgress = this->progress = _tag.Get("progress").GetFloat();
+	if (_tag.Has("extending"))
+		this->extending = _tag.Get("extending").GetByte() != 0;
+	if (this->orientation < 0 || this->orientation > 5)
+		this->orientation = 0;
+}
+
 void TileEntityPistonMoving::Tick(WorldManager& _world) {
 	this->lastProgress = this->progress;
 

@@ -10,15 +10,16 @@
 #include "chunk.h"
 #include "logger.h"
 #include "nbt/nbt.h"
+#include "nbt/nbt_textifier.h"
 #include "platform/memory.h"
-#include "tile_entities/tile_entity.h"
-#include <algorithm>
-#include <cstdint>
+#include "tile_entities/tile_entity_manager.h"
 #include "helpers/endian_convert.h"
-#include <fstream>
 #include "helpers/deflate_pool.h"
 #include <memory>
 #include <string>
+#include <fstream>
+#include <algorithm>
+#include <cstdint>
 
 namespace {
 constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;
@@ -420,7 +421,6 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 	const int8_t* const dataIn = data.data();
 	const int8_t* const blightIn = blockLight.data();
 	const int8_t* const skyIn = skyLight.data();
-	bool any = false;
 	for (int y = 0; y < CHUNK_HEIGHT; y++) {
 		SubChunk& sub = chunk->subChunks[size_t(y >> 4)];
 		const unsigned shift = (y & 1) ? 4u : 0u;
@@ -431,7 +431,6 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 				BlockType thisBlock = BlockType(blocksIn[idx]);
 				if (!Items::IsBlock(thisBlock))
 					continue;
-				any = true;
 				const int li = SubChunk::LocalIndex({ x, y, z });
 				sub.SetBlock(li, thisBlock);
 				sub.SetMeta(li, uint8_t((uint8_t(dataIn[idx / 2]) >> shift) & 0xF));
@@ -442,97 +441,14 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 		if ((y & (SUB_CHUNK_SIZE - 1)) == SUB_CHUNK_SIZE - 1)
 			chunk->TryToCompactSubChunk(y / SUB_CHUNK_SIZE);
 	}
-	if (any)
-		chunk->isModified = true;
 
 	// Load our entities
 	chunk->entityTags = std::move(entities);
 
 	// Load our tile entities
-	for (auto& te : tileEntities) {
-		const auto& id = te.Get("id").GetString();
-		int32_t tx = te.Get("x").GetInt();
-		int32_t ty = te.Get("y").GetInt();
-		int32_t tz = te.Get("z").GetInt();
-		Int3 pos{ tx, ty, tz };
-
-		// load a standard slot-based inventory from an Items list tag
-		auto loadSlots = [&](auto& _slots) {
-			if (!te.Has("Items"))
-				return;
-			for (auto& item : te.Get("Items").GetList()) {
-				int8_t slot = item.Get("Slot").GetByte();
-				int16_t itemId = item.Get("id").GetShort();
-				int8_t count = item.Get("Count").GetByte();
-				int16_t damage = item.Get("Damage").GetShort();
-				if (slot >= 0 && slot < int8_t(_slots.size())) {
-					_slots[size_t(slot)] = ItemStack{ itemId, count, damage };
-				}
-			}
-		};
-
-		//TODO: Add de-serialize method to TileEntity instead of this.. thing
-		if (id == "Chest") {
-			auto ent = std::make_shared<TileEntityChest>(pos);
-			loadSlots(ent->inventory.slots);
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Furnace") {
-			int burnTime = te.Has("BurnTime") ? te.Get("BurnTime").GetShort() : 0;
-			int maxBurnTime = te.Has("MaxBurnTime") ? te.Get("MaxBurnTime").GetShort() : 0;
-			int cookTime = te.Has("CookTime") ? te.Get("CookTime").GetShort() : 0;
-			auto ent = std::make_shared<TileEntityFurnace>(pos, burnTime, maxBurnTime, cookTime);
-			loadSlots(ent->inventory.slots);
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Trap") {
-			auto ent = std::make_shared<TileEntityDispenser>(pos);
-			loadSlots(ent->inventory.slots);
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Sign") {
-			auto ent = std::make_shared<TileEntitySign>(pos);
-			if (te.Has("Text1"))
-				ent->text1 = te.Get("Text1").GetString();
-			if (te.Has("Text2"))
-				ent->text2 = te.Get("Text2").GetString();
-			if (te.Has("Text3"))
-				ent->text3 = te.Get("Text3").GetString();
-			if (te.Has("Text4"))
-				ent->text4 = te.Get("Text4").GetString();
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Music") {
-			auto ent = std::make_shared<TileEntityNoteblock>(pos);
-			if (te.Has("note"))
-				ent->note = te.Get("note").GetByte();
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "RecordPlayer") {
-			auto ent = std::make_shared<TileEntityJukebox>(pos);
-			if (te.Has("Record"))
-				ent->recordItemId = ItemId(te.Get("Record").GetInt());
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "MobSpawner") {
-			auto ent = std::make_shared<TileEntityMobSpawner>(pos);
-			if (te.Has("EntityId"))
-				ent->entityId = te.Get("EntityId").GetString();
-			if (te.Has("Delay"))
-				ent->delay = te.Get("Delay").GetShort();
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Piston") {
-			auto ent = std::make_shared<TileEntityPistonMoving>(pos);
-			if (te.Has("blockId"))
-				ent->storedBlock = BlockType(te.Get("blockId").GetInt());
-			if (te.Has("blockData"))
-				ent->storedMeta = uint8_t(te.Get("blockData").GetInt());
-			if (te.Has("facing"))
-				ent->orientation = te.Get("facing").GetInt();
-			if (te.Has("progress"))
-				ent->lastProgress = ent->progress = te.Get("progress").GetFloat();
-			if (te.Has("extending"))
-				ent->extending = te.Get("extending").GetByte() != 0;
-
-			if (ent->orientation < 0 || ent->orientation > 5)
-				ent->orientation = 0;
-
-			chunk->tileEntities.push_back(std::move(ent));
-		}
+	NBTTextifier text;
+	for (const Tag& te : tileEntities) {
+		chunk->tileEntities.push_back(TileEntityHelper::CreateTileEntityShared(te));
 	}
 
 	// The above stuff marks the chunk as dirty,

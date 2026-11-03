@@ -35,7 +35,22 @@ struct TileEntity {
 
 	virtual void Tick(WorldManager& _world);
 	virtual Tag Serialize();
+	virtual void Deserialize(const Tag& _tag);
 	virtual ~TileEntity() = default;
+
+	void LoadSlots(const Tag& _nbt, auto& _inventory) {
+		if (!_nbt.Has("Items"))
+			return;
+		for (auto& item : _nbt.Get("Items").GetList()) {
+			int8_t slot = item.Get("Slot").GetByte();
+			int16_t itemId = item.Get("id").GetShort();
+			int8_t count = item.Get("Count").GetByte();
+			int16_t damage = item.Get("Damage").GetShort();
+			if (slot >= 0 && slot < int8_t(_inventory.size())) {
+				_inventory[size_t(slot)] = ItemStack{ itemId, count, damage };
+			}
+		}
+	};
 };
 
 static void SerializeInventory(Tag& _root, Inventory& _inventory) {

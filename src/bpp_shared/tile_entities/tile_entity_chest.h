@@ -15,5 +15,6 @@ struct TileEntityChest : TileEntity {
 	TileEntityChest(Int3 _pPosition) : TileEntity(TileType::CHEST, _pPosition) {};
 
 	Tag Serialize() override;
+	void Deserialize(const Tag& _tag) override;
 	void Tick(WorldManager& _world) override;
 };

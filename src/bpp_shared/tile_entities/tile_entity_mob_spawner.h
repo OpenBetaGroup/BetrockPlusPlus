@@ -18,6 +18,7 @@ struct TileEntityMobSpawner : TileEntity {
 	};
 
 	Tag Serialize() override;
+	void Deserialize(const Tag& _tag) override;
 	void Tick(WorldManager& _world) override;
 	bool PlayerInRange(WorldManager& _world);
 };
