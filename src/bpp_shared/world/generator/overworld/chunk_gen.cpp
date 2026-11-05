@@ -126,42 +126,43 @@ void OverworldGenerator::ReplaceBlocksForBiome(Chunk& _chunk) {
 					continue;
 				}
 
-				// If we counter stone, start replacing it
-				if (currentBlock == BLOCK_STONE) {
-					if (stoneDepth == -1) {
-						if (stoneActive <= 0) {
+				// If we don't encounter stone, skip it
+				if (currentBlock != BLOCK_STONE)
+					continue;
+				// If we encounter stone, start replacing it
+				if (stoneDepth == -1) {
+					if (stoneActive <= 0) {
+						topBlock = BLOCK_AIR;
+						fillerBlock = BLOCK_STONE;
+					} else if (y >= WATER_LEVEL - 4 && y <= WATER_LEVEL + 1) {
+						// If we're close to the water level, apply gravel and sand
+						topBlock = GetTopBlock(biome);
+						fillerBlock = GetFillerBlock(biome);
+
+						if (gravelActive) {
 							topBlock = BLOCK_AIR;
-							fillerBlock = BLOCK_STONE;
-						} else if (y >= WATER_LEVEL - 4 && y <= WATER_LEVEL + 1) {
-							// If we're close to the water level, apply gravel and sand
-							topBlock = GetTopBlock(biome);
-							fillerBlock = GetFillerBlock(biome);
-
-							if (gravelActive) {
-								topBlock = BLOCK_AIR;
-								fillerBlock = BLOCK_GRAVEL;
-							}
-							if (sandActive) {
-								topBlock = BLOCK_SAND;
-								fillerBlock = BLOCK_SAND;
-							}
+							fillerBlock = BLOCK_GRAVEL;
 						}
-
-						// Add water if we're below water level
-						if (y < WATER_LEVEL && topBlock == BLOCK_AIR) {
-							topBlock = BLOCK_WATER_STILL;
+						if (sandActive) {
+							topBlock = BLOCK_SAND;
+							fillerBlock = BLOCK_SAND;
 						}
+					}
 
-						stoneDepth = stoneActive;
-						// Place filler block if we're underwater
-						_chunk.SetBlockRaw(bpos, (y >= WATER_LEVEL - 1) ? topBlock : fillerBlock);
-					} else if (stoneDepth > 0) {
-						--stoneDepth;
-						_chunk.SetBlockRaw(bpos, fillerBlock);
-						if (stoneDepth == 0 && fillerBlock == BLOCK_SAND) {
-							stoneDepth = rand.NextInt(4);
-							fillerBlock = BLOCK_SANDSTONE;
-						}
+					// Add water if we're below water level
+					if (y < WATER_LEVEL && topBlock == BLOCK_AIR) {
+						topBlock = BLOCK_WATER_STILL;
+					}
+
+					stoneDepth = stoneActive;
+					// Place filler block if we're underwater
+					_chunk.SetBlockRaw(bpos, (y >= WATER_LEVEL - 1) ? topBlock : fillerBlock);
+				} else if (stoneDepth > 0) {
+					--stoneDepth;
+					_chunk.SetBlockRaw(bpos, fillerBlock);
+					if (stoneDepth == 0 && fillerBlock == BLOCK_SAND) {
+						stoneDepth = rand.NextInt(4);
+						fillerBlock = BLOCK_SANDSTONE;
 					}
 				}
 			}

@@ -728,12 +728,15 @@ struct DespawnEntity : BasePacket {
 // Unused, Base Packet for entity movement packets
 struct EntityMovement : BasePacket {
 	EntityMovement() : BasePacket{ PacketId::EntityMovement } {}
+	EntityId entityId;
 
 	void Serialize(NetworkStream& _stream) const override {
 		_stream.Write(id);
+		_stream.Write(entityId);
 	}
 
-	void Deserialize(NetworkStream& /*_stream*/) override {}
+	void Deserialize(NetworkStream& _stream) override {
+		entityId = _stream.Read<EntityId>();}
 };
 
 // Used for setting an entitys relative position
