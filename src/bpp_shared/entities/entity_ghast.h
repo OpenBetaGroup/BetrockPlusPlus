@@ -41,7 +41,7 @@ struct GhastEntity : public HostileEntity {
 	void UpdateFallState(float /*_movedY*/) override {
 		fallDistance = 0.0f;
 	}
-	bool OnLadder() override {
+	bool IsOnLadder() override {
 		return false;
 	}
 

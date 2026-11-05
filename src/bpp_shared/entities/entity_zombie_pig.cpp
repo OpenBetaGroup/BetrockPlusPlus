@@ -8,7 +8,7 @@
 #include "entity_zombie_pig.h"
 #include "entities.h"
 
-void ZombieEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
+void ZombiePigEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// Drop 0-2 cooked porkchops
 	auto targetItem = Items::Id::PORKCHOP_COOKED;
 	int itemCount = this->rand.NextInt(3);
