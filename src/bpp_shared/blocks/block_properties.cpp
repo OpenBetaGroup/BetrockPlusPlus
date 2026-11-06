@@ -839,7 +839,6 @@ void RegisterBlockProperties() {
 		.hardness = 0.4f,
 		.lightOpacity = 0,
 		.stepSound = StepSound::Wood,
-		.isCollidable = false,
 		.isOpaqueCube = false,
 		.isNormalCube = false,
 	};
