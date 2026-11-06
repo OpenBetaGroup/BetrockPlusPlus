@@ -60,6 +60,7 @@ private:
 	int32_t trunkThickness = 4;
 	// branchStartEnd is always at most 15 entries large
 	std::array<BranchPos, 15> branchStartEnd;
+	size_t branchNodeCount = 0;
 
 	bool ValidPlacement();
 	void GenerateBranchPositions();

@@ -105,6 +105,7 @@ bool GenerateTree(WorldAccess& _world, Java::Random& _rand, Int3 _pos, bool _bir
  */
 void BigTree::Configure(double _pTreeHeight, double _pBranchLength, double _pTrunkShape) {
 	branchStartEnd = {};
+	branchNodeCount = 0;
 	totalHeight = 0;
 	// Default Java
 	maximumTreeHeight = Java::DoubleToInt32(_pTreeHeight * 12.0);
@@ -219,6 +220,7 @@ void BigTree::GenerateBranchPositions() {
 		}
 
 		std::copy(candidateBranches.begin(), candidateBranches.begin() + branchCount, branchStartEnd.begin());
+		branchNodeCount = size_t(branchCount);
 		return;
 	}
 }
@@ -365,8 +367,7 @@ void BigTree::DrawBlockLine(Int3 _startPos, Int3 _endPos, BlockType _blockType) 
  * 
  */
 void BigTree::GenerateLeafClusters() {
-	size_t maxBranchNodes = branchStartEnd.size();
-	for (size_t i = 0; i < maxBranchNodes; ++i) {
+	for (size_t i = 0; i < branchNodeCount; ++i) {
 		Int3 pos = branchStartEnd[i].pos;
 		PlaceLeavesAroundPoint(pos);
 	}
@@ -395,7 +396,7 @@ void BigTree::GenerateTrunk() {
 
 void BigTree::GenerateBranches() {
 	Int3 base = basePos;
-	for (size_t branchIndex = 0; branchIndex < branchStartEnd.size(); ++branchIndex) {
+	for (size_t branchIndex = 0; branchIndex < branchNodeCount; ++branchIndex) {
 		Int3 branchPos = branchStartEnd[branchIndex].pos;
 		int32_t trunkY = branchStartEnd[branchIndex].trunkY;
 		base.y = trunkY;
