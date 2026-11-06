@@ -8,6 +8,16 @@
 #include "entity_zombie_pig.h"
 #include "entities.h"
 
+void ZombiePigEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
+	// Drop 0-2 cooked porkchops
+	auto targetItem = Items::Id::PORKCHOP_COOKED;
+	int itemCount = this->rand.NextInt(3);
+
+	for (int i = 0; i < itemCount; i++) {
+		DropItemAtEntity(targetItem, 1);
+	}
+}
+
 bool ZombiePigEntity::CanSpawnAt() {
 	return world && world->IsAABBClear(collider) && world->GetCollidingBoundingBoxes(collider, this).empty() &&
 	       !world->IsLiquidInAabb(collider);

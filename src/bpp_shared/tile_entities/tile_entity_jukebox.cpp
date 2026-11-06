@@ -9,7 +9,7 @@
 
 #include "tile_entity_jukebox.h"
 
-void TileEntityJukebox::Deserialize(const Tag& _tag) {
+void TileEntityJukebox::Deserialize(const Tag& /*_tag*/) {
 	// no-op
 	return;
 }

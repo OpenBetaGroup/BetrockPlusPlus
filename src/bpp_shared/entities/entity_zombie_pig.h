@@ -18,6 +18,7 @@ struct ZombiePigEntity : public ZombieEntity {
 
 	void BecomeAngryAt(Entity* _entity);
 
+	void OnDeath(Entity* _killer, DamageType _type) override;
 	bool CanSpawnAt() override;
 	void Tick() override;
 	bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) override;
