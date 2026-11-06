@@ -9,9 +9,9 @@
 #include "tile_entity_furnace.h"
 
 void TileEntityFurnace::Deserialize(const Tag& _tag) {
-	int burnTime = _tag.Has("BurnTime") ? _tag.Get("BurnTime").GetShort() : 0;
-	int maxBurnTime = _tag.Has("MaxBurnTime") ? _tag.Get("MaxBurnTime").GetShort() : 0;
-	int cookTime = _tag.Has("CookTime") ? _tag.Get("CookTime").GetShort() : 0;
+	burnTime = _tag.Has("BurnTime") ? _tag.Get("BurnTime").GetShort() : 0;
+	maxBurnTime = _tag.Has("MaxBurnTime") ? _tag.Get("MaxBurnTime").GetShort() : 0;
+	cookTime = _tag.Has("CookTime") ? _tag.Get("CookTime").GetShort() : 0;
 	LoadSlots(_tag, this->inventory.slots);
 }
 

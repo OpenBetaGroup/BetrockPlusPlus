@@ -446,7 +446,6 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 	chunk->entityTags = std::move(entities);
 
 	// Load our tile entities
-	NBTTextifier text;
 	for (const Tag& te : tileEntities) {
 		chunk->tileEntities.push_back(TileEntityHelper::CreateTileEntityShared(te));
 	}
