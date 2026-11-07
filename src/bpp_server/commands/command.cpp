@@ -14,7 +14,8 @@
 #include "../entities/entity_mp_player.h"
 #include <algorithm>
 #include "nbt/nbt_textifier.h"
-#include <charconv>
+#include <cerrno>
+#include <cstdlib>
 #include <cmath>
 #include <limits>
 #include <string>
@@ -182,9 +183,16 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 			const auto invalid = [&] { return std::unexpected("Invalid selector distance: " + std::string(value)); };
 
 			auto bound = [](std::string_view text) -> std::optional<double> {
-				double number;
-				auto [parsedEnd, error] = std::from_chars(text.data(), text.data() + text.size(), number);
-				if (error != std::errc{} || parsedEnd != text.data() + text.size() || !std::isfinite(number) || number < 0)
+				if (text.empty() || text.front() == '+' ||
+					text.find_first_not_of("0123456789.eE+-") != std::string_view::npos)
+					return std::nullopt;
+
+				const std::string buffer(text); // strtod needs a null-terminated string
+				char* parsedEnd = nullptr;
+				errno = 0;
+				const double number = std::strtod(buffer.c_str(), &parsedEnd);
+				if (parsedEnd != buffer.c_str() + buffer.size() || errno == ERANGE ||
+					!std::isfinite(number) || number < 0)
 					return std::nullopt;
 				return number;
 			};
