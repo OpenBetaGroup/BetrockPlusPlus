@@ -37,8 +37,8 @@ std::string GiveItem(const strategos::CmdNode& _cmd, void* _userData) {
 		return std::to_string(item.id) + " is not a valid item id!";
 
 	SendFeedback(ctx, "§eGave " + IdToLabel(item.id) + " (" + std::to_string(item.id) + ":" +
-	                           std::to_string(item.data) + ") x" + std::to_string(item.count) + " to " +
-	                           ctx.session->username);
+							   std::to_string(item.data) + ") x" + std::to_string(item.count) + " to " +
+							   ctx.session->username);
 
 	if (ctx.session->inventory.PickupItem(item))
 		PacketUtilities::SendInventory(*ctx.session, ctx.session->openWindowId, ctx.session->inventory);
@@ -84,16 +84,17 @@ std::string ClearOtherInventory(const strategos::CmdNode& _cmd, void* _userData)
 
 void RegisterGive(strategos::BrigadierContext& _dispatcher) {
 	_dispatcher.add_command(strategos::Node::literal("give")
-	                            .describe("Give yourself a block or item")
-	                            .op()
-	                            .then(strategos::Node::string("item").executes(GiveItem).then(
-	                                strategos::Node::integer("amount").executes(GiveItem))));
+								.describe("Give yourself a block or item")
+								.op()
+								.then(strategos::Node::string("item").executes(GiveItem).then(
+									strategos::Node::integer("amount").executes(GiveItem))));
 	_dispatcher.add_command(strategos::Node::literal("clear")
-	                            .describe("Clears your or another player's inventory")
-	                            .executes(ClearOwnInventory)
-	                            .then(strategos::Node::string("player")
-	                                      .describe("Target inventory to clear")
-	                                      .op()
-	                                      .suggests(strategos::SuggestionSource::Players)
-	                                      .executes(ClearOtherInventory)));
+								.describe("Clears your or another player's inventory")
+								.op()
+								.executes(ClearOwnInventory)
+								.then(strategos::Node::string("player")
+										  .describe("Target inventory to clear")
+										  .op()
+										  .suggests(strategos::SuggestionSource::Players)
+										  .executes(ClearOtherInventory)));
 }
