@@ -286,20 +286,13 @@ public:
 				++base;
 		}
 		const auto command = input.substr(base);
-		const bool trailingSpace = !command.empty() && command.back() == ' ';
-		std::vector<std::string_view> tokens;
+		auto tokens = tokenize(command);
+		const bool trailingSpace = !command.empty() && command.back() == ' ' &&
+		                           (tokens.empty() || tokens.back().data() + tokens.back().size() != command.data() + command.size());
 		std::vector<size_t> offsets;
-		for (size_t pos = 0; pos < command.size();) {
-			while (pos < command.size() && command[pos] == ' ')
-				++pos;
-			if (pos == command.size())
-				break;
-			const size_t start = pos;
-			while (pos < command.size() && command[pos] != ' ')
-				++pos;
-			tokens.push_back(command.substr(start, pos - start));
-			offsets.push_back(base + start);
-		}
+		offsets.reserve(tokens.size());
+		for (auto token : tokens)
+			offsets.push_back(base + static_cast<size_t>(token.data() - command.data()));
 		std::string_view prefix;
 		size_t replaceStart = input.size();
 		size_t completed = tokens.size();
@@ -499,13 +492,39 @@ private:
 
 	[[nodiscard]] static auto tokenize(std::string_view input) -> std::vector<std::string_view> {
 		std::vector<std::string_view> tokens;
-		auto parts = input | std::views::split(' ');
+		for (size_t pos = 0; pos < input.size();) {
+			while (pos < input.size() && input[pos] == ' ') ++pos;
+			if (pos == input.size()) break;
 
-		for (auto part : parts) {
-			std::string_view token(part.begin(), part.end());
-			if (!token.empty()) {
-				tokens.push_back(token);
+			const size_t start = pos;
+			const bool selector = input[pos] == '@';
+			std::vector<char> closers;
+			char quote = 0;
+			bool escaped = false;
+			bool malformed = false;
+
+			for (; pos < input.size(); ++pos) {
+				const char c = input[pos];
+				if (quote) {
+					if (escaped) escaped = false;
+					else if (c == '\\') escaped = true;
+					else if (c == quote) quote = 0;
+					continue;
+				}
+
+				if (!closers.empty()) {
+					if (c == '"' || c == '\'') quote = c;
+					else if (c == '[') closers.push_back(']');
+					else if (c == '{') closers.push_back('}');
+					else if (c == ']' || c == '}') {
+						if (c != closers.back()) malformed = true;
+						else closers.pop_back();
+					}
+				} else if (selector && c == '[') closers.push_back(']');
+
+				else if (c == ' ' && !malformed) break;
 			}
+			tokens.push_back(input.substr(start, pos - start));
 		}
 
 		return tokens;

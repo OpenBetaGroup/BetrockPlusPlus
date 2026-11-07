@@ -14,11 +14,13 @@
 #include <string>
 #include <string_view>
 #include <vector>
+struct Entity;
 class Server;
 class CommandManager;
 
 struct CommandContext {
 	PlayerSession* session = nullptr;
+	Entity* executionEntity = nullptr;
 	WorldManager* world = nullptr;
 	Server* server = nullptr;
 	std::function<void(PlayerSession&)> transferDimension;
