@@ -61,8 +61,8 @@ void PlayerConnStateManager::HandleHandshake(PlayerSession& _session, Server& _s
 	// NOTE: Ornite hyjacks the PreLogin packet to report which mods it has,
 	// so we shouldn't use the PreLogin username to identification.
 	// This works on Vanilla Beta 1.7.3, so we should replicate this.
-	if (incoming.username.starts_with("^@"))
-		Logger::Info << "Modified client! Provided mods: " << incoming.username << '\n';
+	if (incoming.usernameServerId.starts_with("^@"))
+		Logger::Info << "Modified client! Provided mods: " << incoming.usernameServerId << '\n';
 
 	// Authentication
 	_session.serverId = "-";
@@ -72,7 +72,7 @@ void PlayerConnStateManager::HandleHandshake(PlayerSession& _session, Server& _s
 #endif
 
 	Packet::PreLogin response;
-	response.serverId = _session.serverId;
+	response.usernameServerId = _session.serverId;
 	response.Serialize(_session.stream);
 
 	_session.connState = ConnectionState::LoggingIn;
@@ -101,8 +101,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	_session.username = incoming.username;
 
 	// User is banned, reject
-	if (std::find(_server.bannedUsernames.begin(), _server.bannedUsernames.end(), incoming.username) !=
-	    _server.bannedUsernames.end()) {
+	if (ContainsUsername(_server.bannedUsernames, incoming.username)) {
 		DisconnectPlayer(_session, "You are banned from this server!", _server, false);
 		return;
 	}
@@ -115,8 +114,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	}
 
 	// User isn't whitelisted, reject
-	if (_server.useWhitelist && std::find(_server.whitelistedUsernames.begin(), _server.whitelistedUsernames.end(),
-	                                      incoming.username) == _server.whitelistedUsernames.end()) {
+	if (_server.useWhitelist && !ContainsUsername(_server.whitelistedUsernames, incoming.username)) {
 		DisconnectPlayer(_session, "You're not whitelisted!", _server, false);
 		return;
 	}
@@ -128,7 +126,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	// because the session with this username already exists when you're connecting to the server
 	auto it = std::find_if(players.begin(), players.end(),
 	                       [&incoming, &_session](const std::shared_ptr<PlayerSession>& _player) {
-		                       return _player && _player.get() != &_session && _player->username == incoming.username;
+		                       return _player && _player.get() != &_session && UsernameEquals(_player->username, incoming.username);
 	                       });
 
 	if (it != players.end()) {
@@ -178,7 +176,7 @@ void PlayerConnStateManager::HandleVerifyingUsername(PlayerSession& _session, Se
 void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _server) {
 	// Initialize our entity first as the player session depends on it
 	if (!_session.entity)
-		_session.entity = std::make_shared<EntityMPPlayer>();
+		_session.entity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
 
 	// Load player data before building the Login response so we know which dimension they're in
 	auto playerNbt = _server.gameRuntime.saveManager.GetPlayerNbt(
@@ -199,7 +197,7 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	}
 
 	Packet::Login response;
-	response.entityId = _session.entity->id;
+	response.entityIdProtocolVersion = _session.entity->id;
 	response.username = _session.username;
 	response.worldSeed = _server.gameRuntime.world.seed;
 	response.dimension = Dimension(_session.dimension);
@@ -210,7 +208,7 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	spawn.Serialize(_session.stream);
 
 	Packet::SetHealth health;
-	health.health = _session.entity->health;
+	health.health = static_cast<int16_t>(_session.entity->health);
 	health.Serialize(_session.stream);
 
 	Packet::SetTime time;
@@ -254,9 +252,15 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 
 void PlayerConnStateManager::DisconnectPlayer(PlayerSession& _session, const std::string& _reason, Server& _server,
                                               bool _doSave) {
+	// Force close inventory
+	if (_session.entity)
+		_session.inventoryInteraction.OnInteractionClosed(*_session.entity);
+
 	// Force close our window
-	if (_session.activeInteraction)
+	if (_session.activeInteraction && _session.entity)
 		_session.activeInteraction->OnInteractionClosed(*_session.entity);
+
+	// Save our player data
 	if (_doSave) {
 		if (_session.entity)
 			_session.entity->UnmountEntity();
@@ -318,7 +322,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 	int spawnChunkX = int(std::floor(_session.position.pos.x)) >> 4;
 	int spawnChunkZ = int(std::floor(_session.position.pos.z)) >> 4;
 
-	int radius = CrossPlatform::Math::Min(3, sessionWorld.GetViewRadius());
+	int radius = std::min<int>(3, sessionWorld.GetViewRadius());
 
 	int totalSpawnChunks = ((radius * 2) + 1) * ((radius * 2) + 1);
 	int loadedChunks = 0;
@@ -331,7 +335,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 		}
 	}
 
-	int percent = std::ceil((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f);
+	int percent = static_cast<int>(std::ceil((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f));
 
 	if (loadedChunks % (totalSpawnChunks / 4) == 0)
 		Logger::Info << "Spawn chunks: " << percent << "%\n";

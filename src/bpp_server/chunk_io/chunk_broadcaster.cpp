@@ -67,9 +67,7 @@ void ChunkBroadcaster::BroadcastBlockChanges(Server& _server,
 			const PendingBlock& pb = blockChanges[0];
 			Packet::SetBlock sb;
 			sb.block = { pb.block.type, pb.block.data };
-			sb.position = { static_cast<int32_t>(pb.blockPos.x + (chunk.x * CHUNK_WIDTH)),
-				            static_cast<int8_t>(pb.blockPos.y),
-				            static_cast<int32_t>(pb.blockPos.z + (chunk.z * CHUNK_WIDTH)) };
+			sb.position = { pb.blockPos.x + (chunk.x * CHUNK_WIDTH), static_cast<int8_t>(pb.blockPos.y), pb.blockPos.z + (chunk.z * CHUNK_WIDTH) };
 			// Serialise into a temporary buffer, then send to all sessions.
 			NetworkStream tmpStream(-1);
 			sb.Serialize(tmpStream);

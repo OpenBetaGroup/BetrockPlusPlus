@@ -121,7 +121,7 @@ void HostileEntity::UpdateAIState() {
 		}
 
 		if (currentTarget)
-			FaceEntity(dynamic_cast<MobileEntity&>(*currentTarget), 30.0f, 30.0f);
+			FaceEntity(static_cast<MobileEntity&>(*currentTarget), 30.0f, 30.0f);
 	} else {
 		UpdateState(); // Idle if we dont have a path
 	}

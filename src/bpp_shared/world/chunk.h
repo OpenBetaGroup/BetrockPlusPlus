@@ -10,7 +10,6 @@
 #include "blocks/block_properties.h"
 #include "constants.h"
 #include "enums/biomes.h"
-#include "helpers/cross_platform.h"
 #include "helpers/math_helper.h"
 #include "helpers/packed_array.h"
 #include "nbt/nbt.h"
@@ -202,9 +201,9 @@ struct Chunk {
 		return subChunks[size_t(_pos.y >> 4)].GetSkyLight(SubChunk::LocalIndex(_pos));
 	}
 	inline int GetBlockLightValue(Int3 _pos, int _skySubtracted) const {
-		int sky = CrossPlatform::Math::Max(0, int(GetSkyLight(_pos)) - _skySubtracted);
+		int sky = std::max<int>(0, int(GetSkyLight(_pos)) - _skySubtracted);
 		int block = int(GetBlockLight(_pos));
-		return CrossPlatform::Math::Min(15, CrossPlatform::Math::Max(sky, block));
+		return std::min<int>(15, std::max<int>(sky, block));
 	}
 	bool HasBlock(BlockType _type) const {
 		for (const auto& sc : subChunks) {

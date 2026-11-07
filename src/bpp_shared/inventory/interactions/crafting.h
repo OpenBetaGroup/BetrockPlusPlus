@@ -28,6 +28,7 @@ public:
 
 protected:
 	const UInt8_2 gridSize;
+	std::array<ItemKey, 9> lastRecipe;
 
 	void HandleCrafting(int _slot);
 	void FinishCraft();

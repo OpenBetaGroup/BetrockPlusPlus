@@ -61,11 +61,6 @@ struct EntityTracker {
 
 	std::unordered_map<EntityId, TrackedEntry> trackedEntities;
 	std::unordered_set<EntityId> playerIds;
-	std::vector<EntityType> mobileEntities = { EntityType::CHICKEN,       EntityType::COW,      EntityType::PIG,
-		                                       EntityType::SHEEP,         EntityType::WOLF,     EntityType::ZOMBIE,
-		                                       EntityType::ZOMBIE_PIGMAN, EntityType::SKELETON, EntityType::CREEPER,
-		                                       EntityType::SPIDER,        EntityType::GHAST,    EntityType::SLIME,
-		                                       EntityType::GIANT_ZOMBIE,  EntityType::PLAYER,   EntityType::SQUID };
 
 	TickTime forceTeleportTicks = 400; // 20 seconds
 	Java::Random rand;
@@ -103,11 +98,12 @@ struct EntityTracker {
 	void SendPacketToAllPlayers(Packet::BasePacket& _pkt);
 	TrackedEntry* GetTrackerForEntityId(EntityId _id);
 	void Update(TrackedEntry& _trackedEntry);
-	void UpdateDamageState(TrackedEntry& _trackedEntry);
+	void FlushEventQueue(Entity& _entity);
 	void UpdateMetadataState(TrackedEntry& _trackedEntry);
 	void SendMetadataState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession);
 	void UpdateEquipmentState(TrackedEntry& _trackedEntry);
 	void SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession);
+	void SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType, std::shared_ptr<PlayerSession> _session);
 
 	// With my strict goal of keeping strict separation we cannot put this as a virtual in the actual entity class itself
 	TrackingProfile GetTrackingProfile(Entity& _entity) {
@@ -123,7 +119,7 @@ struct EntityTracker {
 		case EntityType::ARROW:
 			return { 64, 20, /*SendVelocity=*/false };
 		case EntityType::FIREBALL:
-			return { 64, 10, /*SendVelocity=*/true };
+			return { 64, 10, /*SendVelocity=*/false };
 		case EntityType::THROWN_SNOWBALL:
 		case EntityType::THROWN_EGG:
 			return { 64, 10, /*SendVelocity=*/true };

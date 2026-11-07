@@ -36,6 +36,7 @@ public:
 	};
 
 	Tag Serialize() override;
+	void Deserialize(const Tag& _tag) override;
 	void Tick(WorldManager& _world) override;
 
 	int GetCookTime() const;

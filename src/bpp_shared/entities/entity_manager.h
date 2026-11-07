@@ -25,10 +25,13 @@ struct EntityContainer {
 };
 
 // For ticking all entities and keeping track of them in the world
+struct PlayerEntity;
 struct EntityManager {
+	const int REMOVAL_DEFAULT_SIZE = 128;
 	EntityId* nextEntityId = nullptr; // Vanilla seems to reserve 0 and 1
 	std::vector<std::shared_ptr<Entity>> entities;
 	std::vector<std::weak_ptr<Entity>> players;
+	std::vector<EntityId> entitiesToRemove;
 	std::unordered_map<Int2, EntityContainer> entityContainers;
 	WorldManager* world = nullptr; // we need to bind a pointer to this later
 
@@ -50,6 +53,10 @@ struct EntityManager {
 	void AddEntity(std::shared_ptr<Entity> _entity, EntityId _forceEntityId = -1);
 	void RemoveEntity(EntityId _id);
 	void CreateEntityFromNbt(Tag& _nbt);
+
+	EntityManager() {
+		entitiesToRemove.reserve(REMOVAL_DEFAULT_SIZE);
+	}
 
 private:
 	void TickEntityAndPassenger(const std::shared_ptr<Entity>& _entity, TickProfiler* _profiler);
@@ -86,10 +93,10 @@ public:
 			               MathHelper::FloorDouble(_position.y / 16.0) };
 
 		// Entity collisions below and above the world are just gonna be inefficient
-		bucketPos.z = std::max(0, bucketPos.z);
-		bucketPos.z = std::min(9, bucketPos.z);
+		bucketPos.z = std::clamp<int32_t>(bucketPos.z, 0, 9);
 		return bucketPos;
 	}
+
 	static bool IsContainerEmpty(const EntityContainer& _container) {
 		for (const auto& bucket : _container.buckets) {
 			if (!bucket.entities.empty())
@@ -115,6 +122,7 @@ public:
 	void EraseContainer(Int2 _cpos) {
 		entityContainers.erase(_cpos);
 	}
+
 	std::shared_ptr<Entity> GetEntityByIdShared(EntityId _id) {
 		for (auto& entity : entities) {
 			if (entity->id == _id)
@@ -122,11 +130,13 @@ public:
 		}
 		return nullptr;
 	}
+
 	EntityId GetNextEntityId() {
 		if (!nextEntityId)
 			return -1;
 		return (*nextEntityId)++;
 	}
+
 	int CountEntitiesOfType(EntityType _type) {
 		int count = 0;
 		for (auto& entity : entities) {
@@ -135,6 +145,7 @@ public:
 		}
 		return count;
 	}
+
 	template <typename T>
 	std::shared_ptr<Entity> GetClosestPlayerWithin(T _pos, int _distance) {
 		double minDist = 0;
@@ -155,5 +166,7 @@ public:
 		return closestPlayer;
 	}
 
+	std::shared_ptr<PlayerEntity> GetPlayerWithName(std::string _name);
 	std::vector<Entity*> GetLivingEntitiesWithinAabb(const AABB& _box);
+	void AlertWolves(PlayerEntity& _player, Entity& _target, bool _ignoreSitting = false);
 };

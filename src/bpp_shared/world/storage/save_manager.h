@@ -6,13 +6,15 @@
 */
 #pragma once
 #include "helpers/file_handle.h"
+#include "helpers/deflate_pool.h"
 #include "java_math.h"
 #include "nbt/nbt.h"
+#include "platform/fs_compat.h"
+#include "platform/platform_caps.h"
 #include "utilities.h"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <libdeflate.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -20,7 +22,9 @@
 #include <winsock2.h>
 #else
 #include <fcntl.h>
+#ifdef BPP_HAS_FLOCK
 #include <sys/file.h>
+#endif
 #include <unistd.h>
 #endif
 
@@ -64,11 +68,13 @@ struct SessionLock {
 		fd = open(_path.c_str(), O_RDWR | O_CREAT, 0644);
 		if (fd < 0)
 			return false;
+#ifdef BPP_HAS_FLOCK
 		if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
 			close(fd);
 			fd = -1;
 			return false;
 		}
+#endif // Consoles have no flock(); there's only ever one process there
 #endif
 		WriteTimestamp();
 		return true;
@@ -82,7 +88,9 @@ struct SessionLock {
 		}
 #else
 		if (fd >= 0) {
+#ifdef BPP_HAS_FLOCK
 			flock(fd, LOCK_UN);
+#endif
 			close(fd);
 			fd = -1;
 		}
@@ -125,7 +133,8 @@ struct SaveManager {
 				Logger::Warning << "level.dat_old couldn't be found!\n";
 				return LevelInitFailureReason::LEVELDAT_FAILURE;
 			}
-			std::filesystem::copy_file(saveDirectory + "/level.dat_old", saveDirectory + "/level.dat");
+			if (!Platform::FS::CopyFileOverwrite(saveDirectory + "/level.dat_old", saveDirectory + "/level.dat"))
+				return LevelInitFailureReason::LEVELDAT_FAILURE;
 		}
 		worldFile = std::make_unique<FileHandle>(saveDirectory + "/level.dat");
 		if (!worldFile->Get().is_open())
@@ -163,20 +172,12 @@ struct SaveManager {
 		stream.read(reinterpret_cast<char*>(compressed.data()), fileSize);
 
 		// Decompress gzip
-		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
+		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed);
+		if (!raw)
 			return false;
-		std::vector<uint8_t> raw(1024 * 1024); // 1MB should be plenty for level.dat
-		size_t actualSize = 0;
-		libdeflate_result result = libdeflate_gzip_decompress(decompressor, compressed.data(), compressed.size(),
-		                                                      raw.data(), raw.size(), &actualSize);
-		libdeflate_free_decompressor(decompressor);
-		if (result != LIBDEFLATE_SUCCESS)
-			return false;
-		raw.resize(actualSize);
 
 		// Parse NBT
-		NBTParser parser(raw.data(), raw.size());
+		NBTParser parser(raw->data(), raw->size());
 		Tag data = parser.root.Get("Data");
 
 		auto CheckAndAssignDefault = [&](std::string tagName, TagType type, auto defaultValue) {
@@ -235,9 +236,10 @@ struct SaveManager {
 
 	bool SaveLevelFile(const LevelData& _levelData) {
 		// Back up existing level.dat if present
-		if (std::filesystem::exists(saveDirectory + "/level.dat")) {
-			std::filesystem::copy_file(saveDirectory + "/level.dat", saveDirectory + "/level.dat_old",
-			                           std::filesystem::copy_options::overwrite_existing);
+		if (!levelBackupDone && std::filesystem::exists(saveDirectory + "/level.dat")) {
+			if (!Platform::FS::CopyFileOverwrite(saveDirectory + "/level.dat", saveDirectory + "/level.dat_old"))
+				Logger::Warning << "Couldn't back up level.dat to level.dat_old.\n";
+			levelBackupDone = true;
 		}
 
 		Tag root;
@@ -318,28 +320,36 @@ struct SaveManager {
 
 		std::vector<uint8_t> raw;
 		NBTwriter writer(raw, root);
+		std::vector<uint8_t> compressed = Deflate::Compress(Deflate::Format::Gzip, raw);
+		if (compressed.size() <= 0)
+			return false;
 
-		libdeflate_compressor* compressor = libdeflate_alloc_compressor(6);
-		if (!compressor)
-			return false;
-		size_t maxSize = libdeflate_gzip_compress_bound(compressor, raw.size());
-		std::vector<uint8_t> compressed(maxSize);
-		size_t actualSize = libdeflate_gzip_compress(compressor, raw.data(), raw.size(), compressed.data(), maxSize);
-		libdeflate_free_compressor(compressor);
-		if (actualSize == 0)
-			return false;
-		compressed.resize(actualSize);
+		// Write to a temp file and rename it into place
+		const std::string finalPath = saveDirectory + "/level.dat";
+		const std::string tmpPath = finalPath + ".tmp";
+		{
+			std::ofstream file(tmpPath, std::ios::binary | std::ios::trunc);
+			if (!file.is_open())
+				return false;
+			file.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
+			file.flush();
+			if (!file.good())
+				return false;
+		}
 
-		std::ofstream file(saveDirectory + "/level.dat", std::ios::binary);
-		if (!file.is_open())
-			return false;
-		file.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
-		if (!file.good())
-			return false;
+		// Release our handle first, an open file can't be replaced on Windows
+		worldFile.reset();
+		const bool replaced = Platform::FS::ReplaceFile(tmpPath, finalPath);
+		if (!replaced)
+			Logger::Error << "Failed to move " << tmpPath << " into place.\n";
 
 		// Reopen as FileHandle for future use
-		worldFile = std::make_unique<FileHandle>(saveDirectory + "/level.dat");
-		return true;
+		try {
+			worldFile = std::make_unique<FileHandle>(finalPath);
+		} catch (const std::exception& e) {
+			Logger::Error << "Couldn't reopen level.dat: " << e.what() << "\n";
+		}
+		return replaced;
 	}
 
 	static int64_t SeedFromString(const std::string& _input) {
@@ -371,21 +381,10 @@ struct SaveManager {
 			return GetNewPlayerNbt();
 
 		std::vector<uint8_t> compressed((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-		if (!decompressor)
+		auto raw = Deflate::Decompress(Deflate::Format::Gzip, compressed);
+		if (!raw)
 			return GetNewPlayerNbt();
-
-		std::vector<uint8_t> raw(1024 * 1024);
-		size_t actualSize = 0;
-		libdeflate_result result = libdeflate_gzip_decompress(decompressor, compressed.data(), compressed.size(),
-		                                                      raw.data(), raw.size(), &actualSize);
-		libdeflate_free_decompressor(decompressor);
-		if (result != LIBDEFLATE_SUCCESS)
-			return GetNewPlayerNbt();
-
-		raw.resize(actualSize);
-		NBTParser parser(raw.data(), raw.size());
+		NBTParser parser(raw->data(), raw->size());
 		return parser.root;
 	}
 
@@ -518,17 +517,9 @@ struct SaveManager {
 			}
 			std::vector<uint8_t> raw;
 			NBTwriter writer(raw, _playerData);
-
-			libdeflate_compressor* compressor = libdeflate_alloc_compressor(6);
-			if (!compressor)
+			auto compressed = Deflate::Compress(Deflate::Format::Gzip, raw);
+			if (compressed.size() <= 0)
 				return false;
-			size_t maxSize = libdeflate_gzip_compress_bound(compressor, raw.size());
-			std::vector<uint8_t> compressed(maxSize);
-			size_t actualSize = libdeflate_gzip_compress(compressor, raw.data(), raw.size(), compressed.data(), maxSize);
-			libdeflate_free_compressor(compressor);
-			if (actualSize == 0)
-				return false;
-			compressed.resize(actualSize);
 
 			std::string finalPath = saveDirectory + "/players/" + _playerName + ".dat";
 			std::string tmpPath = finalPath + ".tmp";
@@ -542,7 +533,10 @@ struct SaveManager {
 				return false;
 			file.close();
 
-			std::filesystem::rename(tmpPath, finalPath);
+			if (!Platform::FS::ReplaceFile(tmpPath, finalPath)) {
+				Logger::Error << "Failed to move " << tmpPath << " into place.\n";
+				return false;
+			}
 			return true;
 		} catch (const std::exception& e) {
 			Logger::Error << "Failed to save player NBT for " << _playerName << ": " << e.what() << "\n";
@@ -564,6 +558,7 @@ struct SaveManager {
 private:
 	std::string saveDirectory;
 	std::unique_ptr<FileHandle> worldFile;
+	bool levelBackupDone = false;
 	SessionLock sessionLock;
 	LevelData currentLevelData;
 };

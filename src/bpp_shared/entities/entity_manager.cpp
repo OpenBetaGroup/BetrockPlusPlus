@@ -25,8 +25,61 @@
 #include "entity_tnt.h"
 #include "entity_zombie.h"
 #include "entity_squid.h"
+#include "entity_wolf.h"
+#include "entity_zombie_pig.h"
+#include "entity_player.h"
+#include "entity_ghast.h"
 #include "gamerules.h"
 #include "world.h"
+#include "username.h"
+
+std::shared_ptr<PlayerEntity> EntityManager::GetPlayerWithName(std::string _name) {
+	// I hate this
+	for (const auto& playerWeak : players) {
+		if (auto playerEntity = playerWeak.lock()) {
+			if (auto player = std::dynamic_pointer_cast<PlayerEntity>(playerEntity)) {
+				if (UsernameEquals(player->username, _name)) {
+					return player;
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+void EntityManager::AlertWolves(PlayerEntity& _player, Entity& _target, bool _ignoreSitting) {
+	if (_target.type == EntityType::CREEPER || _target.type == EntityType::GHAST)
+		return;
+
+	auto wolf = dynamic_cast<WolfEntity*>(&_target);
+	if (wolf) {
+		if (wolf->IsTamed() && NormalizeUsername(_player.username) == NormalizeUsername(wolf->ownerUsername))
+			return;
+	}
+
+	auto searchCollider = AABB{ _player.position.x,       _player.position.y,       _player.position.z,
+		                        _player.position.x + 1.0, _player.position.y + 1.0, _player.position.z + 1.0 };
+	searchCollider = searchCollider.Expand(16.0, 4.0, 16.0);
+
+	EntityType wolfType = EntityType::WOLF;
+	auto candidates = GetEntitiesWithinAabbOfType(searchCollider, wolfType);
+
+	for (auto& candidate : candidates) {
+		auto wolfCandidate = dynamic_cast<WolfEntity*>(candidate);
+		if (!wolfCandidate)
+			continue;
+		if (!wolfCandidate->IsTamed())
+			continue;
+		if (wolfCandidate->attackTarget.lock())
+			continue;
+		if (NormalizeUsername(_player.username) != NormalizeUsername(wolfCandidate->ownerUsername))
+			continue;
+		if (_ignoreSitting && wolfCandidate->isSitting)
+			continue;
+		wolfCandidate->SetWolfSitting(false);
+		wolfCandidate->attackTarget = GetEntityByIdShared(_target.id);
+	}
+}
 
 void EntityManager::RemoveEntity(EntityId _id) {
 	// Find the entity for this ID
@@ -322,6 +375,11 @@ std::vector<Entity*> EntityManager::GetLivingEntitiesWithinAabb(const AABB& _box
 void EntityManager::CreateEntityFromNbt(Tag& _nbt) {
 	// Load an entity from the nbt list
 	std::string id = _nbt.compound["id"].GetString();
+	if (id == "PigZombie") {
+		ZombiePigEntity entity;
+		entity.LoadFromNbt(_nbt);
+		AddEntity(std::make_shared<ZombiePigEntity>(entity));
+	}
 	if (id == "Painting") {
 		PaintingEntity entity;
 		entity.LoadFromNbt(_nbt);
@@ -415,6 +473,16 @@ void EntityManager::CreateEntityFromNbt(Tag& _nbt) {
 		SquidEntity entity;
 		entity.LoadFromNbt(_nbt);
 		AddEntity(std::make_shared<SquidEntity>(entity));
+	}
+	if (id == "Wolf") {
+		WolfEntity entity;
+		entity.LoadFromNbt(_nbt);
+		AddEntity(std::make_shared<WolfEntity>(entity));
+	}
+	if (id == "Ghast") {
+		GhastEntity entity;
+		entity.LoadFromNbt(_nbt);
+		AddEntity(std::make_shared<GhastEntity>(entity));
 	}
 }
 

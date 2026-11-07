@@ -144,11 +144,18 @@ void RegisterDoorBehaviors() {
 		    if (_face == Cardinal::Value::Up || _face == Cardinal::Value::Down)
 			    return false;
 
+			// Pop off if we aren't supported
+		    auto meta = GetMetaFromDirection(BLOCK_TRAPDOOR, Cardinal::Opposite(_face));
+		    auto direction = GetDirectionFromMeta(BLOCK_TRAPDOOR, meta);
+		    auto supportPos = _pos.WithOffset(direction);
+
+		    if (!_world.IsBlockNormalCube(supportPos))
+			    return false;
+
 		    if (!IsReplaceable(_world, _pos))
 			    return false;
 
-		    return GenericPlace(_world, _pos, _placer, _face, BLOCK_TRAPDOOR,
-		                        GetMetaFromDirection(BLOCK_TRAPDOOR, Cardinal::Opposite(_face)));
+		    return GenericPlace(_world, _pos, _placer, _face, BLOCK_TRAPDOOR, meta);
 		},
 	};
 

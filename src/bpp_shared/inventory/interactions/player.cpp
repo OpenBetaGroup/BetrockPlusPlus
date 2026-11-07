@@ -11,6 +11,20 @@
 PlayerInventoryInteraction::PlayerInventoryInteraction(InventoryPlayer* _inv, Runtime& _gameRuntime)
     : CraftingInventoryInteraction(_inv, _inv, _inv, _gameRuntime, { 2, 2 }), playerInventory(_inv) {}
 
+void PlayerInventoryInteraction::OnInteractionClosed(PlayerEntity& player) {
+	// Drop the crafting grid items on inventory close
+	for (size_t i = 1; i <= 4; i++) {
+		ItemStack& stack = inventory->slots[i];
+		player.DropItem(stack);
+		stack = ItemStack{};
+	}
+	// Drop the cursor
+	if (carried.id != Items::INVALID) {
+		player.DropItem(carried);
+		carried = ItemStack{};
+	}
+}
+
 void PlayerInventoryInteraction::OnLeftClick(int _slot) {
 	auto playerInv = dynamic_cast<InventoryPlayer*>(inventory);
 	if (!playerInv)
@@ -67,7 +81,8 @@ void PlayerInventoryInteraction::ShiftClickResult() {
 		return;
 
 	ItemStack copy = result;
-	if (playerInventory->MergeItemStackInInventory(copy, true, 9, 44)) {
+	playerInventory->MergeItemStackInInventory(copy, true, 9, 44);
+	if (copy.count != result.count) {
 		FinishCraft();
 	} else {
 		playerInventory->slots[0] = copy.count == 0 ? ItemStack{} : copy;
@@ -85,7 +100,7 @@ void PlayerInventoryInteraction::ShiftClickOther(int _slot) {
 	if (from == InvMap::ARMOR || from == InvMap::CRAFTING_AREA || from == InvMap::CRAFTING_RESULT ||
 	    from == InvMap::HOTBAR) {
 		bool success = playerInventory->MergeItemStackInInventory(copy, false, 9, 35);
-		if (!success)
+		if (!success && from != InvMap::HOTBAR)
 			playerInventory->MergeItemStackInInventory(copy, false, 36, 44);
 	} else {
 		playerInventory->MergeItemStackInInventory(copy, false, 36, 44);

@@ -28,7 +28,8 @@
 #include <cstdint>
 #include <string>
 
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2)
+#include "platform/platform_caps.h"
+#if defined(BPP_HAS_POSIX_SOCKETS)
 #include <fcntl.h>
 #include <iomanip>
 #include <netinet/in.h>
@@ -58,7 +59,7 @@ Server::Server() : config("server.properties"), gamerulesConfig("gamerules.txt")
 	Logger::Info << "Server initialized on port " << serverPort << "\n";
 	// TODO: If seed is 0, have it generate a new seed
 	gameRuntime.Init(config.GetAsString("level-name", "world"), config.GetAsString("level-seed", "0"),
-	                 config.GetAsNumber("view-distance", 8));
+	                 config.GetAsNumber("view-distance", BPP_DEFAULT_VIEW_DISTANCE));
 	commandManager.Init(this);
 }
 
@@ -196,7 +197,7 @@ void Server::LoadConfig() {
 	if (!config.LoadFromDisk()) {
 		config.Overwrite({
 		    { "level-name", "world" },
-		    { "view-distance", "10" },
+		    { "view-distance", std::to_string(BPP_DEFAULT_VIEW_DISTANCE) },
 		    { "white-list", "false" },
 		    //{"server-ip", ""},
 		    //{"motd", "A Betrock++ Server"},
@@ -445,86 +446,88 @@ void Server::Startup() {
 	                    << Int2(int(gameRuntime.world.spawnPoint.x), int(gameRuntime.world.spawnPoint.z)) << "\n";
 
 	Logger::Info << "Preparing spawn chunks..\n";
-	// Push every single spawn chunk to get ready for generation
-	std::unordered_set<Int32_2> wanted;
-	for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
-		for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
-			Int32_2 pos = { (gameRuntime.world.spawnPoint.x >> 4) + dx, (gameRuntime.world.spawnPoint.z >> 4) + dz };
-			wanted.insert(pos);
+	if (Gamerule::Get<bool>(Gamerule::Id::SpawnChunks)) {
+		// Push every single spawn chunk to get ready for generation
+		std::unordered_set<Int32_2> wanted;
+		for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
+			for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
+				Int32_2 pos = { (gameRuntime.world.spawnPoint.x >> 4) + dx, (gameRuntime.world.spawnPoint.z >> 4) + dz };
+				wanted.insert(pos);
+			}
 		}
-	}
 
-	// Actually request chunks
-	for (auto pos : wanted) {
-		if (!gameRuntime.world.chunks.contains(pos)) {
-			auto c = std::make_shared<Chunk>();
-			c->spawnChunk = true;
-			c->cpos = pos;
-			gameRuntime.world.chunks.emplace(pos, std::move(c));
+		// Actually request chunks
+		for (auto pos : wanted) {
+			if (!gameRuntime.world.chunks.contains(pos)) {
+				auto c = std::make_shared<Chunk>();
+				c->spawnChunk = true;
+				c->cpos = pos;
+				gameRuntime.world.chunks.emplace(pos, std::move(c));
+			}
+			if (!gameRuntime.worldHell.chunks.contains(pos)) {
+				auto c = std::make_shared<Chunk>();
+				c->spawnChunk = true;
+				c->cpos = pos;
+				gameRuntime.worldHell.chunks.emplace(pos, std::move(c));
+			}
 		}
-		if (!gameRuntime.worldHell.chunks.contains(pos)) {
-			auto c = std::make_shared<Chunk>();
-			c->spawnChunk = true;
-			c->cpos = pos;
-			gameRuntime.worldHell.chunks.emplace(pos, std::move(c));
-		}
-	}
 
-	// Chunks are ready to load at this point.
-	auto loadSpawnChunks = [totalSpawnChunks, spawnChunkDistance](WorldManager& _world) {
-		auto start = std::chrono::steady_clock::now();
-		int loadedChunks = 0;
-		while (true) {
-			loadedChunks = 0;
-			// Force gen these chunks AS FAST AS POSSIBLE
-			_world.PumpPipeline({});
-			_world.pool.wait();
-			_world.DrainGenQueue();
-			_world.regionManager->iopool.wait();
-			_world.DrainLoadQueue();
-			_world.PopulateReady(INT_MAX);
-			_world.lightManager.ProcessLightQueue(_world);
+		// Chunks are ready to load at this point.
+		auto loadSpawnChunks = [totalSpawnChunks, spawnChunkDistance](WorldManager& _world) {
+			auto start = std::chrono::steady_clock::now();
+			int loadedChunks = 0;
+			while (true) {
+				loadedChunks = 0;
+				// Force gen these chunks AS FAST AS POSSIBLE
+				_world.PumpPipeline({});
+				_world.pool.wait();
+				_world.DrainGenQueue();
+				_world.regionManager->iopool.wait();
+				_world.DrainLoadQueue();
+				_world.PopulateReady(INT_MAX);
+				_world.lightManager.ProcessLightQueue(_world);
 
-			for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
-				for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
-					Int32_2 p{ (_world.spawnPoint.x >> 4) + dx, (_world.spawnPoint.z >> 4) + dz };
-					auto it = _world.chunks.find(p);
-					if (it != _world.chunks.end() && it->second->state.load() >= ChunkState::Generated)
-						loadedChunks++;
+				for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
+					for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
+						Int32_2 p{ (_world.spawnPoint.x >> 4) + dx, (_world.spawnPoint.z >> 4) + dz };
+						auto it = _world.chunks.find(p);
+						if (it != _world.chunks.end() && it->second->state.load() >= ChunkState::Generated)
+							loadedChunks++;
+					}
 				}
-			}
 
-			// Update load percentage every second
-			if (std::chrono::duration<float>(std::chrono::steady_clock::now() - start).count() >= 1.0f) {
-				int percentLoaded = int((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f);
-				Logger::Info << "Loading spawn.. " << percentLoaded << "%\n";
-				start = std::chrono::steady_clock::now();
-			}
+				// Update load percentage every second
+				if (std::chrono::duration<float>(std::chrono::steady_clock::now() - start).count() >= 1.0f) {
+					int percentLoaded = int((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f);
+					Logger::Info << "Loading spawn.. " << percentLoaded << "%\n";
+					start = std::chrono::steady_clock::now();
+				}
 
-			// Have we loaded all the spawn chunks?
-			if (loadedChunks >= totalSpawnChunks)
-				break;
+				// Have we loaded all the spawn chunks?
+				if (loadedChunks >= totalSpawnChunks)
+					break;
+			}
+			Logger::Info << "Loading spawn.. 100%\n";
+		};
+
+		// Benchmark gen speed
+		//ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
+
+		Logger::Info << "Loading spawn chunks for Overworld: (" << totalSpawnChunks << ")\n";
+		loadSpawnChunks(gameRuntime.world);
+
+		/*
+		std::vector<Chunk*> chunks;
+		for (auto& c : gameRuntime.world.chunks) {
+			chunks.push_back(c.second.get());
 		}
-		Logger::Info << "Loading spawn.. 100%\n";
-	};
+		auto result = ChunkBenchmark::Benchmark(chunks, 100);
+		ChunkBenchmark::Print(result);
+		*/
 
-	// Benchmark gen speed
-	//ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
-
-	Logger::Info << "Loading spawn chunks for Overworld: (" << totalSpawnChunks << ")\n";
-	loadSpawnChunks(gameRuntime.world);
-
-	/*
-	std::vector<Chunk*> chunks;
-	for (auto& c : gameRuntime.world.chunks) {
-		chunks.push_back(c.second.get());
+		Logger::Info << "Loading spawn chunks for Hell: (" << totalSpawnChunks << ")\n";
+		loadSpawnChunks(gameRuntime.worldHell);
 	}
-	auto result = ChunkBenchmark::Benchmark(chunks, 100);
-	ChunkBenchmark::Print(result);
-	*/
-
-	Logger::Info << "Loading spawn chunks for Hell: (" << totalSpawnChunks << ")\n";
-	loadSpawnChunks(gameRuntime.worldHell);
 
 	float startupSeconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - startupStart).count();
 	Logger::Info << "Startup Complete. (" << std::setprecision(4) << startupSeconds << "s)\n";
@@ -559,9 +562,9 @@ void Server::Run() {
 		++avgTickCount;
 		++tpsWindowTicks;
 
-		const double interval = GetTickRate() * 2.0;
-		// Note: std::fmod is gross, but we kinda have to do this :p
-		if (interval > 0.0 && std::fmod(static_cast<double>(ticks), interval) < 1e-9) {
+		// Sample every ~2 seconds' worth of ticks (integer maths, so odd tick rates still work)
+		const uint64_t intervalTicks = std::max<uint64_t>(1, static_cast<uint64_t>(std::llround(GetTickRate() * 2.0)));
+		if (ticks % intervalTicks == 0) {
 			const auto now = Clock::now();
 			const double wallSec = std::chrono::duration<double>(now - tpsWindowStart).count();
 
@@ -655,21 +658,40 @@ void Server::SaveLevelFile() {
 }
 
 void Server::AcceptNewPlayers() {
-    constexpr int K_MAX_ACCEPTS_PER_TICK = 16;
-    for (int i = 0; i < K_MAX_ACCEPTS_PER_TICK; ++i) {
-        std::string clientIp;
-        auto clientSocket = ServerSocketManager::CreateClientSocket(serverSocket, &clientIp);
-        if (clientSocket < 0)
-            return; // queue is empty
-        auto session = std::make_shared<PlayerSession>(clientSocket, gameRuntime);
-        if (players.size() >= maximumPlayers) {
-            DisconnectPlayer("Server is full!", *session);
-            continue; // keep draining so rejected clients get their kick message promptly
-        }
-        session->ipAddress = clientIp;
-        session->server = this;
-        players.push_back(std::move(session));
-    }
+	constexpr int K_MAX_ACCEPTS_PER_TICK = 16;
+	// Connections that haven't finished logging in don't count towards max-players (so they can't
+	// lock real players out), but they are capped globally and per IP so they can't pile up either.
+	constexpr size_t K_MAX_PENDING_PER_IP = 4;
+	constexpr size_t K_MAX_PENDING_TOTAL = 64;
+
+	size_t pendingTotal = 0;
+	std::unordered_map<std::string, size_t> pendingPerIp;
+	auto isPending = [](const PlayerSession& _s) {
+		return _s.connState == ConnectionState::Handshaking || _s.connState == ConnectionState::LoggingIn;
+	};
+	for (const auto& player : players) {
+		if (isPending(*player)) {
+			++pendingTotal;
+			++pendingPerIp[player->ipAddress];
+		}
+	}
+
+	for (int i = 0; i < K_MAX_ACCEPTS_PER_TICK; ++i) {
+		std::string clientIp;
+		auto clientSocket = ServerSocketManager::CreateClientSocket(serverSocket, &clientIp);
+		if (clientSocket < 0)
+			return; // queue is empty
+		auto session = std::make_shared<PlayerSession>(clientSocket, gameRuntime);
+		if (pendingTotal >= K_MAX_PENDING_TOTAL ||
+		    (!clientIp.empty() && pendingPerIp[clientIp] >= K_MAX_PENDING_PER_IP))
+			continue; // dropping the session closes the socket; don't spend a kick packet on a flooder
+		++pendingTotal;
+		if (!clientIp.empty())
+			++pendingPerIp[clientIp];
+		session->ipAddress = clientIp;
+		session->server = this;
+		players.push_back(std::move(session));
+	}
 }
 
 void Server::StopTimeout(float _secondsUntilShutdown) {
@@ -800,13 +822,14 @@ void Server::Tick() {
 		session->newlyUnloaded.clear();
 	}
 	const bool advanceSimulation = !tickFrozen || pendingTickSteps > 0;
-	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % 40 == 0) {
+	const uint64_t autosaveIntervalTicks = std::max<uint64_t>(1, static_cast<uint64_t>(std::llround(GetTickRate() * Gamerule::Get<double>(Gamerule::Id::AutosaveInterval))));
+	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % autosaveIntervalTicks == 0) {
 		for (const auto& session : players) {
 			if (session->connState != ConnectionState::WaitingForSpawnChunks &&
 			    session->connState != ConnectionState::Playing)
 				continue;
 			auto saveStart = Clock::now();
-			SavePlayer(session->username);
+			SavePlayer(*session);
 			const auto saveElapsed = Clock::now() - saveStart;
 			autosaveElapsed += saveElapsed;
 			if (sampling)
@@ -837,6 +860,7 @@ void Server::Tick() {
 	}
 
 	// Send all of the block changes that have accumulated since the last Tick, then clear the list.
+	// TODO: Maybe globally re-use these?
 	std::unordered_map<Int32_2, std::vector<PendingBlock>> localBlockChanges;
 	std::unordered_map<Int32_2, std::vector<PendingBlock>> localBlockChangesHell;
 	localBlockChanges.swap(chunkBlockChanges);
@@ -867,12 +891,18 @@ void Server::Tick() {
 
 	// Flush pending outgoing data on the write thread so socket I/O never
 	// holds up the main tick thread
-	std::vector<std::future<void>> flushFutures;
+	// One task for every session: no per-session promise/future allocations. The write
+	// pool has a single thread anyway, and Tick() waits for it before touching streams again.
+	std::vector<std::shared_ptr<PlayerSession>> toFlush;
 	for (auto& session : players) {
-		if (session->stream.GetRawWriteBuffer().empty())
-			continue;
-		auto& sessionRef = session;
-		flushFutures.push_back(writePool.submit_task([sessionRef]() { sessionRef->stream.FlushWriteBuffer(); }));
+		if (!session->stream.GetRawWriteBuffer().empty())
+			toFlush.push_back(session);
+	}
+	if (!toFlush.empty()) {
+		writePool.detach_task([batch = std::move(toFlush)]() {
+			for (auto& session : batch)
+				session->stream.FlushWriteBuffer();
+		});
 	}
 
 	// Sessions removed this tick get one final synchronous flush (their
@@ -883,27 +913,25 @@ void Server::Tick() {
 		tickProfiler.Record(TickTask::Network, networkInputElapsed + Clock::now() - networkOutputStart);
 
 	// Autosave
-	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % 40 == 0) {
+	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % autosaveIntervalTicks == 0) {
 		auto saveStart = Clock::now();
 		SaveLevelFile();
 		if (sampling)
 			tickProfiler.Record(TickTask::Autosave, Clock::now() - saveStart);
 	}
 
-	// TODO: This is rather fragile!
 	// Countdown
-	if (shutdownTimer.load() > 1)
-		shutdownTimer--;
+	for (uint16_t t = shutdownTimer.load(); t > 1 && !shutdownTimer.compare_exchange_weak(t, t - 1);) {
+	}
 	if (shutdownTimer.load() == 1)
 		shutdownRequested.store(true);
 
 #ifdef BETACRAFT_HEARTBEAT
-	// TODO: This WILL cause issues!! FIND A BETTER WAY TO DO THIS!!!!!!
-	if (betacraftHeartbeat.Enabled() && std::fmod(static_cast<double>(gameRuntime.world.tickScheduler.currentTick), GetTickRate())  < 1e-9) {
+	// Wall-clock based, so it works with any tick rate and while ticking is frozen
+	if (betacraftHeartbeat.Enabled() && Clock::now() >= nextHeartbeatSnapshot) {
+		nextHeartbeatSnapshot = Clock::now() + std::chrono::seconds(1);
 		BetacraftHeartbeatSnapshot snap;
 		snap.maxPlayers = maximumPlayers;
-		if (snap.maxPlayers < 0)
-			snap.maxPlayers = 20;
 		snap.onlineMode = config.GetAsBoolean("online-mode", false);
 		for (const auto& session : players) {
 			if (session->connState != ConnectionState::Playing)
@@ -919,6 +947,8 @@ void Server::Tick() {
 		tickProfiler.Record(TickTask::TotalTick, Clock::now() - totalStart);
 		++collectedSampleTicks;
 		if (collectedSampleTicks >= requestedSampleTicks) {
+			// The report writes to session streams, make sure the write thread is done with them
+			writePool.wait();
 			auto requester = sampleRequester.lock();
 			const bool connected = sampleToConsole || (requester &&
 			    std::any_of(players.begin(), players.end(), [&](const auto& player) {
@@ -1216,9 +1246,19 @@ std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
 void Server::ProcessIncoming(PlayerSession& _session) {
 	WorldManager& sessionWorld = _session.dimension == Dimension::Nether ? gameRuntime.worldHell : gameRuntime.world;
 
+	// Nothing the client sends before it is fully in-game is meaningful, drop it in O(1)
+	if (_session.connState != ConnectionState::Playing || !_session.stream.IsConnected()) {
+		_session.stream.Discard();
+		return;
+	}
+
+	// Cap how much one client can make us do per tick. The rest stays buffered and is handled
+	// next tick (a lagging-but-honest client just catches up; a flooder hits the read buffer cap).
+	constexpr int K_MAX_PACKETS_PER_TICK = 200;
+	int handled = 0;
 	bool recvPacket = false;
 
-	while (_session.stream.HasData()) {
+	while (_session.stream.HasData() && handled++ < K_MAX_PACKETS_PER_TICK) {
 		size_t packetMark = _session.stream.Mark();
 
 		PacketId packetId = _session.stream.Read<PacketId>();

@@ -17,6 +17,7 @@ Nope! The client is not intended to provide free access to Beta 1.7.3. Players w
 Nope! We intend to use official account-based authentication to verify that players are eligible to use the client. A supplied `.jar` file alone is not sufficient proof of a valid license, unfortunately.
 
 ## Server
+
 ### Why does this crafting recipe not work?
 
 There are two options.
@@ -43,12 +44,18 @@ Very few sounds were networked by the time Beta 1.7.3 rolled around. A few examp
 - Other players walking around
 - Block placements done by other players
 
+#### Some features don't line up!
+
+Javas generation order can be inconsistent. For example, there is a Birch tree on the **pack.png** seed (`3257840388504953787`) that attempts to generate at (`12550812, 72, 6`) that either does or doesn't show up primarly due to chunk population ordering. That depends on many factors, such as how fast previous chunks generated/populated, if you walked to the coordinate or teleported there, or if you're running in Singleplayer or Multiplayer. As such it's anywhere from annoying to just literally impossible for us to 1000% match Javas population order exactly without making significant sacrifices to both generation speed, and/or our sanity.
+
+Something could potentially be tackled in the future, if we feel up for it.
+
 ###### I can't craft
 
 This often happens when a mod is used that modifies the client-side crafting recipes. The client tends to prefer it's own crafting recipe results over whatever the server thinks.
 
-
 ## General
+
 ### Support for older Operating Systems (e.g. WinXP or 9x)
 
 While this isn't impossible, these older OS' lack features we rely on at a fundamental level, such as sockets. It'd require a very extensive rewrite, or at least one that'd force us to use an older C++ version, which would just make the codebase a lot more painful to work with.

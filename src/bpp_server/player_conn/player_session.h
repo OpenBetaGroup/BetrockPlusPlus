@@ -52,6 +52,7 @@ struct PlayerSession {
 	// Nether spawn finding
 	bool pendingPortalPlacement = false;
 	bool portalAreaLoaded = false;
+	int lastLoggedSpawnChunkCount = -1; // so spawn-chunk progress is only logged when it changes
 
 	// What block we are currently breaking, if any
 	std::optional<PendingBlockBreak> pendingBlockBreak = std::nullopt;
@@ -59,6 +60,7 @@ struct PlayerSession {
 	// What our client is claiming this Tick
 	std::optional<Vec3> pendingPosition = std::nullopt;
 	std::optional<Vec3> pendingTeleport = std::nullopt;
+	std::optional<Int2> pending2dTeleport = std::nullopt;
 
 	// Our player entity
 	std::shared_ptr<EntityMPPlayer> entity;
@@ -144,8 +146,6 @@ struct PlayerSession {
 		}
 
 		entity->LoadFromNbt(_nbt);
-		entity->lastHealth = entity->health;
-		entity->lastNotifiedHealth = entity->health;
 
 		dimension = _nbt.Has("Dimension") ? static_cast<Dimension>(_nbt.Get("Dimension").GetInt())
 		                                  : Dimension::Overworld;

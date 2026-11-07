@@ -7,6 +7,7 @@
 
 #pragma once
 #include "logger.h"
+#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <format>
@@ -14,6 +15,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "helpers/endian_convert.h"
 #include "nbt_tag.h"
 
 struct NBTwriter {
@@ -68,28 +70,16 @@ struct NBTwriter {
 			size += _tag.byteArray.size();
 			if (_dryRun)
 				break;
-			// TODO: Assume we got the size
+			// Bytes have no endianness, so a straight copy is correct
 			memcpy(_out.data() + pos, _tag.byteArray.data(), _tag.byteArray.size());
-
 			pos += _tag.byteArray.size();
 			break;
 		}
 
 		case TAG_INTARRAY: {
 			size += WriteI32(_out, int32_t(_tag.intArray.size()), _dryRun);
-			size += _tag.intArray.size() * sizeof(int32_t);
-			if (_dryRun)
-				break;
-			for (const int32_t b : _tag.intArray) {
-				uint32_t u = uint32_t(b);
-
-				_out[pos + 0] = u >> 24;
-				_out[pos + 1] = u >> 16;
-				_out[pos + 2] = u >> 8;
-				_out[pos + 3] = u;
-
-				pos += 4;
-			}
+			for (const int32_t v : _tag.intArray)
+				size += WriteI32(_out, v, _dryRun);
 			break;
 		}
 
@@ -105,7 +95,7 @@ struct NBTwriter {
 			for (const auto& [key, child] : _tag.compound)
 				size += WriteTag(_out, child, false, _dryRun);
 			// TAG_END terminates the compound
-			size += WriteI8(_out, uint8_t(TAG_END), _dryRun);
+			size += WriteI8(_out, int8_t(TAG_END), _dryRun);
 			break;
 		}
 
@@ -117,64 +107,39 @@ struct NBTwriter {
 	}
 
 	// Write helpers
+	// Writes any trivially copyable value in big endian and advances pos.
+	template <typename T>
+	inline size_t WriteBE(std::vector<uint8_t>& _out, const T _v, const bool _dryRun = false) {
+		if (!_dryRun) {
+			const T be = ToBigEndian(_v);
+			memcpy(_out.data() + pos, &be, sizeof(T));
+			pos += sizeof(T);
+		}
+		return sizeof(T);
+	}
+
 	inline size_t WriteI8(std::vector<uint8_t>& _out, const int8_t _v, const bool _dryRun = false) {
-		if (!_dryRun)
-			_out[pos++] = (uint8_t(_v));
-		return sizeof(int8_t);
+		return WriteBE<int8_t>(_out, _v, _dryRun);
 	}
 
 	inline size_t WriteI16(std::vector<uint8_t>& _out, const int16_t _v, const bool _dryRun = false) {
-		if (!_dryRun) {
-			uint16_t u = uint16_t(_v);
-			_out[pos] = ((u >> 8) & 0xFF);
-			_out[pos + 1] = (u & 0xFF);
-			pos += sizeof(int16_t);
-		}
-		return sizeof(int16_t);
+		return WriteBE<int16_t>(_out, _v, _dryRun);
 	}
 
 	inline size_t WriteI32(std::vector<uint8_t>& _out, const int32_t _v, const bool _dryRun = false) {
-		if (!_dryRun) {
-			uint32_t u = uint32_t(_v);
-			_out[pos] = ((u >> 24) & 0xFF);
-			_out[pos + 1] = ((u >> 16) & 0xFF);
-			_out[pos + 2] = ((u >> 8) & 0xFF);
-			_out[pos + 3] = (u & 0xFF);
-			pos += sizeof(int32_t);
-		}
-		return sizeof(int32_t);
+		return WriteBE<int32_t>(_out, _v, _dryRun);
 	}
 
 	inline size_t WriteI64(std::vector<uint8_t>& _out, const int64_t _v, const bool _dryRun = false) {
-		if (!_dryRun) {
-			uint64_t u = uint64_t(_v);
-			_out[pos] = ((u >> 56) & 0xFF);
-			_out[pos + 1] = ((u >> 48) & 0xFF);
-			_out[pos + 2] = ((u >> 40) & 0xFF);
-			_out[pos + 3] = ((u >> 32) & 0xFF);
-			_out[pos + 4] = ((u >> 24) & 0xFF);
-			_out[pos + 5] = ((u >> 16) & 0xFF);
-			_out[pos + 6] = ((u >> 8) & 0xFF);
-			_out[pos + 7] = (u & 0xFF);
-			pos += sizeof(int64_t);
-		}
-		return sizeof(int64_t);
+		return WriteBE<int64_t>(_out, _v, _dryRun);
 	}
 
 	inline size_t WriteF32(std::vector<uint8_t>& _out, const float _v, const bool _dryRun = false) {
-		if (!_dryRun) {
-			uint32_t raw = std::bit_cast<uint32_t>(_v);
-			WriteI32(_out, int32_t(raw));
-		}
-		return sizeof(float);
+		return WriteBE<float>(_out, _v, _dryRun);
 	}
 
 	inline size_t WriteF64(std::vector<uint8_t>& _out, const double _v, const bool _dryRun = false) {
-		if (!_dryRun) {
-			uint64_t raw = std::bit_cast<uint64_t>(_v);
-			WriteI64(_out, int64_t(raw));
-		}
-		return sizeof(double);
+		return WriteBE<double>(_out, _v, _dryRun);
 	}
 
 	inline size_t WriteString(std::vector<uint8_t>& _out, const std::string& _s, const bool _dryRun = false) {
@@ -229,9 +194,9 @@ struct NBTParser {
 
 		case TAG_BYTEARRAY: {
 			int32_t count = ReadI32();
-			tag.byteArray.resize(count);
 			if (count < 0 || pos + size_t(count) > length) [[unlikely]]
 				throw std::runtime_error("NBT: byte array out of bounds");
+			tag.byteArray.resize(count);
 			std::memcpy(tag.byteArray.data(), data + pos, count);
 			pos += count;
 			break;
@@ -239,6 +204,8 @@ struct NBTParser {
 
 		case TAG_INTARRAY: {
 			int32_t count = ReadI32();
+			if (count < 0 || pos + size_t(count) * sizeof(int32_t) > length) [[unlikely]]
+				throw std::runtime_error("NBT: int array out of bounds");
 			tag.intArray.resize(count);
 			for (auto& v : tag.intArray)
 				v = ReadI32();
@@ -291,44 +258,23 @@ struct NBTParser {
 	}
 
 	// Read helpers
-	inline int8_t ReadI8() {
-		if (pos >= length)
-			throw std::runtime_error("NBT: i8 out of bounds");
-		return int8_t(data[pos++]);
-	}
-
-	inline int16_t ReadI16() {
-		if (pos + 2 > length)
-			throw std::runtime_error("NBT: i16 out of bounds");
-		uint16_t v = static_cast<uint16_t>((static_cast<uint16_t>(data[pos]) << 8) |
-		                                   static_cast<uint16_t>(data[pos + 1]));
-		pos += 2;
-		return int16_t(v);
-	}
-
-	inline int32_t ReadI32() {
-		if (pos + 4 > length)
+	// Reads any trivially copyable value stored in big endian and advances pos.
+	template <typename T>
+	inline T ReadBE() {
+		if (pos + sizeof(T) > length)
 			throw std::runtime_error("NBT: unexpected end");
-		uint32_t v = (uint32_t(data[pos]) << 24) | (uint32_t(data[pos + 1]) << 16) | (uint32_t(data[pos + 2]) << 8) |
-		             (uint32_t(data[pos + 3]));
-		pos += 4;
-		return int32_t(v);
+		T v;
+		std::memcpy(&v, data + pos, sizeof(T));
+		pos += sizeof(T);
+		return FromBigEndian(v);
 	}
 
-	inline int64_t ReadI64() {
-		uint64_t hi = uint32_t(ReadI32());
-		return (hi << 32) | uint32_t(ReadI32());
-	}
-
-	inline float ReadF32() {
-		uint32_t raw = uint32_t(ReadI32());
-		return std::bit_cast<float>(raw);
-	}
-
-	inline double ReadF64() {
-		uint64_t raw = uint64_t(ReadI64());
-		return std::bit_cast<double>(raw);
-	}
+	inline int8_t ReadI8() { return ReadBE<int8_t>(); }
+	inline int16_t ReadI16() { return ReadBE<int16_t>(); }
+	inline int32_t ReadI32() { return ReadBE<int32_t>(); }
+	inline int64_t ReadI64() { return ReadBE<int64_t>(); }
+	inline float ReadF32() { return ReadBE<float>(); }
+	inline double ReadF64() { return ReadBE<double>(); }
 
 	inline std::string ReadString() {
 		uint16_t len = uint16_t(ReadI16());

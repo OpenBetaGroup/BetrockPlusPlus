@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #pragma once
-#include "cross_platform.h"
 #include "enums/items.h"
 #include "item_stack.h"
 #include "items/item_properties.h"
@@ -109,7 +108,7 @@ struct Inventory {
 
 					// Add the stacks together and do some checks to make sure we don't overflow
 					int space = maxStack - slot->count;
-					int toMove = CrossPlatform::Math::Min(space, int(_stack.count));
+					int toMove = std::min<int>(space, int(_stack.count));
 
 					slot->count += toMove;
 					_stack.count -= toMove;
@@ -157,7 +156,7 @@ struct Inventory {
 
 					// Add the stacks together and do some checks to make sure we don't overflow
 					int space = maxStack - slot->count;
-					int toMove = CrossPlatform::Math::Min(space, int(_stack.count));
+					int toMove = std::min<int>(space, int(_stack.count));
 
 					if (toMove > 0)
 						return true;

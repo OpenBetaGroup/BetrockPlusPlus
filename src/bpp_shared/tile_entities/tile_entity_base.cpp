@@ -19,6 +19,11 @@
 #include "world/world.h"
 #include <string>
 
+void TileEntity::Deserialize(const Tag& /*_tag*/) {
+	// no-op
+	return;
+}
+
 // TODO: Move all these into separate files just like InventoryInteraction
 void TileEntity::Tick(WorldManager& /*_world*/) {
 	// no-op

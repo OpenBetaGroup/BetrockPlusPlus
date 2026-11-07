@@ -10,6 +10,7 @@
 #include "crafting/recipe_manager.h"
 #include "items/tool_item_properties.h"
 #include "logger.h"
+#include "platform/platform_caps.h"
 #include "world/storage/region_manager.h"
 #include "world/storage/save_manager.h"
 #include "world/world.h"
@@ -57,7 +58,7 @@ struct Runtime {
 		worldHell.regionManager = nullptr;
 	}
 
-	void Init(std::string _levelPath, std::string _seedOverride = "", int _renderDistance = 8) {
+	void Init(std::string _levelPath, std::string _seedOverride = "", int _renderDistance = BPP_DEFAULT_VIEW_DISTANCE) {
 		// Override our view distance
 		currentLevelPath = _levelPath;
 		world.SetViewRadius(_renderDistance);

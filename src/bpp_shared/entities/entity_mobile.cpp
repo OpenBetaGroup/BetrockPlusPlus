@@ -67,7 +67,7 @@ std::optional<Tag> MobileEntity::SerializeToNbt() {
 	return tag;
 }
 
-bool MobileEntity::onLadder() {
+bool MobileEntity::IsOnLadder() {
 	auto fd = MathHelper::FloorDouble;
 	return world->GetBlockId({ fd(position.x), fd(collider.minY), fd(position.z) }) == BLOCK_LADDER;
 }
@@ -190,7 +190,7 @@ void MobileEntity::TickPhysics() {
 	if (inWater || currentlyInLava) {
 		// Water and lava movement
 		auto oldY = position.y;
-		double friction = inWater ? double(0.8) : double(0.5);
+		double friction = inWater ? 0.8 : 0.5;
 		ApplyInput(0.02f);
 		Move(this->velocity);
 		velocity *= friction;
@@ -223,7 +223,7 @@ void MobileEntity::TickPhysics() {
 
 		// Clamp our velocity if we are touching a ladder
 		// Also make sure we stop if we sneak
-		if (onLadder()) {
+		if (IsOnLadder()) {
 			double maxLadderVelocity = 0.15;
 			velocity.x = std::min(maxLadderVelocity, std::max(-maxLadderVelocity, velocity.x));
 			velocity.z = std::min(maxLadderVelocity, std::max(-maxLadderVelocity, velocity.z));
@@ -242,7 +242,7 @@ void MobileEntity::TickPhysics() {
 
 		// Our entity is pushing itself into the wall the ladder is on
 		// So apply an upwards nudge
-		if (collidedHorizontally && onLadder()) {
+		if (collidedHorizontally && IsOnLadder()) {
 			velocity.y = 0.2;
 		}
 
@@ -399,6 +399,7 @@ bool MobileEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	}
 
 	if (freshHit) {
+		QueueEvent(PacketData::EntityEvent::HURT);
 		if (_entity != nullptr) {
 			auto dx = _entity->position.x - position.x;
 			auto dz = _entity->position.z - position.z;
@@ -420,6 +421,7 @@ bool MobileEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	}
 
 	if (health <= 0) {
+		QueueEvent(PacketData::EntityEvent::DEATH);
 		OnDeath(_entity, _type);
 	}
 
@@ -474,9 +476,9 @@ void MobileEntity::Tick() {
 	bool isCurrentlyInLava = world->IsMaterialInAabb(GetLavaCollider(), Material::Lava());
 	if (jumping) {
 		if (inWater || isCurrentlyInLava) {
-			velocity.y += double(0.04);
+			velocity.y += 0.04;
 		} else if (onGround) {
-			velocity.y = double(0.42);
+			velocity.y = 0.42;
 		}
 	}
 

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2026, Aidan <JcbbcEnjoyer>
+ * Copyright (c) 2026, Anya Rihtarshich <vesui@proton.me>
  *
  * SPDX-License-Identifier: AGPL-3.0-only
  *
@@ -18,6 +19,7 @@
 #include "enums/items.h"
 #include "generator/overworld/tree_gen.h"
 #include "helpers/direction_fixer.h"
+#include "helpers/block_volume.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
 #include "items/item_properties.h"
@@ -57,6 +59,13 @@ static bool EatCake(WorldManager& _world, Int3 _pos, PlayerSession* _triggeringS
 }
 
 void RegisterMiscBehaviors() {
+	// Vanilla sponge removal notifies every position in a 5x5x5 region. Like coral!
+	blockBehaviors[BLOCK_SPONGE].onBlockRemoval = [](WorldManager& _world, Int3 _pos) {
+		ForEachBlockInVolume(_pos, 2, [&](Int3 _blockPos) {
+			_world.NotifyNeighborsOfUpdate(_blockPos, _world.GetBlockId(_blockPos));
+		});
+	};
+
 	blockBehaviors[BlockType::BLOCK_COBWEB] = {
 		.getCollider = EmptyCollider,
 	};
@@ -288,7 +297,7 @@ void RegisterMiscBehaviors() {
 	// Light when punched and the player is holding flint and steel
 	blockBehaviors[BLOCK_TNT].onBlockDestroyedByPlayer = [](WorldManager& _world, Int3 _pos,
 	                                                        Entity& _destroyer) -> void {
-		auto& player = dynamic_cast<PlayerEntity&>(_destroyer);
+		auto& player = static_cast<PlayerEntity&>(_destroyer);
 		auto heldItem = player.GetHeldItem();
 
 		if (heldItem && heldItem->id == Items::Id::FLINT_AND_STEEL) {
@@ -340,11 +349,47 @@ void RegisterMiscBehaviors() {
 		.getRayBounds = WallSignAabb,
 		.getCollider = EmptyCollider,
 	};
+	blockBehaviors[BLOCK_SIGN_WALL].onTick = [](WorldManager& _world, Int3 _pos, uint8_t _meta,
+	                                         Java::Random& /*_random*/) -> void {
+		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
+		if (!_world.GetMaterial(support).isSolid) {
+			BreakAndDropBlock(_world, _pos);
+		}
+	};
+	blockBehaviors[BLOCK_SIGN_WALL].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
+	                                                   Cardinal::Value _face, BlockType _blockId, uint8_t _meta) -> bool {
+		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
+		if (!_world.GetMaterial(support).isSolid)
+			return false;
+		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
+	};
+
+	blockBehaviors[BLOCK_SIGN_WALL].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
+	                                                        BlockType /*_blockId*/) -> void {
+		blockBehaviors[BLOCK_SIGN_WALL].onTick(_world, _pos, _world.GetMetadata(_pos), _world.rand);
+	};
 
 	blockBehaviors[BlockType::BLOCK_SIGN_STANDING] = {
 		.getSelectionBox = StandingSignAabb,
 		.getRayBounds = StandingSignAabb,
 		.getCollider = EmptyCollider,
+	};
+	blockBehaviors[BLOCK_SIGN_STANDING].onTick = [](WorldManager& _world, Int3 _pos, uint8_t /*_meta*/,
+	                                         Java::Random& /*_random*/) -> void {
+		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
+			BreakAndDropBlock(_world, _pos);
+	};
+	blockBehaviors[BLOCK_SIGN_STANDING].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
+	                                                   Cardinal::Value _face, BlockType _blockId,
+	                                                   uint8_t _meta) -> bool {
+		Int3 clicked = _pos.WithOffset(Cardinal::Opposite(_face));
+		if (!_world.GetMaterial(clicked).isSolid || _face == Cardinal::Value::Down)
+			return false;
+		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
+	};
+	blockBehaviors[BLOCK_SIGN_STANDING].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
+	                                                        BlockType /*_blockId*/) -> void {
+		blockBehaviors[BLOCK_SIGN_STANDING].onTick(_world, _pos, 0, _world.rand);
 	};
 }
 }; // namespace Blocks

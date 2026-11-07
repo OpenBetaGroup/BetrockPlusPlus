@@ -6,7 +6,8 @@
 */
 #pragma once
 #define INVALID_SOCKET -1
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2)
+#include "platform/platform_caps.h"
+#if defined(BPP_HAS_POSIX_SOCKETS)
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -16,7 +17,7 @@
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #endif
-#include "helpers/byteswap_compat.h"
+#include "helpers/endian_convert.h"
 #include "packet_data.h"
 #include <atomic>
 #include <cstdint>
@@ -25,32 +26,6 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-
-template <typename T>
-inline T ByteswapAny(T _value) {
-	static_assert(std::is_trivially_copyable_v<T>, "byteswap_any: only trivially copyable types allowed");
-	if constexpr (sizeof(T) == 1) {
-		return _value;
-	} else if constexpr (sizeof(T) == 2) {
-		uint16_t tmp;
-		std::memcpy(&tmp, &_value, 2);
-		tmp = __builtin_bswap16(tmp);
-		std::memcpy(&_value, &tmp, 2);
-	} else if constexpr (sizeof(T) == 4) {
-		uint32_t tmp;
-		std::memcpy(&tmp, &_value, 4);
-		tmp = __builtin_bswap32(tmp);
-		std::memcpy(&_value, &tmp, 4);
-	} else if constexpr (sizeof(T) == 8) {
-		uint64_t tmp;
-		std::memcpy(&tmp, &_value, 8);
-		tmp = __builtin_bswap64(tmp);
-		std::memcpy(&_value, &tmp, 8);
-	} else {
-		static_assert(sizeof(T) <= 8, "byteswap_any: unsupported type size");
-	}
-	return _value;
-}
 
 class NetworkStream {
 public:
@@ -69,12 +44,10 @@ public:
 		_other.readPos = 0;
 	}
 	bool NewClient();
-	// NOTE: This is a limitation of the Vanilla Beta 1.7.3 Client,
-	// as it can only process 100 Packets per tick
-	static constexpr uint8_t MAX_PACKETS_PER_TICK = 100;
-	uint8_t packetsInQueue = 0;
-	void IncrementPacketCount(PacketId _id);
-	void ResetPacketCount();
+	void Discard() {
+		readPos = readBuffer.size();
+		shortRead = false;
+	}
 
 	// NOTE: if CheckAndClearShortRead()/IsShortRead() ends up true after this
 	// call, the returned value is not meaningful, it was built from a
@@ -86,7 +59,7 @@ public:
 		              "NetworkStream::Read<T>: use Read<std::string>() or Read<std::string>() for string types");
 		T buffer{};
 		ReadBytes(reinterpret_cast<uint8_t*>(&buffer), sizeof(T));
-		return ByteswapAny(buffer);
+		return FromBigEndian(buffer);
 	}
 
 	template <typename T = int>
@@ -95,7 +68,7 @@ public:
 			int8_t boolData = static_cast<int8_t>(_data);
 			WriteBytes(reinterpret_cast<const uint8_t*>(&boolData), sizeof(int8_t));
 		} else {
-			T networkData = ByteswapAny(_data);
+			T networkData = ToBigEndian(_data);
 			WriteBytes(reinterpret_cast<const uint8_t*>(&networkData), sizeof(T));
 		}
 	}
@@ -197,6 +170,7 @@ private:
 
 	std::vector<uint8_t> writeBuffer;
 
-	static constexpr size_t MAX_READ_BUFFER = 1u << 20; // 1 MiB
+	static constexpr size_t MAX_READ_BUFFER = 1u << 20;  // 1 MiB
+	static constexpr size_t MAX_WRITE_BUFFER = 8u << 20; // 8 MiB
 	static constexpr size_t MAX_METADATA_ENTRIES = 256;
 };

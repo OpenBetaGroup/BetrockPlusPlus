@@ -9,6 +9,7 @@
 #include "generator/overworld/biome_gen.h"
 #include "generator/overworld/tree_gen.h"
 #include "tree_gen.h"
+#include <memory>
 
 /**
  * @brief Construct a new Beta 1.7.3 Overworld Generator
@@ -125,42 +126,43 @@ void OverworldGenerator::ReplaceBlocksForBiome(Chunk& _chunk) {
 					continue;
 				}
 
-				// If we counter stone, start replacing it
-				if (currentBlock == BLOCK_STONE) {
-					if (stoneDepth == -1) {
-						if (stoneActive <= 0) {
+				// If we don't encounter stone, skip it
+				if (currentBlock != BLOCK_STONE)
+					continue;
+				// If we encounter stone, start replacing it
+				if (stoneDepth == -1) {
+					if (stoneActive <= 0) {
+						topBlock = BLOCK_AIR;
+						fillerBlock = BLOCK_STONE;
+					} else if (y >= WATER_LEVEL - 4 && y <= WATER_LEVEL + 1) {
+						// If we're close to the water level, apply gravel and sand
+						topBlock = GetTopBlock(biome);
+						fillerBlock = GetFillerBlock(biome);
+
+						if (gravelActive) {
 							topBlock = BLOCK_AIR;
-							fillerBlock = BLOCK_STONE;
-						} else if (y >= WATER_LEVEL - 4 && y <= WATER_LEVEL + 1) {
-							// If we're close to the water level, apply gravel and sand
-							topBlock = GetTopBlock(biome);
-							fillerBlock = GetFillerBlock(biome);
-
-							if (gravelActive) {
-								topBlock = BLOCK_AIR;
-								fillerBlock = BLOCK_GRAVEL;
-							}
-							if (sandActive) {
-								topBlock = BLOCK_SAND;
-								fillerBlock = BLOCK_SAND;
-							}
+							fillerBlock = BLOCK_GRAVEL;
 						}
-
-						// Add water if we're below water level
-						if (y < WATER_LEVEL && topBlock == BLOCK_AIR) {
-							topBlock = BLOCK_WATER_STILL;
+						if (sandActive) {
+							topBlock = BLOCK_SAND;
+							fillerBlock = BLOCK_SAND;
 						}
+					}
 
-						stoneDepth = stoneActive;
-						// Place filler block if we're underwater
-						_chunk.SetBlockRaw(bpos, (y >= WATER_LEVEL - 1) ? topBlock : fillerBlock);
-					} else if (stoneDepth > 0) {
-						--stoneDepth;
-						_chunk.SetBlockRaw(bpos, fillerBlock);
-						if (stoneDepth == 0 && fillerBlock == BLOCK_SAND) {
-							stoneDepth = rand.NextInt(4);
-							fillerBlock = BLOCK_SANDSTONE;
-						}
+					// Add water if we're below water level
+					if (y < WATER_LEVEL && topBlock == BLOCK_AIR) {
+						topBlock = BLOCK_WATER_STILL;
+					}
+
+					stoneDepth = stoneActive;
+					// Place filler block if we're underwater
+					_chunk.SetBlockRaw(bpos, (y >= WATER_LEVEL - 1) ? topBlock : fillerBlock);
+				} else if (stoneDepth > 0) {
+					--stoneDepth;
+					_chunk.SetBlockRaw(bpos, fillerBlock);
+					if (stoneDepth == 0 && fillerBlock == BLOCK_SAND) {
+						stoneDepth = rand.NextInt(4);
+						fillerBlock = BLOCK_SANDSTONE;
 					}
 				}
 			}
@@ -311,8 +313,7 @@ void OverworldGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 			// Sample contientalness noise
 			double continentalness = (continentalnessNoiseField[xzIndex] + 256.0) / 512.0;
 			continentalness *= humi;
-			if (continentalness > 1.0)
-				continentalness = 1.0;
+			continentalness = std::min(continentalness, 1.0);
 			// Sample depth noise
 			double depthNoise = depthNoiseField[xzIndex] / 8000.0;
 			if (depthNoise < 0.0)
@@ -320,14 +321,12 @@ void OverworldGenerator::GenerateTerrainNoise(Int3 _cpos, Int3 _max) {
 			depthNoise = depthNoise * 3.0 - 2.0;
 			if (depthNoise < 0.0) {
 				depthNoise /= 2.0;
-				if (depthNoise < -1.0)
-					depthNoise = -1.0;
+				depthNoise = std::max(depthNoise, -1.0);
 				depthNoise /= 1.4;
 				depthNoise /= 2.0;
 				continentalness = 0.0;
 			} else {
-				if (depthNoise > 1.0)
-					depthNoise = 1.0;
+				depthNoise = std::min(depthNoise, 1.0);
 				depthNoise /= 8.0;
 			}
 			if (continentalness < 0.0)
@@ -389,7 +388,10 @@ Biome OverworldGenerator::GetBiomeAt(Int2 _worldPos) {
 
 // Exact port of BiomeGenBase.getRandomWorldGenForTrees() and per-biome overrides.
 void OverworldGenerator::GenerateTreeForBiome(WorldWrapper& _world, Java::Random& _pRand, Int3 _pos, Biome _biome) {
-	thread_local TreeGenerator::BigTree big;
+	thread_local std::unique_ptr<TreeGenerator::BigTree> bigTree;
+	if (!bigTree)
+		bigTree = std::make_unique<TreeGenerator::BigTree>();
+	TreeGenerator::BigTree& big = *bigTree;
 	switch (_biome) {
 	case BIOME_TAIGA:
 		if (_pRand.NextInt(3) == 0)

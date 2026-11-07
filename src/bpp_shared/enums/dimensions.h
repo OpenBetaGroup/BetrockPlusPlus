@@ -15,5 +15,7 @@ enum class Dimension : int8_t {
 	// The nether, also known as hell or the slip
 	Nether = -1,
 	// The overworld, default dimension
-	Overworld = 0
+	Overworld = 0,
+	// The sky dimension, unused, but still available
+	Sky = 1
 };

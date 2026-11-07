@@ -1,5 +1,0 @@
-Hello! Aids here, this is just some notes for me as I plan the client and for whoever is reading this's general information.
-The client is VERY unfinished right now, but I am working on it!
-
-Most client assets will be stored in .betrock in appdata! (or whatever the linux equivilant is)
-For now they have to be manually extracted, but in the future they wont.

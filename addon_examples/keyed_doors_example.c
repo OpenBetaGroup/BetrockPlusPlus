@@ -1,5 +1,5 @@
 #define ADDON_API_IMPLEMENTATION
-#include "../addon_api.h"
+#include "../include/addon_api.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

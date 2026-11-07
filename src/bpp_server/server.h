@@ -32,6 +32,7 @@ extern std::atomic<bool> shutdownRequested;
 #include "runtime.h"
 #include "server_socket.h"
 #include "strings/ucs2.h"
+#include "username.h"
 #include "trackers/entity_tracker.h"
 #include "world/world_event_broadcaster.h"
 #include "tick_profiler.h"
@@ -55,7 +56,7 @@ public:
 	Config config;
 	Config gamerulesConfig;
 private:
-	int serverViewRadius = 8;
+	int serverViewRadius = BPP_DEFAULT_VIEW_DISTANCE;
 	int spawnChunkRadius = 5;
 	std::atomic<uint16_t> shutdownTimer{ 0 };
 
@@ -65,21 +66,28 @@ public:
 #endif
 #ifdef BETACRAFT_HEARTBEAT
 	BetacraftHeartbeat betacraftHeartbeat;
+	std::chrono::steady_clock::time_point nextHeartbeatSnapshot{};
 #endif
 	Runtime gameRuntime;
 	ChunkSender chunkSender;
 	int flushChunkCount = 10;
 
+	void SavePlayer(PlayerSession& _session) {
+		if (!_session.entity) {
+			Logger::Error << "Failed to save player data for " << _session.username << ": no entity!\n";
+			return;
+		}
+		auto savedNbt = _session.SerializeToNbt();
+		gameRuntime.saveManager.SavePlayerNbt(_session.username, savedNbt);
+	}
+
 	void SavePlayer(const std::string& _username) {
-		auto PlayerSession = GetSessionByUsername(_username);
-		if (!PlayerSession) {
+		auto session = GetSessionByUsername(_username);
+		if (!session) {
 			Logger::Error << "Failed to save player data for " << _username << "!\n";
 			return;
 		}
-
-		auto savedNbt = PlayerSession->SerializeToNbt();
-		gameRuntime.saveManager.SavePlayerNbt(
-		    std::string(PlayerSession->username.begin(), PlayerSession->username.end()), savedNbt);
+		SavePlayer(*session);
 	}
 
 	void DisconnectPlayer(const std::string& _reason, PlayerSession& _session) {
@@ -97,9 +105,8 @@ public:
 
 	std::shared_ptr<PlayerSession> GetSessionByUsername(const std::string& _username) {
 		for (const auto& player : players) {
-			if (player->username == _username) {
+			if (UsernameEquals(player->username, _username))
 				return player;
-			}
 		}
 		return nullptr;
 	}
@@ -146,6 +153,7 @@ public:
 		return _dim == Dimension::Nether ? &this->gameRuntime.worldHell : &this->gameRuntime.world;
 	}
 
+	uint16_t GetMaxPlayers() const noexcept { return maximumPlayers; }
 	bool CanExecuteCommands() const noexcept;
 	bool ExecuteCommand(std::string_view _command, PlayerSession* _sender = nullptr) noexcept;
 

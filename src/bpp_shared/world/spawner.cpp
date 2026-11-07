@@ -17,15 +17,17 @@
 #include "entities/entity_slime.h"
 #include "entities/entity_spider.h"
 #include "entities/entity_squid.h"
+#include "entities/entity_wolf.h"
 #include "entities/entity_zombie.h"
+#include "entities/entity_zombie_pig.h"
+#include "entities/entity_ghast.h"
 #include "world.h"
 
 EntitySpawner::EntitySpawner() {
 	// Water
 	SpawnCategory water;
 	water.spawnMaterial = Material::Water();
-	water.spawnListDefault = { { std::make_shared<SquidEntity>(), []() { return std::make_shared<SquidEntity>(); },
-		                         10 } };
+	water.spawnListDefault = { { std::make_shared<SquidEntity>(), []() { return std::make_shared<SquidEntity>(); }, 10 } };
 	water.spawnListForest = water.spawnListDefault;
 	water.cap = 5;
 	categories.push_back(water);
@@ -43,7 +45,7 @@ EntitySpawner::EntitySpawner() {
 		{ std::make_shared<CowEntity>(), []() { return std::make_shared<CowEntity>(); }, 8 },
 		{ std::make_shared<ChickenEntity>(), []() { return std::make_shared<ChickenEntity>(); }, 10 },
 		{ std::make_shared<SheepEntity>(), []() { return std::make_shared<SheepEntity>(); }, 12 },
-		// TODO: add wolf
+		{ std::make_shared<WolfEntity>(), []() { return std::make_shared<WolfEntity>(); }, 2, /*maxSpawnedInChunk=*/8 }
 	};
 	passive.cap = 15;
 	categories.push_back(passive);
@@ -65,7 +67,8 @@ EntitySpawner::EntitySpawner() {
 		{ std::make_shared<SlimeEntity>(), []() { return std::make_shared<SlimeEntity>(); }, 10 },
 	};
 	hostile.spawnListNether = {
-		// TODO: zombie pigmen and ghast
+		{ std::make_shared<GhastEntity>(), []() { return std::make_shared<GhastEntity>(); }, 10, /*maxSpawnedInChunk=*/1 },
+		{ std::make_shared<ZombiePigEntity>(), []() { return std::make_shared<ZombiePigEntity>(); }, 10 },
 	};
 	hostile.cap = 70;
 	categories.push_back(hostile);
@@ -74,7 +77,7 @@ EntitySpawner::EntitySpawner() {
 // Picks one entry from the weighted list
 static std::optional<SpawnEntry> PickWeighted(Java::Random& _rand, SpawnCategory& _category, Biome _biome) {
 	int total = 0;
-	auto spawnList = _category.GetSpawnSpawnListForBiome(_biome);
+	auto& spawnList = _category.GetSpawnSpawnListForBiome(_biome);
 
 	if (spawnList.size() == 0)
 		return std::nullopt;
@@ -126,30 +129,33 @@ void EntitySpawner::TrySpawnEntities(WorldManager& _world, const std::vector<Cli
 	for (auto& category : this->categories) {
 		int mobCap = category.cap * int(chunksToSpawnIn.size()) / 256;
 
-		if (GetCategoryCount(_world, category) >= mobCap)
+		if (GetCategoryCount(_world, category) > mobCap)
 			continue;
 
 		for (auto& cpos : chunksToSpawnIn) {
-			Int3 anchorPos = { cpos.x * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH),
-				               _world.rand.NextInt(CHUNK_HEIGHT),
-				               cpos.z * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH) };
-
-			// The anchor must not be a solid cube, and its material must be the category's spawn material
-			if (_world.IsBlockNormalCube(anchorPos) || _world.GetMaterial(anchorPos) != category.spawnMaterial)
-				continue; // Discard this chunk
-
 			auto biome = _world.GetBiome({ cpos.x << 4, cpos.z << 4 });
 			auto picked = PickWeighted(_world.rand, category, biome);
 
 			if (!picked.has_value())
 				continue;
 
+			Int3 anchorPos = { cpos.x * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH),
+			                   _world.rand.NextInt(CHUNK_HEIGHT),
+			                   cpos.z * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH) };
+
+			// The anchor must not be a solid cube, and its material must be the category's spawn material
+			if (_world.IsBlockNormalCube(anchorPos) || _world.GetMaterial(anchorPos) != category.spawnMaterial)
+				continue; // Discard this chunk
+
+			const int maxCluster = picked.value().maxSpawnedInChunk;
 			int spawnedThisCluster = 0;
-			for (int group = 0; group < 3 && spawnedThisCluster < 4; group++) {
+			for (int group = 0; group < 3 && spawnedThisCluster < maxCluster; group++) {
 				Int3 pos = anchorPos;
 
 				for (int attempt = 0; attempt < 4; attempt++) {
 					pos.x += _world.rand.NextInt(6) - _world.rand.NextInt(6);
+					// This is always 0 but java rolls these here and NextInt consumes RNG state
+					pos.y += _world.rand.NextInt(1) - _world.rand.NextInt(1);
 					pos.z += _world.rand.NextInt(6) - _world.rand.NextInt(6);
 
 					if (!IsValidSpawnBlock(_world, pos, category.spawnMaterial))
@@ -180,7 +186,7 @@ void EntitySpawner::TrySpawnEntities(WorldManager& _world, const std::vector<Cli
 					_world.entityManager.AddEntity(newMob);
 					spawnedThisCluster++;
 
-					if (spawnedThisCluster >= 4)
+					if (spawnedThisCluster >= maxCluster)
 						break;
 				}
 			}

@@ -43,6 +43,15 @@ double GetMemoryUsage(const MemoryUnit _unit) {
 	return static_cast<double>(rss * pageSizeBytes) / BytesPerUnit(_unit);
 }
 
+// Get the current memory page size in Bytes (Cached after first use)
+size_t GetPageSize() {
+	static const size_t pageSize = []() -> size_t {
+		const long size = sysconf(_SC_PAGESIZE);
+		return size > 0 ? static_cast<size_t>(size) : 4096;
+	}();
+	return pageSize;
+}
+
 #if defined(__GLIBC__)
 
 #include <malloc.h>
@@ -60,6 +69,7 @@ void TrimMemory() {
 double GetActiveMemoryUsage(const MemoryUnit _unit) {
 	return GetMemoryUsage(_unit);
 }
+
 void TrimMemory() {}
 
 #endif

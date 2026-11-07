@@ -21,9 +21,15 @@ struct EntityMPPlayer : public PlayerEntity {
 	double simulatedFallDistance = 0.0;
 	Vec3 firstUpPosition = {};
 	Vec3 previousVelocity = {};
+	
 	EntityMPPlayer() : PlayerEntity() {
 		hasPhysics = false;
 	}
+
+	EntityMPPlayer(std::string _username) : PlayerEntity(_username) {
+		hasPhysics = false;
+	}
+
 	~EntityMPPlayer() {
 		session = nullptr;
 	}
@@ -39,6 +45,7 @@ struct EntityMPPlayer : public PlayerEntity {
 	void OnDismountEntity() override;
 	void UsePortal() override;
 	void OnEnterPortal() override;
+	ItemStack* GetHeldItem() override;
 	virtual SleepFailureReason TrySleep(Int3 _pos);
 	virtual void WakeUp(bool _confirmSpawn = true) override;
 };

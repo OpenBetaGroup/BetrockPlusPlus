@@ -5,6 +5,8 @@
 */
 #include "crafting.h"
 #include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
+#include "items.h"
 #include "numeric_structs.h"
 
 CraftingInventoryInteraction::CraftingInventoryInteraction(Inventory* _sharedInventory, Inventory* _craftingInventory,
@@ -15,16 +17,22 @@ CraftingInventoryInteraction::CraftingInventoryInteraction(Inventory* _sharedInv
 
 void CraftingInventoryInteraction::UpdateResult() {
 	auto grid = std::span<const ItemStack>(craftInventory->slots.data() + 1, gridSize.Total());
-	ItemStack result = runtime.recipeManager.MatchGrid(grid, gridSize);
-	craftInventory->slots[0] = result;
+	auto result = runtime.recipeManager.MatchGrid(grid, gridSize);
+	craftInventory->slots[0] = result.second;
+	lastRecipe = result.first;
 }
 
 void CraftingInventoryInteraction::FinishCraft() {
 	craftInventory->slots[0] = ItemStack{};
 
-	// Consume one of each ingredient that went into this craft
-	for (size_t i = 1; i <= gridSize.Total(); ++i)
-		craftInventory->slots[i].DecrementCount(1);
+	// Consume or transform one of each ingredient that went into this craft
+	for (size_t i = 1; i <= gridSize.Total(); ++i) {
+		const ItemStack transformTo = lastRecipe[i - 1].transformTo;
+		if (transformTo.id != Items::Id::INVALID)
+			craftInventory->slots[i] = transformTo;
+		else
+			craftInventory->slots[i].DecrementCount(1);
+	}
 
 	// The grid changed, there might be another possible craft
 	UpdateResult();

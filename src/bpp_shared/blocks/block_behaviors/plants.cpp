@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2026, Aidan <JcbbcEnjoyer>
+ * Copyright (c) 2026, Anya Rihtarshich <vesui@proton.me>
  *
  * SPDX-License-Identifier: AGPL-3.0-only
  *
@@ -17,6 +18,7 @@
 #include "enums/items.h"
 #include "generator/overworld/tree_gen.h"
 #include "helpers/direction_fixer.h"
+#include "helpers/block_volume.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
 #include "items/item_properties.h"
@@ -294,7 +296,12 @@ void RegisterPlantBehaviors() {
 
 	auto onPlantPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face, BlockType _blockId,
 	                       uint8_t _meta) -> bool {
-		if (CanGenericPlantSurviveAt(_world, _pos)) {
+		auto position = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (position == Int3{ -1, -1, -1 })
+			return false;
+		auto belowBlock = _world.GetBlockId({ _pos.x, _pos.y - 1, _pos.z });
+		bool canGrowOnBlock = belowBlock == BLOCK_FARMLAND || belowBlock == BLOCK_DIRT || belowBlock == BLOCK_GRASS;
+		if (canGrowOnBlock) {
 			return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		}
 		return false;
@@ -302,7 +309,10 @@ void RegisterPlantBehaviors() {
 
 	auto onCactusPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face,
 	                        BlockType _blockId, uint8_t _meta) -> bool {
-		if (CanCactusSurviveAt(_world, _pos)) {
+		auto position = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (position == Int3{ -1, -1, -1 })
+			return false;
+		if (CanCactusSurviveAt(_world, position)) {
 			return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		}
 		return false;
@@ -482,9 +492,9 @@ void RegisterPlantBehaviors() {
 	};
 	blockBehaviors[BLOCK_LEAVES].onBlockDestroyedByPlayer = [](WorldManager& _world, Int3 _pos, Entity& _destroyer) {
 		// Leaves drop themselves instead of their random loot table when broken with shears
-		PlayerEntity* pe = dynamic_cast<PlayerEntity*>(&_destroyer);
-		if (!pe)
+		if (_destroyer.type != EntityType::PLAYER)
 			return;
+		PlayerEntity* pe = static_cast<PlayerEntity*>(&_destroyer);
 
 		auto heldItem = pe->GetHeldItem();
 		if (heldItem && heldItem->id == Items::Id::SHEARS) {
@@ -504,35 +514,23 @@ void RegisterPlantBehaviors() {
 	// Leaves and logs flag leaves to check for removal
 	blockBehaviors[BLOCK_LOG].onBlockRemoval = [](WorldManager& _world, Int3 _pos) -> void {
 		// Mark a 9x9 area dirty if they are leaves
-		int dist = 4;
-		for (int x = -dist; x <= dist; x++) {
-			for (int z = -dist; z <= dist; z++) {
-				for (int y = -dist; y <= dist; y++) {
-					auto dpos = _pos + Int3{ x, y, z };
-					if (_world.GetBlockId(dpos) == BLOCK_LEAVES) {
-						auto meta = _world.GetMetadata(dpos);
-						if (!(meta & 8))
-							_world.SetMeta(dpos, meta |= 8);
-					}
-				}
+		ForEachBlockInVolume(_pos, 4, [&](Int3 _blockPos) {
+			if (_world.GetBlockId(_blockPos) == BLOCK_LEAVES) {
+				auto meta = _world.GetMetadata(_blockPos);
+				if (!(meta & 8))
+					_world.SetMeta(_blockPos, meta |= 8);
 			}
-		}
+		});
 	};
 	blockBehaviors[BLOCK_LEAVES].onBlockRemoval = [](WorldManager& _world, Int3 _pos) -> void {
 		// Mark a 3x3 area dirty if they are leaves
-		int dist = 1;
-		for (int x = -dist; x <= dist; x++) {
-			for (int z = -dist; z <= dist; z++) {
-				for (int y = -dist; y <= dist; y++) {
-					auto dpos = _pos + Int3{ x, y, z };
-					if (_world.GetBlockId(dpos) == BLOCK_LEAVES) {
-						auto meta = _world.GetMetadata(dpos);
-						if (!(meta & 8))
-							_world.SetMeta(dpos, meta |= 8);
-					}
-				}
+		ForEachBlockInVolume(_pos, 1, [&](Int3 _blockPos) {
+			if (_world.GetBlockId(_blockPos) == BLOCK_LEAVES) {
+				auto meta = _world.GetMetadata(_blockPos);
+				if (!(meta & 8))
+					_world.SetMeta(_blockPos, meta |= 8);
 			}
-		}
+		});
 	};
 }
 

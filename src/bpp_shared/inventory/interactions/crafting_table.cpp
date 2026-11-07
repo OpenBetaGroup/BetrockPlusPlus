@@ -87,7 +87,8 @@ void CraftingTableInventoryInteraction::ShiftClickResult() {
 		return;
 
 	ItemStack copy = result;
-	if (playerInventory->MergeItemStackInInventory(copy, true, 9, 44)) {
+	playerInventory->MergeItemStackInInventory(copy, true, 9, 44);
+	if (copy.count != result.count) {
 		FinishCraft();
 	} else {
 		craftInventory.slots[0] = copy.count == 0 ? ItemStack{} : copy;

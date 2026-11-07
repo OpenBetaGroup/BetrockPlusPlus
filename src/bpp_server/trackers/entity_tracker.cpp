@@ -17,15 +17,30 @@
 #include "entities/entity_mobile.h"
 #include "entities/entity_painting.h"
 #include "entities/entity_snowball.h"
+#include "entities/entity_fireball.h"
 #include "logger.h"
 #include "packet_data.h"
 #include <algorithm>
+#include "networking/packets.h"
 #include <cstdint>
 
 double DistanceBetweenPlayerAndEntity(Entity* _entity, Entity* _player) {
 	auto dx = _entity->position.x - _player->position.x;
 	auto dz = _entity->position.z - _player->position.z;
 	return dx * dx + dz * dz;
+}
+
+void EntityTracker::SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType, std::shared_ptr<PlayerSession> _session) {
+	if (!_entityEntry.entity)
+		return;
+	Packet::SpawnMob pkt;
+	pkt.entityId = _entityEntry.entity->id;
+	pkt.mobType = _networkEntityType;
+	pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
+	pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
+						int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
+	_entityEntry.entity->EncodeMetadata(pkt.metadata);
+	pkt.Serialize(_session->stream);
 }
 
 // Update each player instance so entities properly despawn and spawn for them
@@ -211,7 +226,7 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		return;
 	switch (_entityEntry.entity->type) {
 	case EntityType::ITEM: {
-		ItemEntity& ie = dynamic_cast<ItemEntity&>(*_entityEntry.entity);
+		ItemEntity& ie = static_cast<ItemEntity&>(*_entityEntry.entity);
 		Packet::SpawnItem pkt;
 		pkt.entityId = _entityEntry.entity->id;
 		pkt.item = ie.itemStack;
@@ -238,7 +253,7 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		auto username = server->GetUsernameByEntityId(_entityEntry.entity->id);
 		if (username.empty()) {
 			// Fallback
-			auto& playerEntity = dynamic_cast<EntityMPPlayer&>(*_entityEntry.entity);
+			auto& playerEntity = static_cast<EntityMPPlayer&>(*_entityEntry.entity);
 			username = playerEntity.session ? playerEntity.session->username : " ";
 		}
 		pkt.username = username;
@@ -254,7 +269,7 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 			passengerPkt.Serialize(pSession->stream);
 		}
 		// If they're already sleeping, let the new joiner see them in bed.
-		if (auto* mpPlayer = dynamic_cast<EntityMPPlayer*>(_entityEntry.entity)) {
+		if (auto* mpPlayer = static_cast<EntityMPPlayer*>(_entityEntry.entity)) {
 			if (mpPlayer->isSleeping) {
 				Packet::InteractWithBlock sleepingAnim;
 				sleepingAnim.entityId = mpPlayer->id;
@@ -266,116 +281,45 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		}
 		break;
 	}
-	case EntityType::CREEPER: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::CREEPER;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::CREEPER:
+		SpawnMob(_entityEntry, PacketData::MobType::CREEPER, pSession);
 		break;
-	}
-	case EntityType::SPIDER: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::SPIDER;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::SPIDER:
+		SpawnMob(_entityEntry, PacketData::MobType::SPIDER, pSession);
 		break;
-	}
-	case EntityType::ZOMBIE: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::ZOMBIE;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::ZOMBIE:
+		SpawnMob(_entityEntry, PacketData::MobType::ZOMBIE, pSession);
 		break;
-	}
-	case EntityType::SKELETON: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::SKELETON;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::ZOMBIE_PIGMAN:
+		SpawnMob(_entityEntry, PacketData::MobType::ZOMBIE_PIGMAN, pSession);
 		break;
-	}
-	case EntityType::PIG: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::PIG;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::SKELETON:
+		SpawnMob(_entityEntry, PacketData::MobType::SKELETON, pSession);
 		break;
-	}
-	case EntityType::COW: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::COW;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::PIG:
+		SpawnMob(_entityEntry, PacketData::MobType::PIG, pSession);
 		break;
-	}
-	case EntityType::SHEEP: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::SHEEP;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::COW:
+		SpawnMob(_entityEntry, PacketData::MobType::COW, pSession);
 		break;
-	}
-	case EntityType::CHICKEN: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::CHICKEN;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::SHEEP:
+		SpawnMob(_entityEntry, PacketData::MobType::SHEEP, pSession);
 		break;
-	}
-	case EntityType::SQUID: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::SQUID;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::CHICKEN:
+		SpawnMob(_entityEntry, PacketData::MobType::CHICKEN, pSession);
 		break;
-	}
-	case EntityType::SLIME: {
-		Packet::SpawnMob pkt;
-		pkt.entityId = _entityEntry.entity->id;
-		pkt.mobType = PacketData::MobType::SLIME;
-		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
-		pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-			              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
-		_entityEntry.entity->EncodeMetadata(pkt.metadata);
-		pkt.Serialize(pSession->stream);
+	case EntityType::SQUID:
+		SpawnMob(_entityEntry, PacketData::MobType::SQUID, pSession);
 		break;
-	}
+	case EntityType::WOLF:
+		SpawnMob(_entityEntry, PacketData::MobType::WOLF, pSession);
+		break;
+	case EntityType::SLIME:
+		SpawnMob(_entityEntry, PacketData::MobType::SLIME, pSession);
+		break;
+	case EntityType::GHAST:
+		SpawnMob(_entityEntry, PacketData::MobType::GHAST, pSession);
+		break;
 	case EntityType::BOAT: {
 		Packet::SpawnObject pkt;
 		pkt.entityId = _entityEntry.entity->id;
@@ -410,10 +354,7 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		break;
 	}
 	case EntityType::PAINTING: {
-		PaintingEntity* painting = dynamic_cast<PaintingEntity*>(_entityEntry.entity);
-		if (!painting)
-			break;
-
+		PaintingEntity* painting = static_cast<PaintingEntity*>(_entityEntry.entity);
 		Packet::SpawnPainting pkt;
 		pkt.title = painting->art.title;
 		pkt.entityId = painting->id;
@@ -449,12 +390,12 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		break;
 	}
 	case EntityType::FISHING_BOBBER: {
-		auto* bobber = dynamic_cast<FishingBobberEntity*>(_entityEntry.entity);
+		auto* bobber = static_cast<FishingBobberEntity*>(_entityEntry.entity);
 		auto owner = bobber ? bobber->owner.lock() : nullptr;
 
 		if (!owner || owner->isDead)
 			break;
-		auto* mpOwner = dynamic_cast<EntityMPPlayer*>(owner.get());
+		auto* mpOwner = static_cast<EntityMPPlayer*>(owner.get());
 		if (!mpOwner || !mpOwner->session)
 			break;
 
@@ -468,7 +409,7 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		break;
 	}
 	case EntityType::ARROW: {
-		auto* arrow = dynamic_cast<ArrowEntity*>(_entityEntry.entity);
+		auto* arrow = static_cast<ArrowEntity*>(_entityEntry.entity);
 		auto owner = arrow ? arrow->GetOwner() : nullptr;
 		Packet::SpawnObject pkt;
 		pkt.entityId = _entityEntry.entity->id;
@@ -480,8 +421,21 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		pkt.Serialize(pSession->stream);
 		break;
 	}
+	case EntityType::FIREBALL: {
+		auto* fb = static_cast<FireballEntity*>(_entityEntry.entity);
+		auto owner = fb ? fb->GetOwner() : nullptr;
+		Packet::SpawnObject pkt;
+		pkt.entityId = _entityEntry.entity->id;
+		pkt.objectType = PacketData::ObjectType::FIREBALL;
+		pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
+		// Beta sends the owner id, or the fireball's own id if it has none
+		pkt.ownerEntityId = owner ? owner->id : _entityEntry.entity->id;
+		pkt.qVelocity = QuantizeVelocity(fb->acceleration);
+		pkt.Serialize(pSession->stream);
+		break;
+	}
 	case EntityType::THROWN_EGG: {
-		auto* egg = dynamic_cast<EggEntity*>(_entityEntry.entity);
+		auto* egg = static_cast<EggEntity*>(_entityEntry.entity);
 		auto owner = egg ? egg->GetOwner() : nullptr;
 		Packet::SpawnObject pkt;
 		pkt.entityId = _entityEntry.entity->id;
@@ -493,7 +447,7 @@ void EntityTracker::SpawnEntityForPlayer(EntityId _playerId, TrackedEntry& _enti
 		break;
 	}
 	case EntityType::THROWN_SNOWBALL: {
-		auto* snowball = dynamic_cast<SnowballEntity*>(_entityEntry.entity);
+		auto* snowball = static_cast<SnowballEntity*>(_entityEntry.entity);
 		auto owner = snowball ? snowball->GetOwner() : nullptr;
 		Packet::SpawnObject pkt;
 		pkt.entityId = _entityEntry.entity->id;
@@ -544,7 +498,7 @@ void EntityTracker::SendPacketToPlayersInTrackedEntry(Packet::BasePacket& _pkt, 
 		auto playerIt = trackedEntities.find(playerId);
 		if (playerIt == trackedEntities.end()) continue;
 
-		auto* player = dynamic_cast<EntityMPPlayer*>(playerIt->second.entity);
+		auto* player = static_cast<EntityMPPlayer*>(playerIt->second.entity);
 		if (!player || !player->session) continue;
 		_pkt.Serialize(player->session->stream);
 	}
@@ -608,7 +562,7 @@ void EntityTracker::SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_
 		pkt.Serialize(_targetSession->stream);
 	};
 
-	MobileEntity& entity = dynamic_cast<MobileEntity&>(*_trackedEntry.entity);
+	MobileEntity& entity = static_cast<MobileEntity&>(*_trackedEntry.entity);
 	updateEquipmentSlot(4, entity.armor[0]);
 	updateEquipmentSlot(3, entity.armor[1]);
 	updateEquipmentSlot(2, entity.armor[2]);
@@ -631,7 +585,7 @@ void EntityTracker::UpdateEquipmentState(TrackedEntry& _trackedEntry) {
 	};
 
 	auto& equipment = _trackedEntry.equipmentProfile;
-	MobileEntity& entity = dynamic_cast<MobileEntity&>(*_trackedEntry.entity);
+	MobileEntity& entity = static_cast<MobileEntity&>(*_trackedEntry.entity);
 	ItemStack none = {};
 	auto helmet = entity.armor[0] ? entity.armor[0] : &none;
 	auto chest = entity.armor[1] ? entity.armor[1] : &none;
@@ -659,40 +613,22 @@ void EntityTracker::UpdateEquipmentState(TrackedEntry& _trackedEntry) {
 	}
 }
 
-void EntityTracker::UpdateDamageState(TrackedEntry& _trackedEntry) {
-	MobileEntity& entity = dynamic_cast<MobileEntity&>(*_trackedEntry.entity);
+void EntityTracker::FlushEventQueue(Entity& _entity) {
+	auto isPlayer = dynamic_cast<EntityMPPlayer*>(&_entity);
 
-	// Send the death animation packet when the entity starts its death timer
-	if (entity.deathTime == 1) {
-		Packet::EntityEvent deathPkt;
-		deathPkt.entityId = entity.id;
-		deathPkt.action = PacketData::EntityEvent::DEATH;
+	while (_entity.pendingEvents.size() > 0) {
+		auto event = _entity.pendingEvents.back();
+		Packet::EntityEvent pkt;
+		pkt.action = event;
+		pkt.entityId = _entity.id;
 
-		SendPacketToPlayersInTrackedEntry(deathPkt, _trackedEntry);
-		return;
-	}
+		SendPacketToViewers(pkt, _entity.id);
 
-	// Send the hurt animation packet / death animation packet whenever that happens.
-	if (entity.lastHealth != entity.GetHeartsHealth() || entity.beenAttacked) {
-		if (entity.GetHeartsHealth() - entity.lastHealth < 0 || entity.beenAttacked) {
-			Packet::EntityEvent pkt;
-			pkt.entityId = entity.id;
-			pkt.action = PacketData::EntityEvent::HURT;
-
-			SendPacketToPlayersInTrackedEntry(pkt, _trackedEntry);
-
-			// If we are a player play the damage sound for ourselves too
-			if (entity.type == EntityType::PLAYER) {
-				auto session = server->GetSessionById(entity.id);
-				if (session) {
-					pkt.Serialize(session->stream);
-				}
-			}
-
-			entity.beenAttacked = false;
+		if (isPlayer) {
+			pkt.Serialize(isPlayer->session->stream);
 		}
 
-		entity.lastHealth = entity.GetHeartsHealth();
+		_entity.pendingEvents.pop_back();
 	}
 }
 
@@ -702,11 +638,10 @@ void EntityTracker::Update(TrackedEntry& _trackedEntry) {
 		return;
 	auto& entity = _trackedEntry.entity;
 
-	// If we are a mobile entity then send the damage state and update our equipment
+	// If we are a mobile entity then send our equipment
 	// TODO: Only send these if any of them have been updated
-	if (std::find(this->mobileEntities.begin(), this->mobileEntities.end(), entity->type) !=
-	    this->mobileEntities.end()) {
-		UpdateDamageState(_trackedEntry);
+	if (dynamic_cast<MobileEntity*>(entity)) {
+		FlushEventQueue(*entity);
 		UpdateEquipmentState(_trackedEntry);
 		UpdateMetadataState(_trackedEntry);
 	}

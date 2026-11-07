@@ -66,14 +66,24 @@ void FurnaceInventoryInteraction::WriteBack() {
 		playerInventory->slots[i + 6] = sharedInventory.slots[i];
 }
 
-void FurnaceInventoryInteraction::TakeResult() {
+void FurnaceInventoryInteraction::TakeResult(bool _isRightClick) {
 	ItemStack& result = furnaceInventory->slots[RESULT_SLOT];
 	if (result.id == Items::Id::INVALID)
 		return;
 
 	if (carried.id == Items::Id::INVALID) {
+		if (_isRightClick && result.count > 1) {
+			// Beta always take the higher of the two if uneven
+			int taken = (result.count + 1) / 2;
+			int left = result.count - taken;
+			result.count = int8_t(left);
+			carried = ItemStack{ result.id, int8_t(taken), result.data };
+			furnaceInventory->OnInventoryChanged();
+			MergeInventories();
+			return;
+		}
 		carried = result;
-	} else if (carried.id == result.id && carried.data == result.data) {
+	} else if (carried.id == result.id && (Items::HasSubtypes(carried.id) ? result.data == carried.data : true)) {
 		// Same type, try merge with cursor
 		int maxStack = Items::GetMaxStack(carried.id);
 		if (int(carried.count) + int(result.count) > maxStack)
@@ -100,7 +110,7 @@ void FurnaceInventoryInteraction::OnLeftClick(int _slot) {
 
 void FurnaceInventoryInteraction::OnRightClick(int _slot) {
 	if (_slot == RESULT_SLOT) {
-		TakeResult();
+		TakeResult(/*isRightClick=*/true);
 		return;
 	}
 	InventoryInteraction::OnRightClick(_slot);

@@ -136,12 +136,12 @@ void CaveGenerator::CarveCave(Chunk& _chunk, Vec3 _offset, float _tunnelRadius, 
 				int32_t zMin = MathHelper::FloorDouble(_offset.z - radiusXz) - chunkBlockZ - 1;
 				int32_t zMax = MathHelper::FloorDouble(_offset.z + radiusXz) - chunkBlockZ + 1;
 
-				xMin = std::max(xMin, 0);
-				xMax = std::min(xMax, CHUNK_WIDTH);
-				yMin = std::max(yMin, 1);
-				yMax = std::min(yMax, 120);
-				zMin = std::max(zMin, 0);
-				zMax = std::min(zMax, CHUNK_WIDTH);
+				xMin = std::max<int32_t>(xMin, 0);
+				xMax = std::min<int32_t>(xMax, CHUNK_WIDTH);
+				yMin = std::max<int32_t>(yMin, 1);
+				yMax = std::min<int32_t>(yMax, 120);
+				zMin = std::max<int32_t>(zMin, 0);
+				zMax = std::min<int32_t>(zMax, CHUNK_WIDTH);
 
 				bool fluidIsPresent = false;
 				for (int32_t blockX = xMin; !fluidIsPresent && blockX < xMax; ++blockX) {

@@ -7,11 +7,17 @@ This pages includes instructions on how to build and compile Betrock++ for vario
 Simply clone the repository with `git`.
 
 ```bash
-git clone https://github.com/OpenBetaGroup/BetrockPlusPlus.git
+git clone --recurse-submodules https://github.com/OpenBetaGroup/BetrockPlusPlus.git
 cd BetrockPlusPlus
 ```
 
 Alternatively, download a **.zip**.
+
+If you've cloned the repo in the past, ensure all the submodules are up-to-date,
+especially if you intend to compile the client.
+```bash
+git submodule update --init --recursive
+```
 
 ### 2. Install Dependencies
 
@@ -153,3 +159,7 @@ Please see the [docker markdown file for more info](./DOCKER.md).
 
 Do note that most of the information in that file was AI-generated,
 and isn't updated often.
+
+## Nintendo Switch / 3DS
+
+See [BUILDING_CONSOLE.md](BUILDING_CONSOLE.md).

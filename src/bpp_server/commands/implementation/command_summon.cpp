@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2025-2026, jwaxy <jwaxy.is-a.dev>
+ * Copyright (c) 2026, jwaxy <jwaxy.is-a.dev>
  * Copyright (c) 2026, Anya Rihtarshich <vesui@proton.me>
+ * Copyright (c) 2026, Pixel Brush <pixelbrush.dev>
  *
  * SPDX-License-Identifier: AGPL-3.0-only
 */
@@ -20,7 +21,11 @@
 #include "entities/entity_slime.h"
 #include "entities/entity_spider.h"
 #include "entities/entity_zombie.h"
+#include "entities/entity_zombie_pig.h"
+#include "entities/entity_wolf.h"
 #include "entities/entity_squid.h"
+#include "entities/entity_fireball.h"
+#include "entities/entity_ghast.h"
 #include "networking/packets.h"
 #include "nbt/nbt_textifier.h"
 #include <exception>
@@ -37,6 +42,8 @@ std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 		return std::make_shared<CreeperEntity>();
 	case EntityType::ZOMBIE:
 		return std::make_shared<ZombieEntity>();
+	case EntityType::ZOMBIE_PIGMAN:
+		return std::make_shared<ZombiePigEntity>();
 	case EntityType::SKELETON:
 		return std::make_shared<SkeletonEntity>();
 	case EntityType::SPIDER:
@@ -57,6 +64,12 @@ std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 		return std::make_shared<MinecartEntity>();
 	case EntityType::SLIME:
 		return std::make_shared<SlimeEntity>();
+	case EntityType::WOLF:
+		return std::make_shared<WolfEntity>();
+	case EntityType::FIREBALL:
+		return std::make_shared<FireballEntity>();
+	case EntityType::GHAST:
+		return std::make_shared<GhastEntity>();
 	default:
 		return nullptr;
 	}

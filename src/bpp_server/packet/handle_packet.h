@@ -7,10 +7,13 @@
 */
 #pragma once
 #include <functional>
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2)
+#include "platform/platform_caps.h"
+#if defined(BPP_HAS_POSIX_SOCKETS)
 #define INVALID_SOCKET -1
 #include <netinet/in.h>
+#ifndef BPP_PLATFORM_CONSOLE
 #include <sys/ioctl.h>
+#endif
 #include <sys/socket.h>
 #include <unistd.h>
 #elif defined(_WIN32) || defined(_WIN64)

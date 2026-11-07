@@ -59,6 +59,7 @@ jobs:
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SERVER=ON
+          -DBETACRAFT_HEARTBEAT=ON
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
           -DVCPKG_TARGET_TRIPLET=x64-windows-static
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
@@ -102,6 +103,7 @@ jobs:
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SERVER=ON \
+            -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local \
             -DCMAKE_C_COMPILER=gcc-${LINUX_GCC_VERSION} \
             -DCMAKE_CXX_COMPILER=g++-${LINUX_GCC_VERSION}
@@ -140,6 +142,7 @@ jobs:
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SERVER=ON \
+            -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local
 
       - name: Build
@@ -180,6 +183,7 @@ jobs:
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SERVER=ON \
+            -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH="/usr/local;${CURL_PREFIX}" \
             -DCMAKE_C_COMPILER="$LLVM_PREFIX/bin/clang" \
             -DCMAKE_CXX_COMPILER="$LLVM_PREFIX/bin/clang++"

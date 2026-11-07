@@ -13,6 +13,13 @@
 #include "entities/entity_spider.h"
 #include "entities/entity_zombie.h"
 
+void TileEntityMobSpawner::Deserialize(const Tag& _tag) {
+	if (_tag.Has("EntityId"))
+		this->entityId = _tag.Get("EntityId").GetString();
+	if (_tag.Has("Delay"))
+		this->delay = _tag.Get("Delay").GetShort();
+}
+
 bool TileEntityMobSpawner::PlayerInRange(WorldManager& _world) {
 	return _world.entityManager.GetClosestPlayerWithin(Vec3{ position.x + 0.5, position.y + 0.5, position.z + 0.5 },
 	                                                   16) != nullptr;

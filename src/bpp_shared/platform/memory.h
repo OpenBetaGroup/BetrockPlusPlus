@@ -6,6 +6,7 @@
 */
 
 #pragma once
+#include <cstddef>
 #include <cstdint>
 
 enum class MemoryUnit : uint8_t {
@@ -37,6 +38,10 @@ double GetMemoryUsage(MemoryUnit _unit);
 
 // What the allocator considers "in use"
 double GetActiveMemoryUsage(MemoryUnit _unit);
+
+// Get the current memory page size (Cached after first use)
+// TODO: Have default fallback for this function with 4096?
+size_t GetPageSize();
 
 // Asks the allocator to release freed-but-unused memory back to the OS
 void TrimMemory();

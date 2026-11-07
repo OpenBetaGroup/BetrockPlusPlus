@@ -54,7 +54,7 @@ public:
 		return manager.seed;
 	}
 
-	bool CanBlockSeeSky(const Int3 _pos) {
+	bool CanBlockSeeSky(const Int3 _pos) override {
 		auto chunk = chunkRegion.GetChunk(GetRegionChunkPos(_pos));
 		if (!chunk)
 			return false;

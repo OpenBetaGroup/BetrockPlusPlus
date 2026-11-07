@@ -17,13 +17,14 @@ A full, from-scratch reimplementation of Beta 1.7.x into C++.
 
 ## Community
 
-This is another project that's part of/worked on by the OpenBeta Community. We have a [Discord Server](https://discord.gg/JHTz2HSKrf) and [Website](https://OpenBetaGroup.github.io/OpenBeta)!
+This is another project that's part of/worked on by the OpenBeta Community. We have a [Discord Server](https://discord.gg/JHTz2HSKrf) and [Website](https://openbetagroup.github.io)!
 
 ## Running
 
 Grab the [latest build from the Releases tab](https://github.com/OpenBetaGroup/BetrockPlusPlus/releases/latest), choose the build that you need for your OS, then just run it wherever you need!
 
 ## Bug Reporting
+
 If you encounter a bug, inaccuracy or other issue, please file an issue here on Github. Check if a similar issue has already been reported, and roughly follow the same sort of style we use. Provide as much info as you can!
 
 If you don't have a Github account, please report the issue on Discord, though this is generally discouraged.
@@ -51,17 +52,17 @@ We provide a C ABI that allows for the creation of addons.
 This feature is still in its infancy, so don't expect it to be reliable or stable just yet.
 None the less, a few addons exist to demonstrate what's possible.
 
-- [bpa_luau](https://github.com/OpenBetaGroup/bpa_luau): A luau plugin API for easier plugin development
-- [bpa_discord](https://github.com/OpenBetaGroup/bpa_discord): Discord chat integration
+- [bpa_luau](https://github.com/OfficialPixelBrush/bpa_luau): A luau plugin API for easier plugin development
+- [bpa_discord](https://github.com/OfficialPixelBrush/bpa_discord): Discord chat integration
 
 For anyone curious in how to use the addon C ABI, check our [addon_api.h](./include/addon_api.h) file to see what interfaces are available.
 
 ## Related projects
 
 - Beta++ by JcbbcEnjoyer: Beta 1.7.3 Client written in C++
-- [Technical Beta Wiki](https://OpenBetaGroup.github.io/beta-wiki): Technical protocol and implementation reference (any findings are documented here)
+- [Technical Beta Wiki](https://openbetagroup.github.io/beta-wiki): Technical protocol and implementation reference (any findings are documented here)
 - [LibreProg](https://github.com/OpenBetaGroup/LibreProg): Fully FOSS Beta 1.7.3 textures, sounds, etc. (will be used for default textures for Client)
-- [LegacyMcServer](https://github.com/OpenBetaGroup/LegacyMcServer): Beta 1.7.3 Server written in C++ (some code was adopted from this)
+- [LegacyMcServer](https://github.com/OfficialPixelBrush/LegacyMcServer): Beta 1.7.3 Server written in C++ (some code was adopted from this)
 
 ## Credits
 

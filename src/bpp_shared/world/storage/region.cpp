@@ -10,23 +10,64 @@
 #include "chunk.h"
 #include "logger.h"
 #include "nbt/nbt.h"
-#include "tile_entities/tile_entity.h"
-#include <cstdint>
-#include <fstream>
-#include <libdeflate.h>
+#include "nbt/nbt_textifier.h"
+#include "platform/memory.h"
+#include "tile_entities/tile_entity_manager.h"
+#include "helpers/endian_convert.h"
+#include "helpers/deflate_pool.h"
 #include <memory>
 #include <string>
+#include <fstream>
+#include <algorithm>
+#include <cstdint>
 
-void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
+namespace {
+constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;
+constexpr size_t HEIGHT_MAP_DATA_SIZE = 16 * 16;
+// * 1.1 for a bit of headroom for entities, tile entities, storage contents, etc.
+// TODO: Calculate a more accurate baseline that takes into account
+// - The NBT Tag bytes themselves
+// - Any always-existing NBT labels
+constexpr size_t BASE_MEMORY_ALLOCATION_GUESS = CHUNK_DATA_SIZE + HEIGHT_MAP_DATA_SIZE * 1.1;
+
+// First guess for how big a chunk's decompressed NBT is,
+// rounded up to a whole number of memory pages
+size_t InitialDecompressedSize() {
+	static const size_t size = []() -> size_t {
+		const size_t page = std::max<size_t>(GetPageSize(), 1);
+		return ((BASE_MEMORY_ALLOCATION_GUESS + page - 1) / page) * page;
+	}();
+	return size;
+}
+}
+
+bool Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
                       std::shared_ptr<const std::vector<Tag>> _entities) {
-	std::lock_guard<std::mutex> lock(mutex);
+	if (!_chunk) {
+		Logger::Error << "Region::AddChunk: null chunk\n";
+		return false;
+	}
+
 	auto compressed = EncodeNbtData(_chunk, _timestamp, _entities);
-	if (compressed.empty())
-		return;
+	if (compressed.empty()) {
+		Logger::Error << "Region::AddChunk: failed to encode chunk (" << _chunk->cpos.x << ", " << _chunk->cpos.z
+		              << ")\n";
+		return false;
+	}
+
+	// Only lock after encoding (hehe)
+	std::lock_guard<std::mutex> lock(mutex);
 
 	// Chunk header: 4 bytes length + 1 byte compression type
 	uint32_t payloadLength = uint32_t(compressed.size()) + 1; // +1 for the format byte
 	uint32_t sectorsNeeded = (payloadLength + 4 + SECTOR_SIZE - 1) / SECTOR_SIZE;
+
+	// The header stores the sector count in a single byte
+	if (sectorsNeeded > 255) {
+		Logger::Error << "Region::AddChunk: chunk (" << _chunk->cpos.x << ", " << _chunk->cpos.z << ") needs "
+		              << sectorsNeeded << " sectors (max 255)\n";
+		return false;
+	}
 
 	// Find a free run of sectors in the file
 	// Build an occupancy set from the header
@@ -57,12 +98,29 @@ void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
 		}
 	}
 
-	// Write chunk data at the chosen sector
+	// The header stores the offset in 3 bytes
+	if (chosenOffset > 0xFFFFFF) {
+		Logger::Error << "Region::AddChunk: sector offset " << chosenOffset << " does not fit in 24 bits\n";
+		return false;
+	}
+
 	auto& file = regionFile.Get();
+
+	// Don't write anything if the stream is already in a failed state
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: region stream already in a failed state\n";
+		return false;
+	}
+
+	// Write chunk data at the chosen sector
 	file.seekp(chosenOffset * SECTOR_SIZE);
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: seek to chunk data failed\n";
+		return false;
+	}
 
 	// 4-byte big-endian length
-	uint32_t lengthBE = __builtin_bswap32(payloadLength);
+	uint32_t lengthBE = ToBigEndian(payloadLength);
 	file.write(reinterpret_cast<char*>(&lengthBE), 4);
 
 	// 1-byte compression type
@@ -80,31 +138,49 @@ void Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
 		file.write(pad.data(), pad.size());
 	}
 
-	// Update header entry
-	Int2 local{ _chunk->cpos.x & 31, _chunk->cpos.z & 31 };
-	int index = local.x + local.z * 32;
-	regionHeader[index].offset = chosenOffset;
-	regionHeader[index].numberOfSectors = uint8_t(sectorsNeeded);
+	// Make sure the data is on its way to disk BEFORE the header points at it
+	file.flush();
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: writing chunk data failed (disk full or I/O error?)\n";
+		return false;
+	}
 
 	// Write updated header entry to file
+	Int2 local{ _chunk->cpos.x & 31, _chunk->cpos.z & 31 };
+	int index = local.x + local.z * 32;
+
 	file.seekp(index * 4);
 	uint32_t entry = (chosenOffset << 8) | uint8_t(sectorsNeeded);
-	entry = __builtin_bswap32(entry);
+	entry = ToBigEndian(entry);
 	file.write(reinterpret_cast<char*>(&entry), 4);
 	file.flush();
+	if (file.fail()) {
+		Logger::Error << "Region::AddChunk: writing header entry failed\n";
+		return false;
+	}
+
+	// Only update the in-memory header once the file is fully written
+	regionHeader[index].offset = chosenOffset;
+	regionHeader[index].numberOfSectors = uint8_t(sectorsNeeded);
+	return true;
 }
 
-std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos) {
+std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos, ReadStatus& _status) {
+	_status = ReadStatus::Error;
 	std::lock_guard<std::mutex> lock(mutex);
 	Int2 local{ _cpos.x & 31, _cpos.z & 31 };
 	int index = local.x + local.z * 32;
 
-	if (!ChunkExists(local))
+	if (!ChunkExists(local)) {
+		_status = ReadStatus::Missing;
 		return nullptr;
+	}
 
 	uint32_t offset = regionHeader[index].offset;
-	if (offset == 0)
+	if (offset == 0) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 
 	auto& file = regionFile.Get();
 	file.seekg(static_cast<std::streamoff>(offset) * SECTOR_SIZE);
@@ -112,34 +188,52 @@ std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos) {
 	// Read 4-byte length
 	uint32_t length = 0;
 	file.read(reinterpret_cast<char*>(&length), 4);
-	if (file.fail())
+	if (file.fail()) {
+		_status = ReadStatus::Error;
 		return nullptr;
-	length = __builtin_bswap32(length);
+	}
+	length = FromBigEndian(length);
 
 	// Guard against corrupt/zero length before subtracting
 	if (length < 1) {
 		Logger::Warning << "Invalid chunk length: " << length << "\n";
+		_status = ReadStatus::Error;
 		return nullptr;
 	}
 
 	// Read compression type
 	CompressorFormat format = CompressorFormat::REGION_INVALID;
 	file.read(reinterpret_cast<char*>(&format), 1);
-	if (file.fail())
+	if (file.fail()) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 
 	if (format != CompressorFormat::REGION_ZLIB) {
 		Logger::Warning << "Unsupported compression format: " << int(format) << "\n";
+		_status = ReadStatus::Error;
 		return nullptr;
 	}
 
 	// Read compressed data (length includes the format byte, so actual data is length-1)
 	std::vector<uint8_t> compressed(length - 1);
 	file.read(reinterpret_cast<char*>(compressed.data()), length - 1);
-	if (file.fail())
+	if (file.fail()) {
+		_status = ReadStatus::Error;
 		return nullptr;
+	}
 
-	return DecodeNbtData(compressed);
+	auto result = DecodeNbtData(compressed);
+	if (result) {
+		if (result->cpos != _cpos) {
+			Logger::Error << "Expected chunk " << _cpos << " at offset " << offset << "; Got " << result->cpos << "\n";
+			result->cpos = _cpos;
+			_status = ReadStatus::Missing;
+		} else {
+			_status = ReadStatus::Ok;
+		}
+	}
+	return result;
 }
 
 std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk, int64_t _timestamp,
@@ -258,13 +352,13 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 	level.compound["zPos"] = zPos;
 	level.compound["TerrainPopulated"] = populated;
 	level.compound["LastUpdate"] = lastUpdate;
-	level.compound["Blocks"] = blocksTag;
-	level.compound["Data"] = dataTag;
-	level.compound["BlockLight"] = blockLightTag;
-	level.compound["SkyLight"] = skyLightTag;
-	level.compound["HeightMap"] = heightMap;
-	level.compound["Entities"] = entitiesTag;
-	level.compound["TileEntities"] = tileEntities;
+	level.compound["Blocks"] = std::move(blocksTag);
+	level.compound["Data"] = std::move(dataTag);
+	level.compound["BlockLight"] = std::move(blockLightTag);
+	level.compound["SkyLight"] = std::move(skyLightTag);
+	level.compound["HeightMap"] = std::move(heightMap);
+	level.compound["Entities"] = std::move(entitiesTag);
+	level.compound["TileEntities"] = std::move(tileEntities);
 
 	// Only include this tag if we need to reseed lighting
 	if (_chunk->refreshLighting) {
@@ -276,56 +370,22 @@ std::vector<uint8_t> Region::EncodeNbtData(const std::shared_ptr<Chunk>& _chunk,
 		level.compound["RefreshLighting"] = refreshLighting;
 	}
 
-	root.compound["Level"] = level;
+	root.compound["Level"] = std::move(level);
 
 	// Serialize to bytes
 	std::vector<uint8_t> raw;
 	NBTwriter writer(raw, root);
 	// Compress
-	thread_local std::unique_ptr<libdeflate_compressor, decltype(&libdeflate_free_compressor)> compressor(
-	    nullptr, libdeflate_free_compressor);
-	if (!compressor)
-		compressor.reset(libdeflate_alloc_compressor(1));
-	// If still no compressor, give up
-	if (!compressor)
-		return {};
-	size_t maxSize = libdeflate_zlib_compress_bound(compressor.get(), static_cast<size_t>(raw.size()));
-	std::vector<uint8_t> compressed(maxSize);
-	size_t actualSize = libdeflate_zlib_compress(compressor.get(), raw.data(), static_cast<size_t>(raw.size()),
-	                                             compressed.data(), maxSize);
-	if (actualSize == 0)
-		return {};
-	compressed.resize(actualSize);
-	return compressed;
+	return Deflate::Compress(Deflate::Format::Zlib, raw, 1);
 }
 
 std::shared_ptr<Chunk> Region::DecodeNbtData(const std::vector<uint8_t>& _rawData) {
-	libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
-	if (!decompressor)
-		return std::make_shared<Chunk>();
-	size_t decompressedSize = (16 * 128 * 16) * 2.5;
-	std::vector<uint8_t> decompressed(decompressedSize);
-	while (true) {
-		decompressed.resize(decompressedSize);
-		size_t actualOutSize = 0;
-		libdeflate_result result = libdeflate_zlib_decompress(decompressor, _rawData.data(), _rawData.size(),
-		                                                      decompressed.data(), decompressed.size(), &actualOutSize);
-
-		if (result == LIBDEFLATE_SUCCESS) {
-			decompressed.resize(actualOutSize);
-			break;
-		}
-
-		if (result != LIBDEFLATE_INSUFFICIENT_SPACE) {
-			Logger::Warning << "Decompression failed!\n";
-			libdeflate_free_decompressor(decompressor);
-			return std::make_shared<Chunk>();
-		}
-
-		decompressedSize *= 1.5;
+	auto decompressed = Deflate::Decompress(Deflate::Format::Zlib, _rawData, InitialDecompressedSize());
+	if (!decompressed) {
+		Logger::Warning << "Decompression failed!\n";
+		return nullptr;
 	}
-	libdeflate_free_decompressor(decompressor);
-	return DecodeDecompressedNbtData(decompressed);
+	return DecodeDecompressedNbtData(*decompressed);
 }
 
 std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _decompressedData) {
@@ -361,7 +421,6 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 	const int8_t* const dataIn = data.data();
 	const int8_t* const blightIn = blockLight.data();
 	const int8_t* const skyIn = skyLight.data();
-	bool any = false;
 	for (int y = 0; y < CHUNK_HEIGHT; y++) {
 		SubChunk& sub = chunk->subChunks[size_t(y >> 4)];
 		const unsigned shift = (y & 1) ? 4u : 0u;
@@ -372,7 +431,6 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 				BlockType thisBlock = BlockType(blocksIn[idx]);
 				if (!Items::IsBlock(thisBlock))
 					continue;
-				any = true;
 				const int li = SubChunk::LocalIndex({ x, y, z });
 				sub.SetBlock(li, thisBlock);
 				sub.SetMeta(li, uint8_t((uint8_t(dataIn[idx / 2]) >> shift) & 0xF));
@@ -383,97 +441,13 @@ std::shared_ptr<Chunk> Region::DecodeDecompressedNbtData(std::vector<uint8_t>& _
 		if ((y & (SUB_CHUNK_SIZE - 1)) == SUB_CHUNK_SIZE - 1)
 			chunk->TryToCompactSubChunk(y / SUB_CHUNK_SIZE);
 	}
-	if (any)
-		chunk->isModified = true;
 
 	// Load our entities
 	chunk->entityTags = std::move(entities);
 
 	// Load our tile entities
-	for (auto& te : tileEntities) {
-		const auto& id = te.Get("id").GetString();
-		int32_t tx = te.Get("x").GetInt();
-		int32_t ty = te.Get("y").GetInt();
-		int32_t tz = te.Get("z").GetInt();
-		Int3 pos{ tx, ty, tz };
-
-		// load a standard slot-based inventory from an Items list tag
-		auto loadSlots = [&](auto& _slots) {
-			if (!te.Has("Items"))
-				return;
-			for (auto& item : te.Get("Items").GetList()) {
-				int8_t slot = item.Get("Slot").GetByte();
-				int16_t itemId = item.Get("id").GetShort();
-				int8_t count = item.Get("Count").GetByte();
-				int16_t damage = item.Get("Damage").GetShort();
-				if (slot >= 0 && slot < int8_t(_slots.size())) {
-					_slots[size_t(slot)] = ItemStack{ itemId, count, damage };
-				}
-			}
-		};
-
-		//TODO: Add de-serialize method to TileEntity instead of this.. thing
-		if (id == "Chest") {
-			auto ent = std::make_shared<TileEntityChest>(pos);
-			loadSlots(ent->inventory.slots);
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Furnace") {
-			int burnTime = te.Has("BurnTime") ? te.Get("BurnTime").GetShort() : 0;
-			int maxBurnTime = te.Has("MaxBurnTime") ? te.Get("MaxBurnTime").GetShort() : 0;
-			int cookTime = te.Has("CookTime") ? te.Get("CookTime").GetShort() : 0;
-			auto ent = std::make_shared<TileEntityFurnace>(pos, burnTime, maxBurnTime, cookTime);
-			loadSlots(ent->inventory.slots);
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Trap") {
-			auto ent = std::make_shared<TileEntityDispenser>(pos);
-			loadSlots(ent->inventory.slots);
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Sign") {
-			auto ent = std::make_shared<TileEntitySign>(pos);
-			if (te.Has("Text1"))
-				ent->text1 = te.Get("Text1").GetString();
-			if (te.Has("Text2"))
-				ent->text2 = te.Get("Text2").GetString();
-			if (te.Has("Text3"))
-				ent->text3 = te.Get("Text3").GetString();
-			if (te.Has("Text4"))
-				ent->text4 = te.Get("Text4").GetString();
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Music") {
-			auto ent = std::make_shared<TileEntityNoteblock>(pos);
-			if (te.Has("note"))
-				ent->note = te.Get("note").GetByte();
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "RecordPlayer") {
-			auto ent = std::make_shared<TileEntityJukebox>(pos);
-			if (te.Has("Record"))
-				ent->recordItemId = ItemId(te.Get("Record").GetInt());
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "MobSpawner") {
-			auto ent = std::make_shared<TileEntityMobSpawner>(pos);
-			if (te.Has("EntityId"))
-				ent->entityId = te.Get("EntityId").GetString();
-			if (te.Has("Delay"))
-				ent->delay = te.Get("Delay").GetShort();
-			chunk->tileEntities.push_back(std::move(ent));
-		} else if (id == "Piston") {
-			auto ent = std::make_shared<TileEntityPistonMoving>(pos);
-			if (te.Has("blockId"))
-				ent->storedBlock = BlockType(te.Get("blockId").GetInt());
-			if (te.Has("blockData"))
-				ent->storedMeta = uint8_t(te.Get("blockData").GetInt());
-			if (te.Has("facing"))
-				ent->orientation = te.Get("facing").GetInt();
-			if (te.Has("progress"))
-				ent->lastProgress = ent->progress = te.Get("progress").GetFloat();
-			if (te.Has("extending"))
-				ent->extending = te.Get("extending").GetByte() != 0;
-
-			if (ent->orientation < 0 || ent->orientation > 5)
-				ent->orientation = 0;
-
-			chunk->tileEntities.push_back(std::move(ent));
-		}
+	for (const Tag& te : tileEntities) {
+		chunk->tileEntities.push_back(TileEntityHelper::CreateTileEntityShared(te));
 	}
 
 	// The above stuff marks the chunk as dirty,

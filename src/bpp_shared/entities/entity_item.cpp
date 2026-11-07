@@ -69,9 +69,23 @@ std::optional<Tag> ItemEntity::SerializeToNbt() {
 void ItemEntity::OnCollideWithPlayer(PlayerEntity& _entity) {
 	if (pickupCooldown)
 		return;
+	auto beforeCount = itemStack.count;
 	_entity.PickupItem(this->itemStack, this->id);
-	if (this->itemStack.count <= 0)
-		this->isDead = true;
+	if (beforeCount == itemStack.count)
+		return;
+
+	if (this->itemStack.count > 0) {
+		// Spawn a new partial item
+		std::shared_ptr<ItemEntity> item = std::make_shared<ItemEntity>(this->position);
+		item->itemStack = this->itemStack;
+		item->pickupCooldown = this->pickupCooldown;
+		item->health = this->health;
+		item->velocity = this->velocity;
+		item->ticksExisted = this->ticksExisted;
+		this->world->entityManager.AddEntity(item);
+	}
+	itemStack = {};
+	this->isDead = true;
 }
 
 void ItemEntity::UpdateFallState(float /*_movedY*/) {

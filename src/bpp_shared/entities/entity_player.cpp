@@ -11,17 +11,37 @@
 #include "logger/logger.h"
 
 bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
-	auto success = MobileEntity::AttackEntityFrom(_entity, _damage, _type);
-	if (success && isSleeping)
+	if (health <= 0)
+		return false;
+
+	if (isSleeping)
 		WakeUp();
+
+	// TODO: difficulty scaling
+
+	if (_damage == 0)
+		return false;
+
+	auto success = MobileEntity::AttackEntityFrom(_entity, _damage, _type);
+	if (success && dynamic_cast<MobileEntity*>(_entity)) {
+		if (!_entity->isDead)
+			this->entityManager->AlertWolves(*this, *_entity);
+	}
 	return success;
+}
+
+bool PlayerEntity::HeadInOpaqueBlock() {
+	if (isSleeping)
+		return false;
+
+	return MobileEntity::HeadInOpaqueBlock();
 }
 
 void PlayerEntity::OnEnterPortal() {
 	if (this->portalCooldown > 0) {
 		this->portalCooldown = 10;
 		return;
-	} 
+	}
 	this->isInPortal = true;
 }
 
@@ -94,11 +114,11 @@ void PlayerEntity::WakeUp(bool /*_confirmSpawn*/) {
 		Int3 wakeupSpot = sleepPositions[0];
 		constexpr double GROUND_NUDGE = 0.06;
 		Vec3 teleportPos = { double(wakeupSpot.x) + 0.5, double(wakeupSpot.y) + double(this->yOffset) + GROUND_NUDGE,
-			                 double(wakeupSpot.z) + 0.5 };
+		                     double(wakeupSpot.z) + 0.5 };
 		this->Teleport(teleportPos, { rotationYaw, rotationPitch });
 	} else {
 		Vec3 teleportPos = { double(footPos.x) + 0.5, double(footPos.y) + double(this->yOffset) + 0.1,
-			                 double(footPos.z) + 0.5 };
+		                     double(footPos.z) + 0.5 };
 		this->Teleport(teleportPos, { rotationYaw, rotationPitch });
 	}
 }

@@ -8,6 +8,10 @@
 
 #include "tile_entity_chest.h"
 
+void TileEntityChest::Deserialize(const Tag& _tag) {
+	LoadSlots(_tag, this->inventory.slots);
+}
+
 void TileEntityChest::Tick(WorldManager& /*_world*/) {
 	if (chunk && inventory.isModified) {
 		chunk->isModified = true;

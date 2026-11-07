@@ -56,7 +56,7 @@ struct PaintingEntity : public Entity {
 		return true;
 	}
 
-	void Tick() {
+	void Tick() override {
 		tickCounter++;
 		if (tickCounter >= 100) {
 			tickCounter = 0;

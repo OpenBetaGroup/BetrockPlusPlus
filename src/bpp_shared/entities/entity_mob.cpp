@@ -87,7 +87,7 @@ void MobEntity::UpdateState() {
 	auto thisTarget = target.lock();
 	if (thisTarget) {
 		// Turns towards our target
-		FaceEntity(dynamic_cast<MobileEntity&>(*thisTarget), 10.0, 40.0);
+		FaceEntity(static_cast<MobileEntity&>(*thisTarget), 10.0, 40.0);
 
 		// If our ticks to look at this target expired, stop looking
 		// If our target is dead or too far, stop looking

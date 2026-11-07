@@ -164,8 +164,8 @@ struct ChunkSender {
 		// Force even ySize so the client's nibble copy doesn't desync
 		ymin = (ymin / 2) * 2;
 		ymax = (ymax / 2 + 1) * 2 - 1;
-		ymin = CrossPlatform::Math::Max<int>(ymin, 0);
-		ymax = CrossPlatform::Math::Min<int>(ymax, CHUNK_HEIGHT - 1);
+		ymin = std::max<int>(ymin, 0);
+		ymax = std::min<int>(ymax, CHUNK_HEIGHT - 1);
 
 		PendingSubRegion psr;
 		psr.chunkPos = _chunk;

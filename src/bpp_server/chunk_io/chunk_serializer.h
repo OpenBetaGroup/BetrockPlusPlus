@@ -9,7 +9,7 @@
 #pragma once
 #include "chunk.h"
 #include "subchunk.h"
-#include <libdeflate.h>
+#include "helpers/deflate_pool.h"
 #include <vector>
 
 namespace ChunkSerializer {
@@ -23,7 +23,13 @@ inline std::vector<uint8_t> Serialize(const Chunk& _chunk, int _xmin = 0, int _x
 	const int nibbles = (blocks + 1) / 2;
 	const int total = blocks + nibbles * 3;
 
-	std::vector<uint8_t> raw(size_t(total), 0);
+	// NOTE: This means each per-thread chunk serializer grows as big as its biggest allocation.
+	// So for a long-running server, which gets abused to the max (via explosions, for example),
+	// this'd be ~5MB in the worst case (128x128x128) per thread.
+	// TODO: Maybe shrink these after a few ticks?
+	// Most chunk serializations should only take a few KB on average!
+	thread_local std::vector<uint8_t> raw;
+	raw.assign(size_t(total), 0);
 	uint8_t* blockData = raw.data();
 	uint8_t* metaData = blockData + blocks;
 	uint8_t* blockLight = metaData + nibbles;
@@ -40,7 +46,7 @@ inline std::vector<uint8_t> Serialize(const Chunk& _chunk, int _xmin = 0, int _x
 	for (int x = _xmin; x < _xmax; x++) {
 		for (int z = _zmin; z < _zmax; z++) {
 			for (int y = _ymin; y < _ymax;) {
-				const int slabEnd = CrossPlatform::Math::Min(_ymax, (y | (SUB_CHUNK_SIZE - 1)) + 1);
+				const int slabEnd = std::min<int>(_ymax, (y | (SUB_CHUNK_SIZE - 1)) + 1);
 				const SubChunk& sub = _chunk.subChunks[size_t(y >> 4)];
 
 				const SubChunk::BlockLayer* blockLayer = sub.blocks.get();
@@ -69,19 +75,6 @@ inline std::vector<uint8_t> Serialize(const Chunk& _chunk, int _xmin = 0, int _x
 		}
 	}
 
-	thread_local std::unique_ptr<libdeflate_compressor, decltype(&libdeflate_free_compressor)> compressor(
-	    nullptr, libdeflate_free_compressor);
-	if (!compressor)
-		compressor.reset(libdeflate_alloc_compressor(1));
-	if (!compressor)
-		return {};
-	size_t maxSize = libdeflate_zlib_compress_bound(compressor.get(), static_cast<size_t>(total));
-	std::vector<uint8_t> compressed(maxSize);
-	const size_t actualSize = libdeflate_zlib_compress(compressor.get(), raw.data(), static_cast<size_t>(total),
-	                                                   compressed.data(), maxSize);
-	if (actualSize == 0)
-		return {};
-	compressed.resize(actualSize);
-	return compressed;
+	return Deflate::Compress(Deflate::Format::Zlib, raw, 1);
 }
 } // namespace ChunkSerializer

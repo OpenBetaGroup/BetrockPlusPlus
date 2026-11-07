@@ -6,6 +6,7 @@
 
 #include "biome_gen.h"
 #include "chunk.h"
+#include <algorithm>
 
 // This one does nothing. DO NOT USE!
 BiomeGenerator::BiomeGenerator() {}
@@ -17,9 +18,9 @@ BiomeGenerator::BiomeGenerator() {}
  */
 BiomeGenerator::BiomeGenerator(int64_t _seed) {
 	// Init Biome Noise
-	Java::Random randTemp = Java::Random(_seed * 9871L);
-	Java::Random randHum = Java::Random(_seed * 39811L);
-	Java::Random randWeird = Java::Random(_seed * 543321L);
+	Java::Random randTemp = Java::Random(std::bit_cast<int64_t>(static_cast<uint64_t>(_seed) * 9871ULL));
+	Java::Random randHum = Java::Random(std::bit_cast<int64_t>(static_cast<uint64_t>(_seed) * 39811ULL));
+	Java::Random randWeird = Java::Random(std::bit_cast<int64_t>(static_cast<uint64_t>(_seed) * 543321ULL));
 	temperatureNoiseGen = NoiseOctavesSimplex(randTemp, 4);
 	humidityNoiseGen = NoiseOctavesSimplex(randHum, 4);
 	weirdnessNoiseGen = NoiseOctavesSimplex(randWeird, 2);
@@ -38,18 +39,15 @@ BiomeGenerator::BiomeGenerator(int64_t _seed) {
 void BiomeGenerator::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std::span<double> _temperature,
                                       std::span<double> _humidity, std::span<double> _weirdness, Int2 _blockPos) {
 	static constexpr Int32_2 MAX_AREA{ CHUNK_WIDTH, CHUNK_WIDTH };
+	// TODO: Probably unnecessary? We always generate them with the proper size :p
 	static constexpr size_t K_COUNT = size_t(CHUNK_WIDTH) * size_t(CHUNK_WIDTH);
 	if (_temperature.size() < K_COUNT || _humidity.size() < K_COUNT || _weirdness.size() < K_COUNT)
 		return;
-
-	this->temperatureNoiseGen.GenerateOctaves(_temperature.first(K_COUNT), _blockPos, MAX_AREA,
-	                                          Vec2{ double(0.025f), double(0.025f) }, 0.25);
-	this->humidityNoiseGen.GenerateOctaves(_humidity.first(K_COUNT), _blockPos, MAX_AREA,
-	                                       Vec2{ double(0.05f), double(0.05f) }, 1.0 / 3.0);
-	this->weirdnessNoiseGen.GenerateOctaves(_weirdness.first(K_COUNT), _blockPos, MAX_AREA, Vec2{ 0.25, 0.25 },
-	                                        0.5882352941176471);
+	this->temperatureNoiseGen.GenerateOctaves(_temperature, _blockPos, MAX_AREA, temperatureBaseScale,
+	                                          temperatureFactor);
+	this->humidityNoiseGen.GenerateOctaves(_humidity, _blockPos, MAX_AREA, humidityBaseScale, humidityFactor);
+	this->weirdnessNoiseGen.GenerateOctaves(_weirdness, _blockPos, MAX_AREA, weirdnessBaseScale, weirdnessFactor);
 	size_t index = 0;
-
 	// Iterate over each block column
 	for (int32_t iX = 0; iX < CHUNK_WIDTH; ++iX) {
 		for (int32_t iZ = 0; iZ < CHUNK_WIDTH; ++iZ) {
@@ -62,14 +60,8 @@ void BiomeGenerator::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std
 			double humi = (_humidity[index] * 0.15 + 0.5) * limit + weird * scale;
 			temp = 1.0 - (1.0 - temp) * (1.0 - temp);
 			// Limit values to 0.0 - 1.0
-			if (temp < 0.0)
-				temp = 0.0;
-			if (humi < 0.0)
-				humi = 0.0;
-			if (temp > 1.0)
-				temp = 1.0;
-			if (humi > 1.0)
-				humi = 1.0;
+			temp = std::clamp(temp, 0.0, 1.0);
+			humi = std::clamp(humi, 0.0, 1.0);
 			// Write the temperature and humidity values back
 			_temperature[index] = temp;
 			_humidity[index] = humi;
@@ -81,28 +73,20 @@ void BiomeGenerator::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std
 }
 
 Biome BiomeGenerator::GetBiomeAtPoint(Int2 _worldPos) {
+	// TODO: Maybe add thing for sampling at a single point without this?
 	double temp[1], humi[1], weird[1];
-
 	this->temperatureNoiseGen.GenerateOctaves(temp, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 },
-	                                          Vec2{ double(0.025f), double(0.025f) }, 0.25);
-	this->humidityNoiseGen.GenerateOctaves(humi, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 },
-	                                       Vec2{ double(0.05f), double(0.05f) }, 1.0 / 3.0);
+	                                          temperatureBaseScale, temperatureFactor);
+	this->humidityNoiseGen.GenerateOctaves(humi, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 }, humidityBaseScale,
+	                                       humidityFactor);
 	this->weirdnessNoiseGen.GenerateOctaves(weird, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 },
-	                                        Vec2{ 0.25, 0.25 }, 0.5882352941176471);
-
+	                                        weirdnessBaseScale, weirdnessFactor);
 	const double w = weird[0] * 1.1 + 0.5;
 	double t = (temp[0] * 0.15 + 0.7) * 0.99 + w * 0.01;
 	double h = (humi[0] * 0.15 + 0.5) * 0.998 + w * 0.002;
 	t = 1.0 - (1.0 - t) * (1.0 - t);
-	if (t < 0.0)
-		t = 0.0;
-	if (t > 1.0)
-		t = 1.0;
-	if (h < 0.0)
-		h = 0.0;
-	if (h > 1.0)
-		h = 1.0;
-
+	t = std::clamp(t, 0.0, 1.0);
+	h = std::clamp(h, 0.0, 1.0);
 	return GetBiomeFromLookup(float(t), float(h));
 }
 
@@ -119,13 +103,9 @@ void BiomeGenerator::GenerateTemperature(std::span<double> _temperature, std::sp
 	const size_t count = size_t(_max.x) * size_t(_max.y);
 	if (_temperature.size() < count || _weirdness.size() < count)
 		return;
-
-	this->temperatureNoiseGen.GenerateOctaves(_temperature.first(count), _blockPos, _max,
-	                                          Vec2{ double(0.025f), double(0.025f) }, 0.25);
-	this->weirdnessNoiseGen.GenerateOctaves(_weirdness.first(count), _blockPos, _max, Vec2{ 0.25, 0.25 },
-	                                        0.5882352941176471);
+	this->temperatureNoiseGen.GenerateOctaves(_temperature, _blockPos, _max, temperatureBaseScale, temperatureFactor);
+	this->weirdnessNoiseGen.GenerateOctaves(_weirdness, _blockPos, _max, weirdnessBaseScale, weirdnessFactor);
 	size_t index = 0;
-
 	// Iterate over each block column
 	for (int32_t x = 0; x < _max.x; ++x) {
 		for (int32_t z = 0; z < _max.y; ++z) {
@@ -135,10 +115,7 @@ void BiomeGenerator::GenerateTemperature(std::span<double> _temperature, std::sp
 			double temp = (_temperature[index] * 0.15 + 0.7) * limit + weird * scale;
 			temp = 1.0 - (1.0 - temp) * (1.0 - temp);
 			// Limit values to 0.0 - 1.0
-			if (temp < 0.0)
-				temp = 0.0;
-			if (temp > 1.0)
-				temp = 1.0;
+			temp = std::clamp(temp, 0.0, 1.0);
 			// Write the temperature values back
 			_temperature[index] = temp;
 			++index;

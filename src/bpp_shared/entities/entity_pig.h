@@ -6,6 +6,7 @@
  */
 #pragma once
 #include "entity_animal.h"
+#include "entity_zombie_pig.h"
 
 struct PigEntity : public AnimalEntity {
 	bool isSaddled = false;
@@ -22,4 +23,17 @@ struct PigEntity : public AnimalEntity {
 	bool DecodeMetadata(const std::vector<PacketData::EntityMetadata::DataEntry>& _metadata) override;
 	std::optional<Tag> SerializeToNbt() override;
 	void LoadFromNbt(Tag& _nbt) override;
+
+	void OnStruckByLightning(LightningEntity& /*_bolt*/) override {
+		if (!world)
+			return;
+
+		std::shared_ptr<ZombiePigEntity> zombiePig = std::make_shared<ZombiePigEntity>();
+		zombiePig->world = world;
+		zombiePig->entityManager = entityManager;
+		zombiePig->Teleport(this->position, { this->rotationYaw, this->rotationPitch });
+		entityManager->AddEntity(zombiePig);
+
+		this->isDead = true;
+	}
 };

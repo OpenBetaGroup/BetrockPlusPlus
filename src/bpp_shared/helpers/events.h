@@ -10,7 +10,7 @@
 #include <vector>
 
 template <typename... Args>
-class Event {
+class EventEmitter {
 	using Callback = std::function<void(Args...)>;
 
 public:

@@ -36,7 +36,7 @@ struct CreeperEntity : public HostileEntity {
 		UpdateMetadata(powered, _powered);
 	}
 
-	void OnStruckByLightning(LightningEntity& _bolt) {
+	void OnStruckByLightning(LightningEntity& _bolt) override {
 		Entity::OnStruckByLightning(_bolt);
 
 		SetPowered(true);

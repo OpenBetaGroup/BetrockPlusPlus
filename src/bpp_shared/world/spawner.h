@@ -21,6 +21,7 @@ struct SpawnEntry {
 	std::shared_ptr<MobEntity> entityPtrShared;
 	std::function<std::shared_ptr<Entity>()> factory;
 	int weight;
+	int maxSpawnedInChunk = 4;
 };
 
 struct SpawnCategory {

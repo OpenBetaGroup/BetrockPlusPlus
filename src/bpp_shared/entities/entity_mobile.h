@@ -25,7 +25,6 @@ public:
 	MobileEntity();
 
 	int health = 20;
-	int lastHealth = this->GetHeartsHealth();
 	int maxHealth = 20;
 	int maxHurtTime = 20;
 	int lastAttackDamage = 0;
@@ -49,15 +48,15 @@ public:
 	virtual void Tick() override;
 	virtual void OnDeath(Entity* _killer, DamageType _type);
 	virtual void SetGoal(std::optional<Int3> _goal);
-	virtual bool onLadder();
+	virtual bool IsOnLadder();
 	virtual void UpdateAIState() {}
 	virtual void Move(Vec3& _velocity) override;
+	virtual ItemStack* GetHeldItem();
+	virtual void SetHeldItem(ItemStack _stack);
+	virtual bool HeadInOpaqueBlock();
 	void Heal(int _health);
 	bool AABBNotInLiquidOrObstructed(AABB& _collider);
-	bool HeadInOpaqueBlock();
 	bool HeadInWater();
-	ItemStack* GetHeldItem();
-	void SetHeldItem(ItemStack _stack);
 	bool FollowPath();
 	void DealDamage(int _damage);
 	int GetArmorValue();
@@ -76,7 +75,6 @@ public:
 	void SetMaxHealth(int _health) {
 		this->health = _health;
 		this->maxHealth = _health;
-		this->lastHealth = _health;
 	}
 	bool CanBePushed() override {
 		return true;

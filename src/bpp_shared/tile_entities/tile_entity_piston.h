@@ -21,6 +21,7 @@ struct TileEntityPistonMoving : TileEntity {
 	};
 
 	Tag Serialize() override;
+	void Deserialize(const Tag& _tag) override;
 	void Tick(WorldManager& _world) override;
 	void InstantFinish(WorldManager& _world);
 	void NudgePushedObjects(WorldManager& _world, float _progress, float _pushDist);

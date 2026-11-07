@@ -8,6 +8,10 @@
 
 #include "tile_entity_dispenser.h"
 
+void TileEntityDispenser::Deserialize(const Tag& _tag) {
+	LoadSlots(_tag, this->inventory.slots);
+}
+
 void TileEntityDispenser::Tick(WorldManager& /*_world*/) {
 	if (chunk && inventory.isModified) {
 		chunk->isModified = true;

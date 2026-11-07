@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "helpers/byteswap_compat.h"
+#include "helpers/endian_convert.h"
 #include "numeric_structs.h"
 #include <cstdint>
 #include <ostream>

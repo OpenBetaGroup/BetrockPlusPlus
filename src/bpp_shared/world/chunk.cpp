@@ -42,7 +42,7 @@ void Chunk::GenerateSkylightMap() {
 	GenerateHeightMap();
 
 	// Every slot that starts at or above the tallest column is open sky in every column, so light it in one go
-	const int bulkStart = CrossPlatform::Math::Min(CHUNK_HEIGHT,
+	const int bulkStart = std::min<int>(CHUNK_HEIGHT,
 	                                               (GetHighestPoint() + SUB_CHUNK_SIZE - 1) & ~(SUB_CHUNK_SIZE - 1));
 
 	for (int i = bulkStart / SUB_CHUNK_SIZE; i < SUB_CHUNK_COUNT; i++)
@@ -55,9 +55,9 @@ void Chunk::GenerateSkylightMap() {
 				SetSkyLight({ x, y, z }, 15);
 			int skyLight = 15;
 			for (int y = height - 1; y >= 0; y--) {
-				skyLight -= CrossPlatform::Math::Max(1,
+				skyLight -= std::max<int>(1,
 				                                     int(Blocks::blockProperties[GetBlock({ x, y, z })].lightOpacity));
-				skyLight = CrossPlatform::Math::Max(0, skyLight);
+				skyLight = std::max<int>(0, skyLight);
 				SetSkyLight({ x, y, z }, uint8_t(skyLight));
 			}
 		}
@@ -83,9 +83,9 @@ void Chunk::RecalculateSkyLightColumn(Int2 _pos) {
 
 	int skyLight = 15;
 	for (int y = height - 1; y >= 0; y--) {
-		skyLight -= CrossPlatform::Math::Max(1,
+		skyLight -= std::max<int>(1,
 		                                     int(Blocks::blockProperties[GetBlock({ _pos.x, y, _pos.z })].lightOpacity));
-		skyLight = CrossPlatform::Math::Max(0, skyLight);
+		skyLight = std::max<int>(0, skyLight);
 		SetSkyLight({ _pos.x, y, _pos.z }, uint8_t(skyLight));
 	}
 }
@@ -192,14 +192,14 @@ void SubChunk::FillRegion(Int3 _a, Int3 _b, BlockType _type, uint8_t _meta) {
 namespace {
 // Normalizes and clamps a chunk-local box. Returns false if nothing of it is inside the chunk.
 bool ClampChunkBox(Int3 _a, Int3 _b, Int3& _lo, Int3& _hi) {
-	const int loX = CrossPlatform::Math::Min(_a.x, _b.x), hiX = CrossPlatform::Math::Max(_a.x, _b.x);
-	const int loY = CrossPlatform::Math::Min(_a.y, _b.y), hiY = CrossPlatform::Math::Max(_a.y, _b.y);
-	const int loZ = CrossPlatform::Math::Min(_a.z, _b.z), hiZ = CrossPlatform::Math::Max(_a.z, _b.z);
+	const int loX = std::min<int>(_a.x, _b.x), hiX = std::max<int>(_a.x, _b.x);
+	const int loY = std::min<int>(_a.y, _b.y), hiY = std::max<int>(_a.y, _b.y);
+	const int loZ = std::min<int>(_a.z, _b.z), hiZ = std::max<int>(_a.z, _b.z);
 	if (hiX < 0 || loX >= CHUNK_WIDTH || hiY < 0 || loY >= CHUNK_HEIGHT || hiZ < 0 || loZ >= CHUNK_WIDTH)
 		return false;
-	_lo = { CrossPlatform::Math::Max(loX, 0), CrossPlatform::Math::Max(loY, 0), CrossPlatform::Math::Max(loZ, 0) };
-	_hi = { CrossPlatform::Math::Min(hiX, CHUNK_WIDTH - 1), CrossPlatform::Math::Min(hiY, CHUNK_HEIGHT - 1),
-		    CrossPlatform::Math::Min(hiZ, CHUNK_WIDTH - 1) };
+	_lo = { std::max<int>(loX, 0), std::max<int>(loY, 0), std::max<int>(loZ, 0) };
+	_hi = { std::min<int>(hiX, CHUNK_WIDTH - 1), std::min<int>(hiY, CHUNK_HEIGHT - 1),
+		    std::min<int>(hiZ, CHUNK_WIDTH - 1) };
 	return true;
 }
 } // namespace
@@ -210,8 +210,8 @@ void Chunk::FillRegion(Int3 _a, Int3 _b, BlockType _type, uint8_t _meta) {
 		return;
 	for (int sub = lo.y >> 4; sub <= (hi.y >> 4); sub++) {
 		const int base = sub * SUB_CHUNK_SIZE;
-		const int y0 = CrossPlatform::Math::Max(lo.y, base) - base;
-		const int y1 = CrossPlatform::Math::Min(hi.y, base + SUB_CHUNK_SIZE - 1) - base;
+		const int y0 = std::max<int>(lo.y, base) - base;
+		const int y1 = std::min<int>(hi.y, base + SUB_CHUNK_SIZE - 1) - base;
 		subChunks[size_t(sub)].FillRegion({ lo.x, y0, lo.z }, { hi.x, y1, hi.z }, _type, _meta);
 	}
 	isModified = true;
@@ -225,8 +225,8 @@ void Chunk::FillBlockLightRegion(Int3 _a, Int3 _b, uint8_t _val) {
 	const bool fullFootprint = lo.x == 0 && hi.x == CHUNK_WIDTH - 1 && lo.z == 0 && hi.z == CHUNK_WIDTH - 1;
 	for (int sub = lo.y >> 4; sub <= (hi.y >> 4); sub++) {
 		const int base = sub * SUB_CHUNK_SIZE;
-		const int y0 = CrossPlatform::Math::Max(lo.y, base) - base;
-		const int y1 = CrossPlatform::Math::Min(hi.y, base + SUB_CHUNK_SIZE - 1) - base;
+		const int y0 = std::max<int>(lo.y, base) - base;
+		const int y1 = std::min<int>(hi.y, base + SUB_CHUNK_SIZE - 1) - base;
 		SubChunk& s = subChunks[size_t(sub)];
 		if (fullFootprint && y0 == 0 && y1 == SUB_CHUNK_SIZE - 1) {
 			s.FillBlockLight(_val);

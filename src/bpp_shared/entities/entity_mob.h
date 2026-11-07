@@ -30,7 +30,7 @@ struct MobEntity : public MobileEntity {
 	virtual bool TryDespawn();
 	virtual void OnDeath(Entity* _killer, DamageType _type) override;
 	virtual void Tick() override;
-	virtual bool CanSpawnAt() {
+	virtual bool CanSpawnAt() override {
 		if (!world)
 			return false;
 		return MobileEntity::CanSpawnAt();

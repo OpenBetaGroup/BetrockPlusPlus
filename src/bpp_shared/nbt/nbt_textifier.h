@@ -10,14 +10,223 @@
 #include <cctype>
 
 struct NBTTextifier {
+public:
+	enum Mode : uint8_t {
+		FULL,
+		REDUCED
+	};
+
 	// Converts an NBT compound to a string
-	
+	std::string Parse(const Tag& _tag, Mode /*_mode*/) {
+		std::string parsed;
+
+		if (_tag.type != TAG_COMPOUND)
+			Throw("Root tag must be a compound!");
+
+		ParseTag(_tag, parsed, _tag.name, /*inList=*/false, /*inCompound=*/true);
+
+		return parsed;
+	}
+private:
+	// Parse a singular tag into text
+	void ParseTag(const Tag& _tag, std::string& _string, std::string _name, bool inList = false, bool inCompound = false,
+	              bool writeName = true, bool forceComma = false) {
+		// Write the name of our tag
+		if (_tag.type != TAG_COMPOUND) {
+			if (writeName) {
+				_string.append("\"");
+				_string.append(EscapeString(_name));
+				_string.append("\": ");
+			}
+		} else if (_name != "") {
+			_string.append("\"");
+			_string.append(EscapeString(_name));
+			_string.append("\": ");
+		}
+
+		switch (_tag.type) {
+		case TagType::TAG_COMPOUND: {
+			_string.append("{");
+			if (!inList)
+				_string.append("\n");
+			auto length = _tag.compound.size();
+			size_t index = 0;
+			for (auto& tag : _tag.compound) {
+				ParseTag(tag.second, _string, tag.first, index < length - 1 ? false : true, true, true);
+				index++;
+			}
+			if (!inList)
+				_string.append("\n");
+			_string.append("}");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_LIST: {
+			_string.append("[");
+			auto length = _tag.list.size();
+			size_t index = 0;
+			for (auto& tag : _tag.list) {
+				ParseTag(tag, _string, tag.name, true, inCompound, false);
+				if (index < length - 1)
+					_string.append(", ");
+				index++;
+			}
+			_string.append("]");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_BYTEARRAY: {
+			_string.append("[b; ");
+			auto length = _tag.byteArray.size();
+			size_t index = 0;
+			for (auto& byte : _tag.byteArray) {
+				_string.append(std::to_string(byte) + "b");
+				if (index < length - 1)
+					_string.append(", ");
+				index++;
+			}
+			_string.append("]");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_INTARRAY: {
+			_string.append("[i; ");
+			auto length = _tag.intArray.size();
+			size_t index = 0;
+			for (auto& integer : _tag.intArray) {
+				_string.append(std::to_string(integer));
+				if (index < length - 1)
+					_string.append(", ");
+				index++;
+			}
+			_string.append("]");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_BYTE: {
+			_string.append(std::to_string(_tag.GetByte()));
+			_string.append("b");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_SHORT: {
+			_string.append(std::to_string(_tag.GetShort()));
+			_string.append("s");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_INT: {
+			_string.append(std::to_string(_tag.GetInt()));
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_LONG: {
+			_string.append(std::to_string(_tag.GetLong()));
+			_string.append("L");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_FLOAT: {
+			_string.append(std::to_string(_tag.GetFloat()));
+			_string.append("f");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_DOUBLE: {
+			_string.append(std::to_string(_tag.GetDouble()));
+			_string.append("d");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_STRING: {
+			_string.append("\"");
+			_string.append(EscapeString(_tag.GetString()));
+			_string.append("\"");
+			if (!inList)
+				_string.append(", \n");
+			else if (forceComma)
+				_string.append(", ");
+			return;
+		}
+		case TagType::TAG_END: {
+			return;
+		}
+		}
+	}
+
+	// Escapes characters that would break a quoted literal
+	static std::string EscapeString(const std::string& _in) {
+		std::string out;
+		out.reserve(_in.size());
+		for (const char c : _in) {
+			switch (c) {
+			case '\\':
+				out += "\\\\";
+				break;
+			case '"':
+				out += "\\\"";
+				break;
+			case '\n':
+				out += "\\n";
+				break;
+			case '\r':
+				out += "\\r";
+				break;
+			case '\t':
+				out += "\\t";
+				break;
+			default:
+				out += c;
+				break;
+			}
+		}
+		return out;
+	}
+
+	void Throw(std::string _reason) const {
+		Logger::Error << _reason << "\n";
+		throw std::runtime_error(_reason);
+	}
+
+	void Warn(std::string _reason) const {
+		Logger::Warning << _reason << "\n";
+	}
 };
 
 struct TextNBTifier {
 	// Converts a string to an NBT compound
 	std::string nbtString;
-	int64_t stepper = 0;
+	size_t stepper = 0;
 
 	Tag Parse(std::string _string) {
 		nbtString = _string;
@@ -52,18 +261,18 @@ private:
 
 	// Linker
 	Tag Link(std::vector<Token>* _tokens);
-	Tag LinkTag(std::vector<Token>* _tokens, int64_t& _stepper, std::string& _tagName);
-	Tag LinkList(std::vector<Token>* _tokens, int64_t& _stepper, std::string _name);
-	Tag LinkCompound(std::vector<Token>* _tokens, int64_t& _stepper, std::string _name);
+	Tag LinkTag(std::vector<Token>* _tokens, size_t& _stepper, std::string& _tagName);
+	Tag LinkList(std::vector<Token>* _tokens, size_t& _stepper, std::string _name);
+	Tag LinkCompound(std::vector<Token>* _tokens, size_t& _stepper, std::string _name);
 	void SetNumberFromText(Tag& _tag, std::string _text);
 
 	// Lexer
-	void Lex(std::vector<Token>* _tokens, int64_t& _stepper);
-	void LexToken(std::vector<Token>* _tokens, int64_t& _stepper);
-	void LexLiteral(std::vector<Token>* _tokens, int64_t& _stepper);
-	void LexList(std::vector<Token>* _tokens, int64_t& _stepper);
-	bool IsArrayIdentifier(std::vector<Token>* _tokens, int64_t& _stepper);
-	void LexCompound(std::vector<Token>* _tokens, int64_t& _stepper);
+	void Lex(std::vector<Token>* _tokens, size_t& _stepper);
+	void LexToken(std::vector<Token>* _tokens, size_t& _stepper);
+	void LexLiteral(std::vector<Token>* _tokens, size_t& _stepper);
+	void LexList(std::vector<Token>* _tokens, size_t& _stepper);
+	bool IsArrayIdentifier(std::vector<Token>* _tokens, size_t& _stepper);
+	void LexCompound(std::vector<Token>* _tokens, size_t& _stepper);
 
 	bool IsBreakChar(const char _char) {
 		return _char == ':' || _char == ',';
@@ -84,10 +293,10 @@ private:
 		Logger::Warning << _reason << "\n";
 	}
 
-	bool IndexInBounds(int64_t _index) const {
+	bool IndexInBounds(size_t _index) const {
 		return _index < nbtString.length();
 	}
-	
+
 	char Peek() {
 		if (!IndexInBounds(stepper))
 			return '\0';
@@ -114,7 +323,7 @@ private:
 	// Skips until a non-whitespace character is provided
 	// Returns true if it skipped characters
 	bool SkipWhitespace() {
-		int64_t savedStep = stepper;
+		size_t savedStep = stepper;
 		while (std::isspace(nbtString[stepper])) {
 			stepper++;
 		}

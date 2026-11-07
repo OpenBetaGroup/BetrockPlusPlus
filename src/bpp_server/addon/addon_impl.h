@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../../../addon_bindings/c_cpp/addon_api.h"
+#include "addon_api.h"
 #include "inventory/item_stack.h"
 #include <unordered_map>
 

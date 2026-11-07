@@ -145,17 +145,18 @@ bool EntityMPPlayer::PickupItem(ItemStack& _stack, EntityId _entityId) {
 	if (!this->EntityAlive())
 		return false;
 
-	if (this->session->inventory.PickupItem(_stack)) {
-		Packet::CollectItem pkt;
-		pkt.collectorEntityId = this->id;
-		pkt.itemEntityId = _entityId;
-		if (this->session->entityTracker)
-			this->session->entityTracker->SendPacketToViewers(pkt, this->id);
-		pkt.Serialize(this->session->stream);
-		return true;
-	}
+	auto countBefore = _stack.count;
+	this->session->inventory.PickupItem(_stack);
+	if (_stack.count == countBefore)
+		return false; // Nothing moved
 
-	return false;
+	Packet::CollectItem pkt;
+	pkt.collectorEntityId = this->id;
+	pkt.itemEntityId = _entityId;
+	if (this->session->entityTracker)
+		this->session->entityTracker->SendPacketToViewers(pkt, this->id);
+	pkt.Serialize(this->session->stream);
+	return true;
 }
 
 static constexpr double CLEAR_CHECK_TOLERANCE = 0.05;
@@ -169,21 +170,22 @@ void EntityMPPlayer::HandlePositionChecks() {
 	if (!Gamerule::Get<bool>(Gamerule::Id::PlayerMovementCheck))
 		return;
 
-	this->velocity = {};
-	if (this->vehicle.lock().get()) {
+	// Only wipe our velocity if we dont have a pending velocity to send
+	if (!this->forceVelocityUpdate)
+		this->velocity = {};
+
+	auto inVehicle = this->vehicle.lock().get();
+
+	if (inVehicle && !session->pendingTeleport) {
 		// Vehicles are weird!
-		Vec3 pos = session->pendingPosition.value();
+		if (!session->pendingPosition)
+			return;
+		Vec3 pos = *session->pendingPosition;
 		session->pendingPosition.reset();
 		if (pos.x <= -1 || pos.x > 1 || pos.z <= -1 || pos.z > 1)
 			return;
 		this->velocity = pos;
 		this->velocity.y = 0;
-
-		// Leave the vehicle on teleport
-		if (session->pendingTeleport) {
-			this->UnmountEntity();
-			return;
-		}
 
 		// Update our position to the session
 		if (!this->session)
@@ -197,6 +199,23 @@ void EntityMPPlayer::HandlePositionChecks() {
 		if (this->isSleeping) {
 			this->WakeUp();
 		}
+
+		if (inVehicle) {
+			Vec3 savedTp = *session->pendingTeleport;
+			this->UnmountEntity();
+
+			session->pendingTeleport = savedTp;
+			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
+			session->position.pos = *session->pendingTeleport;
+			Packet::PlayerPositionAndRotation pkt;
+			pkt.rotation = session->rotation;
+			pkt.onGround = onGround;
+			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
+			pkt.cameraY = position.y; // This is backwards, thanks notch
+			pkt.Serialize(session->stream);
+			return;
+		}
+
 		// Reset fall state
 		fallDistance = 0;
 		onGround = true;
@@ -213,17 +232,36 @@ void EntityMPPlayer::HandlePositionChecks() {
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
 			session->position.pos = *session->pendingTeleport;
 			Packet::PlayerPositionAndRotation pkt;
-			pkt.rotation = session->rotation; // what the client last told us, so they keep facing the same way
+			pkt.rotation = session->rotation;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
 			pkt.cameraY = position.y; // This is backwards, thanks notch
 			pkt.Serialize(session->stream);
 			return;
 		}
+
 		// Client acknowledged our tp
 		session->pendingTeleport.reset();
 		this->fallDistance = 0;
 		this->simulatedFallDistance = 0;
+
+		// If this is a 2d teleport, snap to the highest block
+		if (session->pending2dTeleport) {
+			session->pending2dTeleport.reset();
+			auto newY = world->GetHeightValue(MathHelper::FloorDouble(position.x), MathHelper::FloorDouble(position.z));
+			Vec3 tpPos = { position.x, double(newY) + 0.01, position.z };
+			session->pendingTeleport = tpPos;
+
+			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
+			session->position.pos = *session->pendingTeleport;
+			Packet::PlayerPositionAndRotation pkt;
+			pkt.rotation = session->rotation;
+			pkt.onGround = onGround;
+			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
+			pkt.cameraY = position.y; // This is backwards, thanks notch
+			pkt.Serialize(session->stream);
+			return;
+		}
 	}
 
 	if (this->isSleeping) {
@@ -258,14 +296,18 @@ void EntityMPPlayer::HandlePositionChecks() {
 		// How far the client claims to have moved this tick
 		double claimedTravelDistSq = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
 		if (claimedTravelDistSq > 100.0) {
+			// Impossible distance for one tick. Don't simulate it (Move() sweeps the whole
+			// path, so this would be a cheap way to stall the server), just roll the player back.
 			movedWrong = true;
+			delta = {};
+		} else {
+			Move(delta);
 		}
-		Move(delta);
 		movedThisTick = true;
 
 		// Simulate our own fall distance / on ground
 		// Anti cheat is fun :p
-		if (inWater || onGround || onLadder()) {
+		if (inWater || onGround || IsOnLadder()) {
 			simulatedFallDistance = 0;
 		} else if (delta.y < 0) {
 			simulatedFallDistance -= delta.y;
@@ -344,10 +386,15 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 		bool willCorrect = (wasClearBefore && (residualTooLarge || !clearNow)) || movedWrong;
 
-		if (movedWrong)
+		if (movedWrong) {
+			Logger::Debug << "Claimed: " << claimed << " Last Position: " << lastPosition << "\n";
 			Logger::Warning << "Client " << session->username << " moved wrongly!\n";
+		}
 
 		if (willCorrect) {
+			Logger::Debug << "Correcting position! clearBefore: " << wasClearBefore
+			              << " residualTooLarge: " << residualTooLarge << " clearNow: " << clearNow
+			              << " movedWrong: " << movedWrong << "\n";
 			Vec3 safeRollback = lastPosition;
 			safeRollback.y += ROLLBACK_NUDGE;
 			ticksSinceTeleportSent = 0;
@@ -456,6 +503,10 @@ void EntityMPPlayer::OnEnterPortal() {
 	}
 }
 
+ItemStack* EntityMPPlayer::GetHeldItem() {
+	return session->inventory.GetHeldItem();
+}
+
 void EntityMPPlayer::Tick() {
 	if (!session)
 		return;
@@ -489,7 +540,7 @@ void EntityMPPlayer::Tick() {
 	// Do living entity stuff
 	PlayerEntity::Tick();
 
-	if (onLadder())
+	if (IsOnLadder())
 		// No fall damage on ladders
 		fallDistance = 0.0f;
 

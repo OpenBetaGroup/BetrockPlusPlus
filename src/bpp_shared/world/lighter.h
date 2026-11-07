@@ -40,10 +40,10 @@ struct LightRegion {
 			return false;
 
 		int oldVol = (max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1);
-		int nx1 = CrossPlatform::Math::Min(min.x, _x1), ny1 = CrossPlatform::Math::Min(min.y, _y1),
-		    nz1 = CrossPlatform::Math::Min(min.z, _z1);
-		int nx2 = CrossPlatform::Math::Max(max.x, _x2), ny2 = CrossPlatform::Math::Max(max.y, _y2),
-		    nz2 = CrossPlatform::Math::Max(max.z, _z2);
+		int nx1 = std::min<int>(min.x, _x1), ny1 = std::min<int>(min.y, _y1),
+		    nz1 = std::min<int>(min.z, _z1);
+		int nx2 = std::max<int>(max.x, _x2), ny2 = std::max<int>(max.y, _y2),
+		    nz2 = std::max<int>(max.z, _z2);
 		int newVol = (nx2 - nx1 + 1) * (ny2 - ny1 + 1) * (nz2 - nz1 + 1);
 		if (newVol - oldVol > 2)
 			return false;
@@ -106,12 +106,12 @@ public:
 
 	// Schedule a region [mn, mx] update with merge/dedup
 	void ScheduleLightRegion(Int3 _mn, Int3 _mx, LightType _type) {
-		_mn.y = CrossPlatform::Math::Max(_mn.y, 0);
-		_mx.y = CrossPlatform::Math::Min(_mx.y, CHUNK_HEIGHT - 1);
+		_mn.y = std::max<int>(_mn.y, 0);
+		_mx.y = std::min<int>(_mx.y, CHUNK_HEIGHT - 1);
 		if (_mn.y > _mx.y)
 			return;
 
-		size_t checkCount = CrossPlatform::Math::Min(lightQueue.size(), size_t(5));
+		size_t checkCount = std::min<int>(lightQueue.size(), size_t(5));
 		for (size_t i = 0; i < checkCount; ++i) {
 			LightRegion& r = lightQueue[size_t(lightQueue.size() - 1 - i)];
 			if (r.type != _type)

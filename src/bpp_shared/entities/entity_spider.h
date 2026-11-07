@@ -17,7 +17,7 @@ struct SpiderEntity : public HostileEntity {
 		canTriggerWalking = false;
 	}
 	~SpiderEntity() = default;
-	bool onLadder() override;
+	bool IsOnLadder() override;
 	void OnDeath(Entity* _killer, DamageType _type) override;
 	void TryAttackEntity(Entity& _target, float _distance) override;
 	std::shared_ptr<Entity> FindPlayerToAttack() override;

@@ -64,6 +64,16 @@ double GetActiveMemoryUsage(const MemoryUnit _unit) {
 	return static_cast<double>(inUseBytes) / BytesPerUnit(_unit);
 }
 
+// Get the current memory page size in Bytes (Cached after first use)
+size_t GetPageSize() {
+	static const size_t pageSize = []() -> size_t {
+		SYSTEM_INFO si;
+		GetSystemInfo(&si);
+		return static_cast<size_t>(si.dwPageSize);
+	}();
+	return pageSize;
+}
+
 void TrimMemory() {
 	DWORD heapCount = GetProcessHeaps(0, nullptr);
 	if (heapCount != 0) {

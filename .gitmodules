@@ -1,0 +1,3 @@
+[submodule "src/bpp_client"]
+	path = src/bpp_client
+	url = git@github.com:OpenBetaGroup/bpp_client.git

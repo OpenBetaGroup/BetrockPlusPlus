@@ -83,7 +83,7 @@ namespace {
 						std::format("§7{} Players, {} Entities, {} Hell Entities", players.size(),
 									ctx.server->overworldEntityTracker.trackedEntities.size(),
 									ctx.server->hellEntityTracker.trackedEntities.size()),
-									std::format("§7Avg. TPS: {:.2f}/{:.0f} ({:+.2f})", avgTps, maxTps, avgTps - maxTps),
+									std::format("§7Avg. TPS: {:.2f}/{:.2f} ({:+.2f})", avgTps, maxTps, avgTps - maxTps),
 									std::format("§7Avg. MSPT: {:.2f} ms ({:.0f}% of {:.0f} ms budget)", mspt, loadPct, budgetMs),
 									std::format("§7Headroom: {:+.2f} ms, max sustainable ~{:.1f} TPS", budgetMs - mspt, maxSustainableTps)
 		};

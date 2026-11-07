@@ -378,6 +378,9 @@ void RailManager::RefreshRail(WorldManager& _world, Int3 _pos, BlockType _block,
 		if (neighborPos == _pos)
 			continue; // nothing actually there
 
+		if (!CanConnect(_world, _pos, dir))
+			continue;
+
 		auto neighborBlock = _world.GetBlockId(neighborPos);
 		auto neighborShape = DetermineRailShapeWithAddition(_world, neighborPos, neighborBlock,
 		                                                    Cardinal::Opposite(dir));

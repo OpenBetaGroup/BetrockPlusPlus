@@ -277,13 +277,17 @@ void RegisterAll() {
 	itemBehavior[SIGN].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& _user,
 	                                   Cardinal::Value _face) {
 		Int3 placePos = _pos.WithOffset(_face);
+		bool success = false;
 		if (_face == Cardinal::Value::Up) {
 			int meta = MathHelper::FloorDouble(((_user.rotationYaw + 180.0f) / 360.0f) * 16.0f + 0.5f) & 0xF;
-			_world.SetBlock(placePos, BLOCK_SIGN_STANDING, meta);
+			success = Blocks::blockBehaviors[BLOCK_SIGN_STANDING].onBlockPlaced(_world, placePos, _user, _face,
+			                                                                    BLOCK_SIGN_STANDING, meta);
 		} else {
-			_world.SetBlock(placePos, BLOCK_SIGN_WALL, GetMetaFromDirection(BLOCK_SIGN_WALL, _face));
+			success = Blocks::blockBehaviors[BLOCK_SIGN_WALL].onBlockPlaced(
+			    _world, placePos, _user, _face, BLOCK_SIGN_WALL, GetMetaFromDirection(BLOCK_SIGN_WALL, _face));
 		}
-		_stack->DecrementCount(1);
+		if (success) 
+			_stack->DecrementCount(1);
 	};
 
 	auto onDoorPlace = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& _user, Cardinal::Value _face) {
@@ -379,12 +383,11 @@ void RegisterAll() {
 	};
 
 	// TODO: Implement maps properly
-#ifdef EXPERIMENTAL
-	itemBehavior[MAP].onStartHolding = [](ItemStack* _stack, PlayerSession& _session) {
+	itemBehavior[MAP].onStartHolding = [](ItemStack* /*_stack*/, PlayerSession& /*_session*/) {
 		Logger::Debug << "Started holding a map!\n";
 	};
 
-	itemBehavior[MAP].whileHeld = [](ItemStack* _stack, PlayerSession& _session, Server& _server) {
+	itemBehavior[MAP].whileHeld = [](ItemStack* /*_stack*/, PlayerSession& _session, Server& _server) {
 		auto pos = _session.position.GetBlockPos();
 		std::vector<Map::MarkerPlacement> markers = {
 			// TODO: Evil fuck-ass offset magic???
@@ -430,9 +433,8 @@ void RegisterAll() {
 		x++;
 	};
 
-	itemBehavior[MAP].onStopHolding = [](ItemStack* _stack) {
+	itemBehavior[MAP].onStopHolding = [](ItemStack* /*_stack*/) {
 		Logger::Debug << "No longer holding a map!\n";
 	};
-#endif
 };
 }; // namespace Items

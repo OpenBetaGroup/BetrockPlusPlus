@@ -23,3 +23,7 @@ struct TileEntityManager {
 
 	void TickTileEntities(WorldManager& _world);
 };
+
+namespace TileEntityHelper {
+std::shared_ptr<TileEntity> CreateTileEntityShared(const Tag& _nbt);
+}

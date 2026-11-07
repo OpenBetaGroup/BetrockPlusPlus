@@ -11,171 +11,104 @@
 #include "logger/logger.h"
 #include <iomanip>
 
+namespace {
+template <typename Pkt, typename Fn>
+void Handle(PlayerSession& _session, Fn&& _fn) {
+	Pkt pkt;
+	pkt.Deserialize(_session.stream);
+	if (!_session.stream.IsShortRead())
+		_fn(pkt);
+}
+} // namespace
+
 bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, WorldManager& _sessionWorld,
                                 Server& _server) {
 	if (_session.connState != ConnectionState::Playing || !_session.stream.IsConnected())
 		return true;
+
+	auto& tracker = _session.dimension == Dimension::Overworld ? _server.overworldEntityTracker
+	                                                            : _server.hellEntityTracker;
+
 	switch (_packetId) {
-	case PacketId::KeepAlive: {
-		Packet::KeepAlive pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::KeepAlive(pkt, _session);
+	case PacketId::KeepAlive:
+		Handle<Packet::KeepAlive>(_session, [&](auto& pkt) { HandlePacket::KeepAlive(pkt, _session); });
 		break;
-	}
-	case PacketId::ChatMessage: {
-		Packet::ChatMessage pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::ChatMessage(
-		    pkt, _session, _server.players, _sessionWorld, _server.commandManager, [&_server](PlayerSession& /*_s*/) {},
-		    _server);
+	case PacketId::ChatMessage:
+		Handle<Packet::ChatMessage>(_session, [&](auto& pkt) {
+			HandlePacket::ChatMessage(
+			    pkt, _session, _server.players, _sessionWorld, _server.commandManager, [](PlayerSession&) {},
+			    _server);
+		});
 		break;
-	}
 	case PacketId::SetTime: {
 		Packet::SetTime pkt;
 		pkt.Deserialize(_session.stream);
 		break;
 	}
-	case PacketId::InteractWithEntity: {
-		Packet::InteractWithEntity pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::InteractWithEntity(pkt, _session, _sessionWorld);
+	case PacketId::InteractWithEntity:
+		Handle<Packet::InteractWithEntity>(
+		    _session, [&](auto& pkt) { HandlePacket::InteractWithEntity(pkt, _session, _sessionWorld); });
 		break;
-	}
-	case PacketId::Respawn: {
-		Packet::Respawn pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::Respawn(pkt, _session, _server);
+	case PacketId::Respawn:
+		Handle<Packet::Respawn>(_session, [&](auto& pkt) { HandlePacket::Respawn(pkt, _session, _server); });
 		break;
-	}
-	case PacketId::PlayerMovement: {
-		Packet::PlayerMovement pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::PlayerMovement(pkt, _session);
+	case PacketId::PlayerMovement:
+		Handle<Packet::PlayerMovement>(_session, [&](auto& pkt) { HandlePacket::PlayerMovement(pkt, _session); });
 		break;
-	}
-	case PacketId::PlayerPosition: {
-		Packet::PlayerPosition pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::PlayerPosition(pkt, _session, _server);
+	case PacketId::PlayerPosition:
+		Handle<Packet::PlayerPosition>(_session,
+		                               [&](auto& pkt) { HandlePacket::PlayerPosition(pkt, _session, _server); });
 		break;
-	}
-	case PacketId::PlayerRotation: {
-		Packet::PlayerRotation pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::PlayerRotation(pkt, _session);
+	case PacketId::PlayerRotation:
+		Handle<Packet::PlayerRotation>(_session, [&](auto& pkt) { HandlePacket::PlayerRotation(pkt, _session); });
 		break;
-	}
-	case PacketId::PlayerPositionAndRotation: {
-		Packet::PlayerPositionAndRotation pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::PlayerPositionAndRotation(pkt, _session, _server);
+	case PacketId::PlayerPositionAndRotation:
+		Handle<Packet::PlayerPositionAndRotation>(
+		    _session, [&](auto& pkt) { HandlePacket::PlayerPositionAndRotation(pkt, _session, _server); });
 		break;
-	}
-	case PacketId::MineBlock: {
-		Packet::MineBlock pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::MineBlock(pkt, _session, _sessionWorld, _server);
+	case PacketId::MineBlock:
+		Handle<Packet::MineBlock>(
+		    _session, [&](auto& pkt) { HandlePacket::MineBlock(pkt, _session, _sessionWorld, _server); });
 		break;
-	}
-	case PacketId::PlaceBlock: {
-		Packet::PlaceBlock pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::PlaceBlock(pkt, _session, _sessionWorld, _server.gameRuntime, _server);
+	case PacketId::PlaceBlock:
+		Handle<Packet::PlaceBlock>(_session, [&](auto& pkt) {
+			HandlePacket::PlaceBlock(pkt, _session, _sessionWorld, _server.gameRuntime, _server);
+		});
 		break;
-	}
-	case PacketId::SetHotbarSlot: {
-		Packet::SetHotbarSlot pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::SetHotbarSlot(pkt, _session);
+	case PacketId::SetHotbarSlot:
+		Handle<Packet::SetHotbarSlot>(_session, [&](auto& pkt) { HandlePacket::SetHotbarSlot(pkt, _session); });
 		break;
-	}
-	case PacketId::InteractWithBlock: {
-		Packet::InteractWithBlock pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::InteractWithBlock(pkt, _session, _sessionWorld);
+	case PacketId::InteractWithBlock:
+		Handle<Packet::InteractWithBlock>(
+		    _session, [&](auto& pkt) { HandlePacket::InteractWithBlock(pkt, _session, _sessionWorld); });
 		break;
-	}
-	case PacketId::Animation: {
-		Packet::Animation pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::Animation(pkt, _session,
-		                        _session.dimension == Dimension::Overworld ? _server.overworldEntityTracker
-		                                                                   : _server.hellEntityTracker);
+	case PacketId::Animation:
+		Handle<Packet::Animation>(_session, [&](auto& pkt) { HandlePacket::Animation(pkt, _session, tracker); });
 		break;
-	}
-	case PacketId::PlayerAction: {
-		Packet::PlayerAction pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::PlayerAction(pkt, _session,
-		                           _session.dimension == Dimension::Overworld ? _server.overworldEntityTracker
-		                                                                      : _server.hellEntityTracker);
+	case PacketId::PlayerAction:
+		Handle<Packet::PlayerAction>(_session,
+		                             [&](auto& pkt) { HandlePacket::PlayerAction(pkt, _session, tracker); });
 		break;
-	}
-	case PacketId::PlayerInput: {
+	case PacketId::PlayerInput: { // Consumed but unused
 		Packet::PlayerInput pkt;
 		pkt.Deserialize(_session.stream);
 		break;
 	}
-	case PacketId::CloseContainer: {
-		Packet::CloseContainer pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::CloseContainer(pkt, _session);
+	case PacketId::CloseContainer:
+		Handle<Packet::CloseContainer>(_session, [&](auto& pkt) { HandlePacket::CloseContainer(pkt, _session); });
 		break;
-	}
-	case PacketId::ClickSlot: {
-		Packet::ClickSlot pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::ClickSlot(pkt, _session);
+	case PacketId::ClickSlot:
+		Handle<Packet::ClickSlot>(_session, [&](auto& pkt) { HandlePacket::ClickSlot(pkt, _session); });
 		break;
-	}
-	case PacketId::ContainerTransaction: {
-		Packet::ContainerTransaction pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::ContainerTransaction(pkt, _session);
+	case PacketId::ContainerTransaction:
+		Handle<Packet::ContainerTransaction>(
+		    _session, [&](auto& pkt) { HandlePacket::ContainerTransaction(pkt, _session); });
 		break;
-	}
-	case PacketId::UpdateSign: {
-		Packet::UpdateSign pkt;
-		pkt.Deserialize(_session.stream);
-		if (_session.stream.IsShortRead())
-			return true;
-		HandlePacket::UpdateSign(pkt, _session, _sessionWorld, _server.players);
+	case PacketId::UpdateSign:
+		Handle<Packet::UpdateSign>(_session, [&](auto& pkt) {
+			HandlePacket::UpdateSign(pkt, _session, _sessionWorld, _server.players);
+		});
 		break;
-	}
 	case PacketId::Disconnect: {
 		Packet::Disconnect pkt;
 		pkt.Deserialize(_session.stream);
@@ -185,7 +118,7 @@ bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, Wor
 		return false; // session is dead; stop processing
 	}
 	default:
-		Logger::Warning << "UNHANDLED packet 0x" << std::hex << static_cast<int>(_packetId) << "\n";
+		Logger::Warning << "UNHANDLED packet 0x" << std::hex << static_cast<int>(_packetId) << std::dec << "\n";
 		_server.connStateManager.DisconnectPlayer(_session, "Unknown packet", _server);
 		return false;
 	}

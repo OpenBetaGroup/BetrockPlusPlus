@@ -26,6 +26,7 @@
 #include "server.h"
 #include "tile_entities/tile_entity.h"
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <iomanip>
 #include <memory>
@@ -56,14 +57,24 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 	if (!_session.entity)
 		return;
 
-	{
-		bp_player_chat_event event{ .player = &_session.apiPlayer, .message = _pkt.message.c_str(), .cancel = false };
-		_server.GetAddonManager().Broadcast(&bp_addon_events::playerChat, event);
-
-		if (event.cancel)
+	// Vanilla caps chat at 100 characters
+	constexpr size_t K_MAX_CHAT_LENGTH = 100;
+	if (_pkt.message.size() > K_MAX_CHAT_LENGTH * 3 || ToUCS2(_pkt.message).size() > K_MAX_CHAT_LENGTH) {
+		_server.DisconnectPlayer("Chat message too long!", _session);
+		return;
+	}
+	// Control characters and the colour-code character (U+00A7, UTF-8 C2 A7) are not allowed from players
+	for (size_t i = 0; i < _pkt.message.size(); ++i) {
+		const auto c = static_cast<unsigned char>(_pkt.message[i]);
+		const bool colorCode = c == 0xC2 && i + 1 < _pkt.message.size() &&
+		                       static_cast<unsigned char>(_pkt.message[i + 1]) == 0xA7;
+		if (c < 32 || c == 127 || colorCode) {
+			_server.DisconnectPlayer("Illegal characters in chat", _session);
 			return;
+		}
 	}
 
+	// Rate limit before doing any real work (addons, commands, broadcast)
 	const auto now = std::chrono::steady_clock::now();
 	if (_session.recentChatMessageCount == _session.recentChatMessageTimes.size() &&
 	    now - _session.recentChatMessageTimes[_session.nextChatMessageTime] < std::chrono::seconds(1)) {
@@ -75,6 +86,14 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 	    (_session.nextChatMessageTime + 1) % _session.recentChatMessageTimes.size();
 	if (_session.recentChatMessageCount < _session.recentChatMessageTimes.size())
 		++_session.recentChatMessageCount;
+
+	{
+		bp_player_chat_event event{ .player = &_session.apiPlayer, .message = _pkt.message.c_str(), .cancel = false };
+		_server.GetAddonManager().Broadcast(&bp_addon_events::playerChat, event);
+
+		if (event.cancel)
+			return;
+	}
 
 	Logger::Message << "<" << _session.username << "> " << _pkt.message << "\n";
 	if (!_pkt.message.empty() && _pkt.message.front() == '/') {
@@ -108,10 +127,25 @@ void PlayerMovement(Packet::PlayerMovement& _pkt, PlayerSession& _session) {
 }
 
 static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server) {
+	// A vanilla client never sends these. NaN/inf/huge values would make the movement
+	// simulation sweep (or loop over) an unbounded area, so reject them before anything else.
+	constexpr double K_MAX_HORIZONTAL = double(INT32_MAX);
+	constexpr double K_MAX_VERTICAL = 1.0e4;
+	if (!std::isfinite(_to.x) || !std::isfinite(_to.y) || !std::isfinite(_to.z)) {
+		_server.DisconnectPlayer("Invalid move player packet received", _session);
+		return false;
+	}
+
 	// We are in a vehicle!
 	if (_to.y == -999.0 || (_session.entity && !_session.entity->vehicle.expired())) {
 		_session.pendingPosition = _to;
 		return true;
+	}
+
+	if (std::abs(_to.x) > K_MAX_HORIZONTAL || std::abs(_to.z) > K_MAX_HORIZONTAL ||
+	    std::abs(_to.y) > K_MAX_VERTICAL) {
+		_server.DisconnectPlayer("Illegal position", _session);
+		return false;
 	}
 
 	if (_session.entity)
@@ -522,6 +556,23 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 	_session.pendingWindowId = _pkt.windowId;
 	_session.pendingTransactionId = _pkt.transactionId;
 
+	auto SendSuccess = [&]() {
+		Packet::ContainerTransaction ct;
+		ct.accepted = true;
+		ct.transactionId = _session.pendingTransactionId;
+		ct.windowId = _pkt.windowId;
+		ct.Serialize(_session.stream);
+	};
+
+	auto SendFailAndLock = [&]() {
+		Packet::ContainerTransaction ct;
+		ct.accepted = false;
+		ct.transactionId = _session.pendingTransactionId;
+		ct.windowId = _pkt.windowId;
+		ct.Serialize(_session.stream);
+		_session.inventoryLocked = true;
+	};
+
 	// Clicked outside the window
 	if (_pkt.slotId == -999) {
 		InventoryInteraction* interaction = nullptr;
@@ -546,91 +597,58 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 				_session.entity->DropItem(interaction->carried);
 				interaction->carried = ItemStack{ Items::Id::INVALID };
 			}
-			PacketUtilities::SendSlot(_session, -1, -1, &interaction->carried);
 		}
+		SendSuccess();
 		return;
 	}
 
-	// The player's inventory is handled separate
-	if (_pkt.windowId == 0) {
-		// Make sure what the client thinks and what we have line up
+	auto HandleInventory = [&](InventoryInteraction* _interaction) {
 		ItemStack empty{ Items::Id::INVALID };
-		auto expected = _session.inventory.GetStackInSlot(_pkt.slotId);
+		if (!_interaction || !_interaction->inventory)
+			return;
+		auto expected = _interaction->inventory->GetStackInSlot(_pkt.slotId);
 		ItemStack& slotItem = expected ? *expected : empty;
-
-		// Clicked inside the window
 		if (slotItem.id != _pkt.item.id || slotItem.data != _pkt.item.data || slotItem.count != _pkt.item.count) {
-			Packet::ContainerTransaction ct;
-			ct.accepted = false;
-			ct.transactionId = _session.pendingTransactionId;
-			ct.windowId = _pkt.windowId;
-			ct.Serialize(_session.stream);
-			_session.inventoryLocked = true;
+			SendFailAndLock();
 
 			// Reset the held cursor
-			PacketUtilities::SendSlot(_session, -1, -1, &_session.inventoryInteraction.carried);
-
-			PacketUtilities::SendInventory(_session, _pkt.windowId, _session.inventory);
+			PacketUtilities::SendSlot(_session, -1, -1, &_interaction->carried);
+			PacketUtilities::SendInventory(_session, _pkt.windowId, *_interaction->inventory);
 			return;
 		}
 
 		// Everything lined up so go as normal
 		if (_pkt.shift) {
-			_session.inventoryInteraction.OnShiftClick(_pkt.slotId);
+			_interaction->OnShiftClick(_pkt.slotId);
+			_interaction->InitSnapshot();
+			SendSuccess();
 			return;
 		}
 		if (_pkt.rightClick) {
-			_session.inventoryInteraction.OnRightClick(_pkt.slotId);
+			_interaction->OnRightClick(_pkt.slotId);
+			_interaction->InitSnapshot();
+			SendSuccess();
 			return;
 		}
-		_session.inventoryInteraction.OnLeftClick(_pkt.slotId);
+		_interaction->OnLeftClick(_pkt.slotId);
+		_interaction->InitSnapshot();
+		SendSuccess();
 		return;
-	}
-	ItemStack empty{ Items::Id::INVALID };
-	if (!_session.activeInteraction || !_session.activeInteraction->inventory)
-		return;
-	auto expected = _session.activeInteraction->inventory->GetStackInSlot(_pkt.slotId);
-	ItemStack& slotItem = expected ? *expected : empty;
-	if (slotItem.id != _pkt.item.id || slotItem.data != _pkt.item.data || slotItem.count != _pkt.item.count) {
-		Packet::ContainerTransaction ct;
-		ct.accepted = false;
-		ct.transactionId = _session.pendingTransactionId;
-		ct.windowId = _pkt.windowId;
-		ct.Serialize(_session.stream);
-		_session.inventoryLocked = true;
+	};
 
-		// Reset the held cursor
-		PacketUtilities::SendSlot(_session, -1, -1, &_session.activeInteraction->carried);
-		PacketUtilities::SendInventory(_session, _pkt.windowId, *_session.activeInteraction->inventory);
+	if (_pkt.windowId == 0) {
+		HandleInventory(&_session.inventoryInteraction);
 		return;
 	}
-
-	// Everything lined up so go as normal
-	if (_pkt.shift) {
-		_session.activeInteraction->OnShiftClick(_pkt.slotId);
-		return;
-	}
-	if (_pkt.rightClick) {
-		_session.activeInteraction->OnRightClick(_pkt.slotId);
-		return;
-	}
-	_session.activeInteraction->OnLeftClick(_pkt.slotId);
-	return;
+	HandleInventory(_session.activeInteraction.get());
 }
 
 void CloseContainer(Packet::CloseContainer& _pkt, PlayerSession& _session) {
-	if (_pkt.windowId == 0 && _session.entity) {
-		// Drop the crafting grid items on inventory close
-		for (size_t i = 1; i <= 4; i++) {
-			ItemStack& stack = _session.inventory.slots[i];
-			_session.entity->DropItem(stack);
-			stack = ItemStack{};
-		}
-		// Drop the cursor
-		if (_session.inventoryInteraction.carried.id != Items::INVALID) {
-			_session.entity->DropItem(_session.inventoryInteraction.carried);
-			_session.inventoryInteraction.carried = ItemStack{};
-		}
+	if (!_session.entity)
+		return;
+
+	if (_pkt.windowId == 0) {
+		_session.inventoryInteraction.OnInteractionClosed(*_session.entity);
 	}
 
 	// Trigger the close interaction
@@ -671,7 +689,7 @@ void InteractWithEntity(Packet::InteractWithEntity& _pkt, PlayerSession& _sessio
 	ItemStack* heldItem = _session.inventory.GetHeldItem();
 	if (!heldItem) {
 		if (!_pkt.attack) {
-			PlayerEntity* playerPtr = dynamic_cast<PlayerEntity*>(sourceEntity.get());
+			PlayerEntity* playerPtr = static_cast<PlayerEntity*>(sourceEntity.get());
 			entity->OnPlayerInteract(playerPtr);
 			return;
 		}
@@ -686,7 +704,7 @@ void InteractWithEntity(Packet::InteractWithEntity& _pkt, PlayerSession& _sessio
 		if (_pkt.attack) {
 			Items::AttackWithItem(*entity, *sourceEntity, heldItem);
 		} else {
-			PlayerEntity* playerPtr = dynamic_cast<PlayerEntity*>(sourceEntity.get());
+			PlayerEntity* playerPtr = static_cast<PlayerEntity*>(sourceEntity.get());
 			entity->OnPlayerInteract(playerPtr);
 		}
 		return;
@@ -704,7 +722,7 @@ void InteractWithEntity(Packet::InteractWithEntity& _pkt, PlayerSession& _sessio
 		if (behavior.onEntityUse)
 			behavior.onEntityUse(_world, *entity, heldItem);
 		else {
-			PlayerEntity* playerPtr = dynamic_cast<PlayerEntity*>(sourceEntity.get());
+			PlayerEntity* playerPtr = static_cast<PlayerEntity*>(sourceEntity.get());
 			entity->OnPlayerInteract(playerPtr);
 		}
 	}
@@ -758,7 +776,7 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	oldWorld->entityManager.RemoveEntity(_session.entity->id);
 	_session.entity->session = nullptr;
 
-	auto newEntity = std::make_shared<EntityMPPlayer>();
+	auto newEntity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
 	newEntity->session = &_session;
 	newEntity->id = _session.entity->id;
 	_session.entity = newEntity;
@@ -835,8 +853,7 @@ void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldMana
 		if (viewer->connState != ConnectionState::Playing || viewer->dimension != _world.thisDimension)
 			continue;
 
-		Int2 chunkCoord = Int2{ static_cast<int32_t>(position.x >> 4),
-			                    static_cast<int32_t>(position.z >> 4) };
+		Int2 chunkCoord = Int2{ position.x >> 4, position.z >> 4 };
 		if (!viewer->sentChunks.contains(chunkCoord))
 			continue;
 
