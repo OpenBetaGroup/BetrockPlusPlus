@@ -49,7 +49,7 @@ void GhastEntity::UpdateAIState() {
 		}
 	}
 
-	target = targetedEntity.lock();
+	auto target = targetedEntity.lock();
 	if (target && target->isDead) {
 		targetedEntity.reset();
 		target = nullptr;

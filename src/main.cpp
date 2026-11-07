@@ -32,7 +32,27 @@
 #include <signal.h>
 #endif
 
-#include "nbt/nbt_textifier.h"
+#ifdef CRASH_LOGGING
+#include "CrashCatch.hpp"
+#endif
+
+// Shared Libs
+#include "bpp_shared/helpers/java/java_math.h"
+#include "bpp_shared/logger/logger.h"
+#include "bpp_shared/platform/memory.h"
+#include "bpp_shared/platform/platform.h"
+#include "bpp_shared/platform/platform_label.h"
+#include "bpp_utilities/utilities.h"
+#include "version.h"
+#include <numeric_structs.h>
+
+// Server includes
+#ifdef BUILD_SERVER
+#if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
+#include "internet/curl_runtime.h"
+#endif
+#include "bpp_server/server.h"
+#endif
 
 // Client includes
 #ifdef BUILD_CLIENT
