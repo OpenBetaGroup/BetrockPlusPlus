@@ -129,7 +129,7 @@ float WorldManager::GetCelestialAngle() {
 	int normalizedTime = int(this->elapsedTicks % DAY_LENGTH);
 
 	// Subtract 1/4 of a day so sunrise = 0
-	float timePercent = float(normalizedTime + 1.0f) / float(DAY_LENGTH) - 0.25f;
+	float timePercent = (float(normalizedTime) + 1.0f) / float(DAY_LENGTH) - 0.25f;
 	if (timePercent < 0.0f)
 		timePercent++;
 	if (timePercent > 1.0f)

@@ -479,7 +479,7 @@ static void SolveRedstoneNetwork(WorldManager& _world, Int3 _pos) {
 
 	std::unordered_map<Int3, uint8_t> oldLevels;
 	for (auto& pos : order) {
-		oldLevels.insert({ pos, static_cast<uint8_t>(_world.GetMetadata(pos)) });
+		oldLevels.insert({ pos, _world.GetMetadata(pos) });
 	}
 
 	while (ResolvePowerLevels(_world, order))

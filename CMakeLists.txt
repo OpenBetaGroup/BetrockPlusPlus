@@ -582,6 +582,7 @@ target_compile_options(BetrockPlusPlus PRIVATE
         #-Wmissing-field-initializers
         # Multiple declarations of the same function/variable
         -Wredundant-decls
+        #-Wuseless-cast
         # Comparing floating-point values for equality can be iffy
         #-Wfloat-equal
         # Warn about code that will never be executed (Clang only)

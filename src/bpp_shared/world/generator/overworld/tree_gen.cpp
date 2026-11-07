@@ -188,9 +188,9 @@ void BigTree::GenerateBranchPositions() {
 					double radialDistance = branchLength * double(canopyRadius) * (double(rand.NextFloat()) + 0.328);
 					// Oh hey, look! An approximation of pi!
 					double angle = double(rand.NextFloat()) * 2.0 * 3.14159;
-					int32_t branchX = MathHelper::FloorDouble(radialDistance * double(std::sin(angle)) +
+					int32_t branchX = MathHelper::FloorDouble(radialDistance * std::sin(angle) +
 					                                          double(basePos.x) + 0.5);
-					int32_t branchZ = MathHelper::FloorDouble(radialDistance * double(std::cos(angle)) +
+					int32_t branchZ = MathHelper::FloorDouble(radialDistance * std::cos(angle) +
 					                                          double(basePos.z) + 0.5);
 					Int3 branchBase = Int3{ branchX, currentY, branchZ };
 					Int3 branchTop = Int3{ branchX, currentY + trunkThickness, branchZ };

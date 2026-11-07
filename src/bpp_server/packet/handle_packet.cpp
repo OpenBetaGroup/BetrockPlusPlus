@@ -852,8 +852,7 @@ void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldMana
 		if (viewer->connState != ConnectionState::Playing || viewer->dimension != _world.thisDimension)
 			continue;
 
-		Int2 chunkCoord = Int2{ static_cast<int32_t>(position.x >> 4),
-			                    static_cast<int32_t>(position.z >> 4) };
+		Int2 chunkCoord = Int2{ position.x >> 4, position.z >> 4 };
 		if (!viewer->sentChunks.contains(chunkCoord))
 			continue;
 
