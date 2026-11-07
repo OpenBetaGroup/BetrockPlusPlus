@@ -27,9 +27,11 @@ struct EntityContainer {
 // For ticking all entities and keeping track of them in the world
 struct PlayerEntity;
 struct EntityManager {
+	const int REMOVAL_DEFAULT_SIZE = 128;
 	EntityId* nextEntityId = nullptr; // Vanilla seems to reserve 0 and 1
 	std::vector<std::shared_ptr<Entity>> entities;
 	std::vector<std::weak_ptr<Entity>> players;
+	std::vector<EntityId> entitiesToRemove;
 	std::unordered_map<Int2, EntityContainer> entityContainers;
 	WorldManager* world = nullptr; // we need to bind a pointer to this later
 
@@ -51,6 +53,10 @@ struct EntityManager {
 	void AddEntity(std::shared_ptr<Entity> _entity, EntityId _forceEntityId = -1);
 	void RemoveEntity(EntityId _id);
 	void CreateEntityFromNbt(Tag& _nbt);
+
+	EntityManager() {
+		entitiesToRemove.reserve(REMOVAL_DEFAULT_SIZE);
+	}
 
 private:
 	void TickEntityAndPassenger(const std::shared_ptr<Entity>& _entity, TickProfiler* _profiler);

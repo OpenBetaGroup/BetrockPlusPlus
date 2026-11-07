@@ -1059,16 +1059,13 @@ void WorldManager::SetBlockRaw(const Int3 _wpos, const BlockType _blockType, con
 
 void WorldManager::SetBlock(const Int3 _wpos, const BlockType _blockType, const uint8_t _metadata,
                             const bool _keepTileEntity, const bool _updateNeighbors) {
-	if (!InBounds(_wpos.y))
+	if (_wpos.y < 0 || _wpos.y > 128)
 		return;
 	Int32_2 cp{ _wpos.x >> 4, _wpos.z >> 4 };
 	auto* chunk = GetChunkRaw(cp);
 	if (!IsChunkValid(chunk)) {
 		// Target chunk isn't ready; cache the write for replay (bounded).
-		constexpr size_t MAX_BLEED_WRITES_PER_CHUNK = 1024;
 		auto& queue = pendingBleedWrites[cp];
-		if (queue.size() >= MAX_BLEED_WRITES_PER_CHUNK)
-			queue.erase(queue.begin());
 		queue.push_back({ _wpos, Block{ _blockType, _metadata } });
 		return;
 	}
@@ -1140,6 +1137,9 @@ void WorldManager::SetBlock(const Int3 _wpos, const BlockType _blockType, const 
 			                                 { pos.x + 1, std::max<int>(newHeight, oldHeight), pos.z + 1 },
 			                                 LightType::Sky);
 		}
+	} else {
+		// So our heightmap doesn't go out of sync
+		chunk->GenerateHeightMapColumn(localXz);
 	}
 
 	// Remove any tile entities that exist at this spot

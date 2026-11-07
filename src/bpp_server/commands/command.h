@@ -103,3 +103,11 @@ inline void SendTeleport(PlayerSession& _target, Vec3 _position, float _yaw = 0.
 	pkt.onGround = false;
 	pkt.Serialize(_target.stream);
 }
+
+inline void SendTeleport2d(PlayerSession& _target, Vec2 _position, float _yaw = 0.0f, float _pitch = 0.0f) {
+	// We teleport super high up so we are clear of land, then we mark the session for a 2D TP;
+	// The TP branch of the mp_player_entity will handle the rest
+	Vec3 transformedPosition = { _position.x, CHUNK_HEIGHT * 4, _position.z };
+	_target.pending2dTeleport = { MathHelper::FloorDouble(_position.x), MathHelper::FloorDouble(_position.z) };
+	SendTeleport(_target, transformedPosition, _yaw, _pitch);
+};
