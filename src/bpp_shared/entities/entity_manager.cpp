@@ -57,10 +57,6 @@ void EntityManager::AlertWolves(PlayerEntity& _player, Entity& _target, bool _ig
 			return;
 	}
 
-	auto player = dynamic_cast<PlayerEntity*>(&_target);
-	if (player && NormalizeUsername(player->username) == NormalizeUsername(_player.username))
-		return;
-
 	auto searchCollider = AABB{ _player.position.x,       _player.position.y,       _player.position.z,
 		                        _player.position.x + 1.0, _player.position.y + 1.0, _player.position.z + 1.0 };
 	searchCollider = searchCollider.Expand(16.0, 4.0, 16.0);

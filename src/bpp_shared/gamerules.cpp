@@ -38,6 +38,8 @@ struct Registry {
         Register(Id::Nightmares, "nightmares", "If monsters can spawn near a sleeping player", true); // Vanilla: true
         Register(Id::NetherBedsExplode, "nether_beds_explode", "If beds should explode in the nether", true); // Vanilla: true
         Register(Id::SpawnProtectionRadius, "spawn_protection_radius", "How large the radius in which blocks can't be placed is", 16); // Vanilla: 16
+		Register(Id::ZeroDamageKnockback, "zero_damage_knockback",
+		         "Whether 0 damage attack (snowballs, eggs) do knockback", false); // Vanilla: false
         // Mobs
         //Register(Id::ForgiveDeadPlayers, "forgive_dead_players", "If aggro'd mobs forgive a player after dying", true);
         Register(Id::MobGriefing, "mob_griefing", "If mobs can damage the environment (e.g. creeper explosions destroying blocks)", true); // Vanilla: true

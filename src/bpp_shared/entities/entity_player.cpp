@@ -19,12 +19,12 @@ bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 
 	// TODO: difficulty scaling
 
-	if (_damage == 0)
+	if (_damage == 0 && !Gamerule::Get<bool>("zero_damage_knockback"))
 		return false;
 
 	auto success = MobileEntity::AttackEntityFrom(_entity, _damage, _type);
 	if (success && dynamic_cast<MobileEntity*>(_entity)) {
-		if (!_entity->isDead)
+		if (!_entity->isDead && _entity != this)
 			this->entityManager->AlertWolves(*this, *_entity);
 	}
 	return success;

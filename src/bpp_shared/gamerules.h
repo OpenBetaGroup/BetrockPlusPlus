@@ -34,6 +34,7 @@ enum class Id {
 	SpawnChunks,
 	RespectUsernameCapitalization,
 	AutosaveInterval,
+	ZeroDamageKnockback,
 	// Mobs
 	ForgiveDeadPlayers,
 	MobGriefing,
