@@ -586,7 +586,7 @@ target_compile_options(BetrockPlusPlus PRIVATE
         # Comparing floating-point values for equality can be iffy
         #-Wfloat-equal
         # Warn about code that will never be executed (Clang only)
-        -fanalyzer
+        #-fanalyzer
         $<$<CXX_COMPILER_ID:Clang>:-Wunreachable-code>
     >
     $<$<CXX_COMPILER_ID:MSVC>:
