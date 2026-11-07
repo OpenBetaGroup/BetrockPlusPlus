@@ -419,7 +419,7 @@ public:
 
 	// Returns true when the world-space Y is within valid chunk bounds.
 	static constexpr bool InBounds(int _y) {
-		return _y >= 0 && _y < CHUNK_HEIGHT;
+		return _y >= 0 && _y < CHUNK_HEIGHT - 1;
 	}
 
 private:
