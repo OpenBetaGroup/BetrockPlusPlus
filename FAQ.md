@@ -44,6 +44,12 @@ Very few sounds were networked by the time Beta 1.7.3 rolled around. A few examp
 - Other players walking around
 - Block placements done by other players
 
+#### Some features don't line up!
+
+Javas generation order can be inconsistent. For example, there is a Birch tree on the **pack.png** seed (`3257840388504953787`) that attempts to generate at (`12550812, 72, 6`) that either does or doesn't show up primarly due to chunk population ordering. That depends on many factors, such as how fast previous chunks generated/populated, if you walked to the coordinate or teleported there, or if you're running in Singleplayer or Multiplayer. As such it's anywhere from annoying to just literally impossible for us to 1000% match Javas population order exactly without making significant sacrifices to both generation speed, and/or our sanity.
+
+Something could potentially be tackled in the future, if we feel up for it.
+
 ###### I can't craft
 
 This often happens when a mod is used that modifies the client-side crafting recipes. The client tends to prefer it's own crafting recipe results over whatever the server thinks.
