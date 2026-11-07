@@ -197,7 +197,6 @@ void ServerBlock::Initialize() {
 		// Already sleeping? Don't let the client re-trigger the interaction.
 		if (_session.entity->isSleeping)
 			return false;
-		// TODO: Only make beds explode if the gamerule is set (maybe make them global?)
 		// Intentional game design (trademark)
 		if (_world.thisDimension != Dimension::Overworld && Gamerule::Get<bool>(Gamerule::Id::NetherBedsExplode)) {
 			// TODO: Probably deduplicate this via blockBehaviors[BLOCK_BED].onBlockDestroyedByPlayer

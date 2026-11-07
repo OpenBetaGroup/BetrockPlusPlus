@@ -49,29 +49,28 @@ void GhastEntity::UpdateAIState() {
 		}
 	}
 
-	// TODO: Again, doesn't the base entity already supply "target"?
-	auto target = targetedEntity.lock();
-	if (target && target->isDead) {
-		targetedEntity.reset();
-		target = nullptr;
+	auto lockedTarget = attackTarget.lock();
+	if (lockedTarget && lockedTarget->isDead) {
+		attackTarget.reset();
+		lockedTarget = nullptr;
 	}
-	if (!target || aggroCooldown-- <= 0) {
-		target = entityManager->GetClosestPlayerWithin(position, 100);
-		targetedEntity = target;
-		if (target)
+	if (!lockedTarget || aggroCooldown-- <= 0) {
+		lockedTarget = entityManager->GetClosestPlayerWithin(position, 100);
+		attackTarget = lockedTarget;
+		if (lockedTarget)
 			aggroCooldown = 20;
 	}
 
 	constexpr double AGGRO_RANGE = 64.0;
-	if (target && position.DistanceSquared(target->position) < AGGRO_RANGE * AGGRO_RANGE) {
-		// Aim at the middle of the target from the middle of us
-		double toX = target->position.x - position.x;
-		double toY = (target->collider.minY + double(target->height) / 2.0) - (position.y + double(height) / 2.0);
-		double toZ = target->position.z - position.z;
+	if (lockedTarget && position.DistanceSquared(lockedTarget->position) < AGGRO_RANGE * AGGRO_RANGE) {
+		// Aim at the middle of the lockedTarget from the middle of us
+		double toX = lockedTarget->position.x - position.x;
+		double toY = (lockedTarget->collider.minY + double(lockedTarget->height) / 2.0) - (position.y + double(height) / 2.0);
+		double toZ = lockedTarget->position.z - position.z;
 		rotationYaw = float(-std::atan2(toX, toZ) * 180.0 / JavaMath::PI);
 
 		Vec3 eyeFrom = { position.x, position.y + GetEyeHeight(), position.z };
-		Vec3 eyeTo = { target->position.x, target->position.y + target->height * 0.85f, target->position.z };
+		Vec3 eyeTo = { lockedTarget->position.x, lockedTarget->position.y + lockedTarget->height * 0.85f, lockedTarget->position.z };
 		if (HasLineOfSight(eyeFrom, eyeTo)) {
 			attackCounter++;
 			if (attackCounter == 20) {
@@ -122,7 +121,6 @@ void GhastEntity::ShootFireball(double _dx, double _dy, double _dz) {
 }
 
 void GhastEntity::TickPhysics() {
-	// TODO: Don't we already get this via the base "inLava"?
 	bool currentlyInLava = world->IsMaterialInAabb(GetLavaCollider(), Material::Lava());
 	if (inWater) {
 		Move(this->velocity);

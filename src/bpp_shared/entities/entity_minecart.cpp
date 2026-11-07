@@ -259,7 +259,7 @@ void MinecartEntity::Tick() {
 	prevPosition = position;
 	float prevYaw = rotationYaw;
 
-	this->velocity.y -= double(0.04);
+	this->velocity.y -= 0.04;
 
 	auto fd = MathHelper::FloorDouble;
 	Int3 blockPos = { fd(position.x), fd(position.y), fd(position.z) };
@@ -417,7 +417,7 @@ void MinecartEntity::Tick() {
 
 		this->Move(this->velocity);
 		if (!this->onGround)
-			this->velocity *= double(0.95);
+			this->velocity *= 0.95;
 	}
 
 	UpdateYaw(prevPos, prevYaw);

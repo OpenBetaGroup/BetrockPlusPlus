@@ -51,7 +51,6 @@ static bool CanPushBlock(WorldManager& _world, BlockType _block, Int3 _pos, bool
 	}
 
 	auto props = Blocks::blockProperties[_block];
-	// TODO: Turn this into an enum
 	PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
 	                                                               : props.material.mobilityFlag;
 	if (props.hardness == -1.0f || mobilityFlag == PushabilityFlag::Immovable ||

@@ -9,7 +9,7 @@
 #include "raycast.h"
 
 struct MobEntity : public MobileEntity {
-	std::weak_ptr<Entity> target;
+	std::weak_ptr<Entity> lookTarget;
 	TickTime ticksToFollowTarget = 0;
 	float randomYawVelocity = 0.0f;
 	double defaultPitch = 0.0;

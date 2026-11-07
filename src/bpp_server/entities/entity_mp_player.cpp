@@ -174,7 +174,9 @@ void EntityMPPlayer::HandlePositionChecks() {
 	if (!this->forceVelocityUpdate)
 		this->velocity = {};
 
-	if (this->vehicle.lock().get()) {
+	auto inVehicle = this->vehicle.lock().get();
+
+	if (inVehicle && !session->pendingTeleport) {
 		// Vehicles are weird!
 		if (!session->pendingPosition)
 			return;
@@ -184,12 +186,6 @@ void EntityMPPlayer::HandlePositionChecks() {
 			return;
 		this->velocity = pos;
 		this->velocity.y = 0;
-
-		// Leave the vehicle on teleport
-		if (session->pendingTeleport) {
-			this->UnmountEntity();
-			return;
-		}
 
 		// Update our position to the session
 		if (!this->session)
@@ -203,6 +199,23 @@ void EntityMPPlayer::HandlePositionChecks() {
 		if (this->isSleeping) {
 			this->WakeUp();
 		}
+
+		if (inVehicle) {
+			Vec3 savedTp = *session->pendingTeleport;
+			this->UnmountEntity();
+
+			session->pendingTeleport = savedTp;
+			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
+			session->position.pos = *session->pendingTeleport;
+			Packet::PlayerPositionAndRotation pkt;
+			pkt.rotation = session->rotation;
+			pkt.onGround = onGround;
+			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
+			pkt.cameraY = position.y; // This is backwards, thanks notch
+			pkt.Serialize(session->stream);
+			return;
+		}
+
 		// Reset fall state
 		fallDistance = 0;
 		onGround = true;
@@ -219,17 +232,36 @@ void EntityMPPlayer::HandlePositionChecks() {
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
 			session->position.pos = *session->pendingTeleport;
 			Packet::PlayerPositionAndRotation pkt;
-			pkt.rotation = session->rotation; // what the client last told us, so they keep facing the same way
+			pkt.rotation = session->rotation;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
 			pkt.cameraY = position.y; // This is backwards, thanks notch
 			pkt.Serialize(session->stream);
 			return;
 		}
+
 		// Client acknowledged our tp
 		session->pendingTeleport.reset();
 		this->fallDistance = 0;
 		this->simulatedFallDistance = 0;
+
+		// If this is a 2d teleport, snap to the highest block
+		if (session->pending2dTeleport) {
+			session->pending2dTeleport.reset();
+			auto newY = world->GetHeightValue(MathHelper::FloorDouble(position.x), MathHelper::FloorDouble(position.z));
+			Vec3 tpPos = { position.x, double(newY) + 0.01, position.z };
+			session->pendingTeleport = tpPos;
+
+			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
+			session->position.pos = *session->pendingTeleport;
+			Packet::PlayerPositionAndRotation pkt;
+			pkt.rotation = session->rotation;
+			pkt.onGround = onGround;
+			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
+			pkt.cameraY = position.y; // This is backwards, thanks notch
+			pkt.Serialize(session->stream);
+			return;
+		}
 	}
 
 	if (this->isSleeping) {
@@ -354,10 +386,15 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 		bool willCorrect = (wasClearBefore && (residualTooLarge || !clearNow)) || movedWrong;
 
-		if (movedWrong)
+		if (movedWrong) {
+			Logger::Debug << "Claimed: " << claimed << " Last Position: " << lastPosition << "\n";
 			Logger::Warning << "Client " << session->username << " moved wrongly!\n";
+		}
 
 		if (willCorrect) {
+			Logger::Debug << "Correcting position! clearBefore: " << wasClearBefore
+			              << " residualTooLarge: " << residualTooLarge << " clearNow: " << clearNow
+			              << " movedWrong: " << movedWrong << "\n";
 			Vec3 safeRollback = lastPosition;
 			safeRollback.y += ROLLBACK_NUDGE;
 			ticksSinceTeleportSent = 0;

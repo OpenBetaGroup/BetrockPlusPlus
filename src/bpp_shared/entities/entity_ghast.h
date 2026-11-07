@@ -10,8 +10,6 @@
 struct GhastEntity : public HostileEntity {
 	Vec3 waypoint = {};
 	int courseChangeCooldown = 0;
-
-	std::weak_ptr<Entity> targetedEntity;
 	int aggroCooldown = 0;
 
 	// Counts up while we can see our target 

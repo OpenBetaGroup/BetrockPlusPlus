@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2025-2026, Pixel Brush <pixelbrush.dev>
+ * Copyright (c) 2026, Anya Rihtarshich <vesui@proton.me>
  *
  * SPDX-License-Identifier: AGPL-3.0-only
 */
@@ -48,7 +49,7 @@ std::string ClearOwnInventory(const strategos::CmdNode& /*_cmd*/, void* _userDat
 	auto& ctx = CmdCtx(_userData);
 	if (!ctx.session) return ERROR_PLAYER_REQUIRED;
 	const auto count = ctx.session->inventory.Clear();
-	PacketUtilities::SendInventory(*ctx.session, ctx.session->openWindowId, ctx.session->inventory);
+	PacketUtilities::SendInventory(*ctx.session, 0, ctx.session->inventory);
 	SendFeedback(ctx, std::format("§eRemoved {} Item(s) from player {}", count, ctx.session->username));
 	return "";
 }
@@ -56,15 +57,25 @@ std::string ClearOwnInventory(const strategos::CmdNode& /*_cmd*/, void* _userDat
 std::string ClearOtherInventory(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto playerName = _cmd.get_arg<std::string>("player");
-	if (!playerName)
-		return ERROR_REASON_PARAMETERS;
+	if (!playerName) return ERROR_REASON_PARAMETERS;
+	if (!IsOperator(ctx)) return ERROR_OPERATOR;
+	if (!playerName->empty() && playerName->front() == '@') {
+		auto targets = ResolveCmdPlayerTargets(*playerName, ctx, "Clear");
+		if (!targets) return targets.error();
 
+		for (const CommandTarget& resolved : *targets) {
+
+			auto& target = *resolved.session;
+			const auto count = target.inventory.Clear();
+			PacketUtilities::SendInventory(target, 0, target.inventory);
+			SendFeedback(ctx, std::format("§eRemoved {} Item(s) from player {}", count, target.username));
+		}
+		return "";
+	}
 	auto target = ctx.server->GetSessionByUsername(*playerName);
-	if (!target)
-		return *playerName + " does not exist!";
-
+	if (!target) return *playerName + " does not exist!";
 	const auto count = target->inventory.Clear();
-	PacketUtilities::SendInventory(*target, target->openWindowId, target->inventory);
+	PacketUtilities::SendInventory(*target, 0, target->inventory);
 	SendFeedback(ctx, std::format("§eRemoved {} Item(s) from player {}", count, *playerName));
 	return "";
 }
@@ -78,10 +89,11 @@ void RegisterGive(strategos::BrigadierContext& _dispatcher) {
 	                            .then(strategos::Node::string("item").executes(GiveItem).then(
 	                                strategos::Node::integer("amount").executes(GiveItem))));
 	_dispatcher.add_command(strategos::Node::literal("clear")
-	                            .describe("Give yourself a block or item")
-	                            .op()
+	                            .describe("Clears your or another player's inventory")
 	                            .executes(ClearOwnInventory)
 	                            .then(strategos::Node::string("player")
+	                                      .describe("Target inventory to clear")
+	                                      .op()
 	                                      .suggests(strategos::SuggestionSource::Players)
 	                                      .executes(ClearOtherInventory)));
 }

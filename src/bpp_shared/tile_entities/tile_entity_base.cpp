@@ -19,7 +19,7 @@
 #include "world/world.h"
 #include <string>
 
-void TileEntity::Deserialize(const Tag& _tag) {
+void TileEntity::Deserialize(const Tag& /*_tag*/) {
 	// no-op
 	return;
 }

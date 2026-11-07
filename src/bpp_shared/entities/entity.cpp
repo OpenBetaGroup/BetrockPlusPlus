@@ -239,7 +239,6 @@ void Entity::TickPassengerEntity() {
 		return;
 	}
 
-	this->velocity = {};
 	this->UpdateEntityPhysicsState();
 
 	Vec3 seatOffset = lockVehicle->GetRiderSeatOffset();

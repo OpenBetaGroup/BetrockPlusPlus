@@ -56,7 +56,7 @@ if(NOT BUILD_SERVER)
     endif()
 endif()
 
-project(Betrock++ VERSION 0.3.2)
+project(Betrock++ VERSION 0.3.3)
 
 # Drop fortify for Alpine
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND EXISTS "/usr/include/fortify/stdio.h")
@@ -582,9 +582,11 @@ target_compile_options(BetrockPlusPlus PRIVATE
         #-Wmissing-field-initializers
         # Multiple declarations of the same function/variable
         -Wredundant-decls
+        #-Wuseless-cast
         # Comparing floating-point values for equality can be iffy
         #-Wfloat-equal
         # Warn about code that will never be executed (Clang only)
+        #-fanalyzer
         $<$<CXX_COMPILER_ID:Clang>:-Wunreachable-code>
     >
     $<$<CXX_COMPILER_ID:MSVC>:

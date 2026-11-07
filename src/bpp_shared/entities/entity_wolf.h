@@ -65,5 +65,7 @@ struct WolfEntity : public AnimalEntity {
 	void SetWolfSitting(bool _sitting) {
 		this->isSitting = _sitting;
 		this->wasMetadataUpdated = true;
+		this->attackTarget.reset();
+		this->currentPath.clear();
 	}
 };

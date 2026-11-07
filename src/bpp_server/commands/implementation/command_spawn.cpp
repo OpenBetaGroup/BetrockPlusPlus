@@ -18,13 +18,30 @@ std::string TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 
 	WorldManager* overworld = ctx.server->GetWorldForDimension(Dimension::Overworld);
 	Int32_3 ipos = overworld->GetSpawnPoint(false);
-	ipos.y = overworld->GetHeightValue(ipos.x, ipos.z);
-	Vec3 dest{ double(ipos.x) + 0.5, double(ipos.y) + 0.01, double(ipos.z) + 0.5 };
-	if (ctx.world->thisDimension != Dimension::Overworld) {
-		ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, dest);
+
+	bool hasSpawnChunksEnabled = Gamerule::Get<bool>("spawn_chunks");
+
+	// We can do a generic tp since the chunk is guaranteed to be loaded
+	if (hasSpawnChunksEnabled) {
+		Vec3 dest{ double(ipos.x) + 0.5, double(overworld->GetHeightValue(ipos.x, ipos.z)) + 0.01, double(ipos.z) + 0.5 };
+		if (ctx.world->thisDimension != Dimension::Overworld) {
+			ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, dest);
+			return "";
+		}
+
+		SendTeleport(*ctx.session, dest);
 		return "";
 	}
-	SendTeleport(*ctx.session, dest);
+
+	// Fallback
+	Vec2 dest{ double(ipos.x) + 0.5, double(ipos.z) + 0.5 };
+	if (ctx.world->thisDimension != Dimension::Overworld) {
+		Vec3 tpPos = { dest.x, CHUNK_HEIGHT + 1.0, dest.z };
+		ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, tpPos);
+		SendTeleport2d(*ctx.session, dest);
+		return "";
+	}
+	SendTeleport2d(*ctx.session, dest);
 	return "";
 }
 

@@ -163,6 +163,16 @@ bool CanCactusSurviveAt(WorldAccess& _world, Int3 _pos) {
 	return canGrowOnBlock && adjacentBlocksClear;
 }
 
+bool CanPumpkinPlaceAt(WorldAccess& _world, Int3 _pos) {
+	if (_world.GetBlockId(_pos) != BlockType::BLOCK_AIR)
+		return false;
+	const Material mat = _world.GetMaterial(_pos);
+	if (mat.type != MaterialType::SnowLayer) return false;
+	if (!mat.isLiquid) return false;
+	if (mat.isOpaque) return false;
+	return _world.GetMaterial(_pos.Offset(Cardinal::Value::Down)).isSolid;
+}
+
 /**
  * @brief Says if a torch can attach to the block its placed on
  * 
@@ -839,7 +849,6 @@ void RegisterBlockProperties() {
 		.hardness = 0.4f,
 		.lightOpacity = 0,
 		.stepSound = StepSound::Wood,
-		.isCollidable = false,
 		.isOpaqueCube = false,
 		.isNormalCube = false,
 	};

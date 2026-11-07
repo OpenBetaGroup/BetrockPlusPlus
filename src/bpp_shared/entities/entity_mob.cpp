@@ -78,22 +78,22 @@ void MobEntity::UpdateState() {
 		auto nearestPlayer = this->entityManager->GetClosestPlayerWithin(this->position, 8);
 		if (nearestPlayer) {
 			ticksToFollowTarget = 10 + rand.NextInt(20);
-			target = nearestPlayer;
+			lookTarget = nearestPlayer;
 		} else {
 			randomYawVelocity = (rand.NextFloat() - 0.5) * 20.0f;
 		}
 	}
 
-	auto thisTarget = target.lock();
+	auto thisTarget = lookTarget.lock();
 	if (thisTarget) {
-		// Turns towards our target
+		// Turns towards our lookTarget
 		FaceEntity(static_cast<MobileEntity&>(*thisTarget), 10.0, 40.0);
 
-		// If our ticks to look at this target expired, stop looking
-		// If our target is dead or too far, stop looking
+		// If our ticks to look at this lookTarget expired, stop looking
+		// If our lookTarget is dead or too far, stop looking
 		ticksToFollowTarget = std::max(ticksToFollowTarget - 1.0, 0.0);
 		if (ticksToFollowTarget == 0.0 || thisTarget->isDead || (position.DistanceSquared(thisTarget->position) > 64.0))
-			target.reset();
+			lookTarget.reset();
 		return;
 	}
 

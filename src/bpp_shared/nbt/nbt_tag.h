@@ -148,6 +148,41 @@ struct Tag {
 		return it->second;
 	}
 
+	bool Matches(const Tag& _pattern) const {
+		if (type != _pattern.type) return false;
+
+		switch (type) {
+		case TAG_END: return true;
+		case TAG_BYTE: return byteValue == _pattern.byteValue;
+		case TAG_SHORT: return shortValue == _pattern.shortValue;
+		case TAG_INT: return intValue == _pattern.intValue;
+		case TAG_LONG: return longValue == _pattern.longValue;
+		case TAG_FLOAT: return floatValue == _pattern.floatValue;
+		case TAG_DOUBLE: return doubleValue == _pattern.doubleValue;
+		case TAG_STRING: return stringValue == _pattern.stringValue;
+		case TAG_BYTEARRAY: return byteArray == _pattern.byteArray;
+		case TAG_INTARRAY: return intArray == _pattern.intArray;
+		case TAG_COMPOUND:
+			for (const auto& [key, pattern] : _pattern.compound) {
+				auto found = compound.find(key);
+				if (found == compound.end() || !found->second.Matches(pattern)) return false;
+			}
+			return true;
+		case TAG_LIST:
+			if (_pattern.list.empty()) return list.empty();
+			for (const auto& pattern : _pattern.list) {
+				bool found = false;
+
+				for (const auto& actual : list) {
+					if (actual.Matches(pattern)) { found = true; break; }
+				}
+				if (!found) return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
 private:
 	void Expect(TagType _t) const {
 		if (type != _t) {

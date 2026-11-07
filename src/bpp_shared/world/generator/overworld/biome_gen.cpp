@@ -18,9 +18,9 @@ BiomeGenerator::BiomeGenerator() {}
  */
 BiomeGenerator::BiomeGenerator(int64_t _seed) {
 	// Init Biome Noise
-	Java::Random randTemp = Java::Random(_seed * 9871L);
-	Java::Random randHum = Java::Random(_seed * 39811L);
-	Java::Random randWeird = Java::Random(_seed * 543321L);
+	Java::Random randTemp = Java::Random(std::bit_cast<int64_t>(static_cast<uint64_t>(_seed) * 9871ULL));
+	Java::Random randHum = Java::Random(std::bit_cast<int64_t>(static_cast<uint64_t>(_seed) * 39811ULL));
+	Java::Random randWeird = Java::Random(std::bit_cast<int64_t>(static_cast<uint64_t>(_seed) * 543321ULL));
 	temperatureNoiseGen = NoiseOctavesSimplex(randTemp, 4);
 	humidityNoiseGen = NoiseOctavesSimplex(randHum, 4);
 	weirdnessNoiseGen = NoiseOctavesSimplex(randWeird, 2);
@@ -43,7 +43,8 @@ void BiomeGenerator::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std
 	static constexpr size_t K_COUNT = size_t(CHUNK_WIDTH) * size_t(CHUNK_WIDTH);
 	if (_temperature.size() < K_COUNT || _humidity.size() < K_COUNT || _weirdness.size() < K_COUNT)
 		return;
-	this->temperatureNoiseGen.GenerateOctaves(_temperature, _blockPos, MAX_AREA, temperatureBaseScale, temperatureFactor);
+	this->temperatureNoiseGen.GenerateOctaves(_temperature, _blockPos, MAX_AREA, temperatureBaseScale,
+	                                          temperatureFactor);
 	this->humidityNoiseGen.GenerateOctaves(_humidity, _blockPos, MAX_AREA, humidityBaseScale, humidityFactor);
 	this->weirdnessNoiseGen.GenerateOctaves(_weirdness, _blockPos, MAX_AREA, weirdnessBaseScale, weirdnessFactor);
 	size_t index = 0;
@@ -74,9 +75,12 @@ void BiomeGenerator::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std
 Biome BiomeGenerator::GetBiomeAtPoint(Int2 _worldPos) {
 	// TODO: Maybe add thing for sampling at a single point without this?
 	double temp[1], humi[1], weird[1];
-	this->temperatureNoiseGen.GenerateOctaves(temp, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 }, temperatureBaseScale, temperatureFactor);
-	this->humidityNoiseGen.GenerateOctaves(humi, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 }, humidityBaseScale, humidityFactor);
-	this->weirdnessNoiseGen.GenerateOctaves(weird, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 }, weirdnessBaseScale, weirdnessFactor);
+	this->temperatureNoiseGen.GenerateOctaves(temp, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 },
+	                                          temperatureBaseScale, temperatureFactor);
+	this->humidityNoiseGen.GenerateOctaves(humi, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 }, humidityBaseScale,
+	                                       humidityFactor);
+	this->weirdnessNoiseGen.GenerateOctaves(weird, Int2{ _worldPos.x, _worldPos.y }, Int32_2{ 1, 1 },
+	                                        weirdnessBaseScale, weirdnessFactor);
 	const double w = weird[0] * 1.1 + 0.5;
 	double t = (temp[0] * 0.15 + 0.7) * 0.99 + w * 0.01;
 	double h = (humi[0] * 0.15 + 0.5) * 0.998 + w * 0.002;

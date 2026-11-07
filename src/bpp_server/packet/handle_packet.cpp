@@ -100,6 +100,7 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 		CommandContext ctx;
 		ctx.session = &_session;
 		ctx.sender = &_session;
+		ctx.executionEntity = _session.entity.get();
 		ctx.world = &_world;
 		ctx.server = &_server;
 		ctx.transferDimension = _transferDimension;
@@ -852,8 +853,7 @@ void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldMana
 		if (viewer->connState != ConnectionState::Playing || viewer->dimension != _world.thisDimension)
 			continue;
 
-		Int2 chunkCoord = Int2{ static_cast<int32_t>(position.x >> 4),
-			                    static_cast<int32_t>(position.z >> 4) };
+		Int2 chunkCoord = Int2{ position.x >> 4, position.z >> 4 };
 		if (!viewer->sentChunks.contains(chunkCoord))
 			continue;
 

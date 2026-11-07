@@ -174,7 +174,7 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 
 	// Block/meta and the untouched light channel aren't affected by the light
 	// write below, so grab them once now instead of re-reading after.
-	BlockType blockId = BlockType(chunk->GetBlock({ lx, _y, lz }));
+	BlockType blockId = chunk->GetBlock({ lx, _y, lz });
 	uint8_t meta = chunk->GetMeta({ lx, _y, lz });
 	uint8_t otherLight = (_type == LightType::Sky) ? chunk->GetBlockLight({ lx, _y, lz })
 	                                               : chunk->GetSkyLight({ lx, _y, lz });
@@ -230,7 +230,7 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 
 			if (nVal < val) {
 				// Block/meta aren't affected by the light write; grab them first.
-				BlockType nBlockId = BlockType(nc->GetBlock({ nlx, ny, nlz }));
+				BlockType nBlockId = nc->GetBlock({ nlx, ny, nlz });
 				uint8_t nMeta = nc->GetMeta({ nlx, ny, nlz });
 				uint8_t nOtherLight = (t == LightType::Sky) ? nc->GetBlockLight({ nlx, ny, nlz })
 				                                            : nc->GetSkyLight({ nlx, ny, nlz });

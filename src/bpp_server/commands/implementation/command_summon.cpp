@@ -27,65 +27,14 @@
 #include "entities/entity_fireball.h"
 #include "entities/entity_ghast.h"
 #include "networking/packets.h"
+#include "nbt/nbt_textifier.h"
+#include <exception>
+
 #include <memory>
 #include <utility>
 
 namespace {
 
-EntityType GetEntityTypeFromString(std::string _name) {
-	if (_name == "fireball") {
-		return EntityType::FIREBALL;
-	}
-	if (_name == "creeper") {
-		return EntityType::CREEPER;
-	}
-	if (_name == "zombie") {
-		return EntityType::ZOMBIE;
-	}
-	if (_name == "zombie_pigman") {
-		return EntityType::ZOMBIE_PIGMAN;
-	}
-	if (_name == "skeleton") {
-		return EntityType::SKELETON;
-	}
-	if (_name == "spider") {
-		return EntityType::SPIDER;
-	}
-	if (_name == "sheep") {
-		return EntityType::SHEEP;
-	}
-	if (_name == "cow") {
-		return EntityType::COW;
-	}
-	if (_name == "pig") {
-		return EntityType::PIG;
-	}
-	if (_name == "chicken") {
-		return EntityType::CHICKEN;
-	}
-	if (_name == "squid") {
-		return EntityType::SQUID;
-	}
-	if (_name == "boat") {
-		return EntityType::BOAT;
-	}
-	if (_name == "minecart") {
-		return EntityType::MINECART;
-	}
-	if (_name == "painting") {
-		return EntityType::PAINTING;
-	}
-	if (_name == "slime") {
-		return EntityType::SLIME;
-	}
-	if (_name == "wolf") {
-		return EntityType::WOLF;
-	}
-	if (_name == "ghast") {
-		return EntityType::GHAST;
-	}
-	return EntityType::NONE;
-}
 
 std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 	switch (_type) {
@@ -126,16 +75,34 @@ std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 	}
 }
 
+std::optional<Tag> ParseSummonNbt(const strategos::CmdNode& _cmd) {
+	auto nbtText = _cmd.get_arg<std::string>("nbt");
+	if (!nbtText) return std::nullopt;
+
+	try {
+		TextNBTifier parser;
+		auto nbt = parser.Parse(*nbtText);
+
+		if (nbt.type != TAG_COMPOUND)
+			throw std::runtime_error("NBT root must be a compound");
+
+		return nbt;
+	} catch (const std::exception& exception) {
+		throw std::runtime_error(std::string("Invalid entity NBT: ") + exception.what());
+	}
+}
+
+
 std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto entityType = _cmd.get_arg<std::string>("entityType");
 	if (!entityType)
 		return ERROR_REASON_PARAMETERS;
-	if (!ctx.session)
+	if (!ctx.executionEntity)
 		return ERROR_PLAYER_REQUIRED;
 
-	Vec3 spawnPos = ctx.session->position.pos;
-	spawnPos.y += 1.0; // Spawn above the player
+	Vec3 spawnPos = ctx.executionEntity->position;
+	spawnPos.y += 1.0; // Spawn above the executor, who is one of my favorite pokemon.
 
 	auto eTypeEnum = GetEntityTypeFromString(*entityType);
 	if (eTypeEnum == EntityType::NONE)
@@ -143,6 +110,12 @@ std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 	auto entity = GetEntityShared(eTypeEnum);
 	if (!entity)
 		return "Failed to create entity: " + *entityType;
+
+	try {
+		if (auto nbt = ParseSummonNbt(_cmd)) entity->LoadFromNbt(*nbt);
+	} catch (const std::exception& exception) {
+		return exception.what();
+	}
 
 	entity->Teleport(spawnPos);
 
@@ -169,6 +142,12 @@ std::string SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
 	if (!entity)
 		return "Failed to create entity: " + *entityType;
 
+	try {
+		if (auto nbt = ParseSummonNbt(_cmd)) entity->LoadFromNbt(*nbt);
+	} catch (const std::exception& exception) {
+		return exception.what();
+	}
+
 	entity->Teleport(ePos);
 
 	ctx.world->entityManager.AddEntity(entity);
@@ -185,5 +164,9 @@ void RegisterSummon(strategos::BrigadierContext& _dispatcher) {
 	                            .op()
 	                            .then(strategos::Node::string("entityType")
 	                                      .executes(SummonEntity)
-	                                      .then(strategos::Node::vec3("pos").executes(SummonEntityAtPos))));
+	                                      .then(strategos::Node::greedy_string("nbt").executes(SummonEntity))
+	                                      .then(strategos::Node::vec3("pos")
+	                                                .executes(SummonEntityAtPos)
+	                                                .then(strategos::Node::greedy_string("nbt")
+	                                                          .executes(SummonEntityAtPos)))));
 }
