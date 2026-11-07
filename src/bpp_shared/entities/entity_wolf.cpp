@@ -169,7 +169,7 @@ void WolfEntity::UpdateAIState() {
 
 	auto currentTarget = attackTarget.lock();
 
-	// Get our target
+	// Get our lookTarget
 	if (!currentTarget) {
 		auto found = FindPlayerToAttack();
 		if (found) {
@@ -272,9 +272,9 @@ void WolfEntity::Tick() {
 	MobEntity::Tick();
 
 	this->isInterested = false;
-	auto lookTarget = target.lock();
-	if (lookTarget && currentPath.empty() && !isAngry) {
-		auto isPlayer = dynamic_cast<PlayerEntity*>(lookTarget.get());
+	auto lockedLookTarget = lookTarget.lock();
+	if (lockedLookTarget && currentPath.empty() && !isAngry) {
+		auto isPlayer = dynamic_cast<PlayerEntity*>(lockedLookTarget.get());
 		if (isPlayer) {
 			auto playerHeldItem = isPlayer->GetHeldItem();
 			this->isInterested = playerHeldItem && HeldItemInterestsWolf(playerHeldItem->id);
