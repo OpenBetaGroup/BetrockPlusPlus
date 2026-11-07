@@ -49,8 +49,7 @@ void GhastEntity::UpdateAIState() {
 		}
 	}
 
-	// TODO: Again, doesn't the base entity already supply "target"?
-	auto target = targetedEntity.lock();
+	target = targetedEntity.lock();
 	if (target && target->isDead) {
 		targetedEntity.reset();
 		target = nullptr;
@@ -122,7 +121,6 @@ void GhastEntity::ShootFireball(double _dx, double _dy, double _dz) {
 }
 
 void GhastEntity::TickPhysics() {
-	// TODO: Don't we already get this via the base "inLava"?
 	bool currentlyInLava = world->IsMaterialInAabb(GetLavaCollider(), Material::Lava());
 	if (inWater) {
 		Move(this->velocity);
