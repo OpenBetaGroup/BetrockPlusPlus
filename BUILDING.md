@@ -15,6 +15,7 @@ Alternatively, download a **.zip**.
 
 If you've cloned the repo in the past, ensure all the submodules are up-to-date,
 especially if you intend to compile the client.
+
 ```bash
 git submodule update --init --recursive
 ```

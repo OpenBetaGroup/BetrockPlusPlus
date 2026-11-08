@@ -339,7 +339,7 @@ struct SaveManager {
 
 		// Release our handle first, an open file can't be replaced on Windows
 		worldFile.reset();
-		const bool replaced = Platform::FS::ReplaceFile(tmpPath, finalPath);
+		const bool replaced = Platform::FS::ReplaceFileOverwrite(tmpPath, finalPath);
 		if (!replaced)
 			Logger::Error << "Failed to move " << tmpPath << " into place.\n";
 
@@ -533,7 +533,7 @@ struct SaveManager {
 				return false;
 			file.close();
 
-			if (!Platform::FS::ReplaceFile(tmpPath, finalPath)) {
+			if (!Platform::FS::ReplaceFileOverwrite(tmpPath, finalPath)) {
 				Logger::Error << "Failed to move " << tmpPath << " into place.\n";
 				return false;
 			}

@@ -38,7 +38,7 @@ inline bool CopyFileOverwrite(const std::filesystem::path& _from, const std::fil
 // Moves _from onto _to, replacing it if it already exists.
 // POSIX does this atomically, but FAT/exFAT (SD cards) refuses to rename onto
 // an existing file, so on failure we remove the target and try once more.
-inline bool ReplaceFile(const std::filesystem::path& _from, const std::filesystem::path& _to) {
+inline bool ReplaceFileOverwrite(const std::filesystem::path& _from, const std::filesystem::path& _to) {
 	std::error_code ec;
 	std::filesystem::rename(_from, _to, ec);
 	if (!ec)
