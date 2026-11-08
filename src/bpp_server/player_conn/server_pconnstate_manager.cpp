@@ -218,15 +218,16 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	time.Serialize(_session.stream);
 
 	// Get a fresh respawn point
-	auto respawnPoint = sessionWorld.GetSpawnPoint(true);
+	Int3 respawnPoint = sessionWorld.GetSpawnPoint(/*Random Adjust=*/true);
+	Vec3 spawnLocation = { double(respawnPoint.x) + 0.5, double(CHUNK_HEIGHT) * 4.0, double(respawnPoint.z) + 0.5 };
 
 	// If our session position is the default then overwrite it
 	if (_session.position.pos == Vec3{ -1, -1000000, -1 }) {
-		_session.position.pos = { float(respawnPoint.x) + 0.5, float(respawnPoint.y), float(respawnPoint.z) + 0.5 };
+		_session.pendingRespawn = true;
+		_session.entity->Teleport(spawnLocation);
+		_session.position.pos = spawnLocation;
+		_session.pendingTeleport = spawnLocation;
 	}
-
-	// Small nudge
-	_session.position.pos.y += 0.01;
 
 	// Log that we logged in!
 	Logger::Info << "Player " << _session.username << " logged in with entity ID " << _session.entity->id << " at ("
@@ -234,11 +235,8 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	             << ")\n";
 
 	// Update our last trusted position and rotation
-	_session.entity->position = _session.position.pos;
 	_session.entity->rotationYaw = _session.rotation.x;
 	_session.entity->rotationPitch = _session.rotation.y;
-	_session.pendingTeleport = _session.position.pos;
-	_session.entity->RebuildCollider();
 
 	// Let everyone else know we logged in
 	_server.SendGlobalChatMessage("§e" + _session.username + " joined the game.");
@@ -346,12 +344,12 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 
 	Logger::Info << "Spawn chunks sent.\n";
 
-	Packet::PlayerPositionAndRotation pos;
-	pos.position = { _session.position.pos.x, _session.position.pos.y + PLAYER_EYE_HEIGHT, _session.position.pos.z };
-	pos.cameraY = _session.position.pos.y;
-	pos.rotation = _session.rotation;
-	pos.onGround = false;
-	pos.Serialize(_session.stream);
+	// NOTE:
+	// The function CheckRespawnState in mp_player_entity.cpp will always resolve a respawn point before this point
+	// Or at least it should... :p
+
+	// Small nudge so we dont fall through the floor
+	_session.position.pos.y += 0.001;
 
 	// Update our last trusted position
 	_session.entity->position = _session.position.pos;

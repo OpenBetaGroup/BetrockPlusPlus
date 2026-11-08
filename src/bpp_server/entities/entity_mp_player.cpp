@@ -161,13 +161,9 @@ bool EntityMPPlayer::PickupItem(ItemStack& _stack, EntityId _entityId) {
 
 static constexpr double CLEAR_CHECK_TOLERANCE = 0.05;
 static constexpr double ROLLBACK_NUDGE = 0.06;
-static constexpr int32_t TELEPORT_RESEND_TICKS = 20;
 
 void EntityMPPlayer::HandlePositionChecks() {
 	if (isDead || !world)
-		return;
-
-	if (!Gamerule::Get<bool>(Gamerule::Id::PlayerMovementCheck))
 		return;
 
 	// Only wipe our velocity if we dont have a pending velocity to send
@@ -225,9 +221,6 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 		if (dist > 0.0625 || !world->AABBinValidChunks(this->collider.Expand(checkRange, checkRange, checkRange))) {
 			session->pendingPosition.reset();
-			if (++ticksSinceTeleportSent < TELEPORT_RESEND_TICKS)
-				return;
-			ticksSinceTeleportSent = 0;
 			// Still not there, so send another tp packet and reset our position
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
 			session->position.pos = *session->pendingTeleport;
@@ -386,6 +379,11 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 		bool willCorrect = (wasClearBefore && (residualTooLarge || !clearNow)) || movedWrong;
 
+		if (!Gamerule::Get<bool>(Gamerule::Id::PlayerMovementCheck)) {
+			movedWrong = false;
+			willCorrect = false;
+		}
+
 		if (movedWrong) {
 			Logger::Debug << "Claimed: " << claimed << " Last Position: " << lastPosition << "\n";
 			Logger::Warning << "Client " << session->username << " moved wrongly!\n";
@@ -397,7 +395,6 @@ void EntityMPPlayer::HandlePositionChecks() {
 			              << " movedWrong: " << movedWrong << "\n";
 			Vec3 safeRollback = lastPosition;
 			safeRollback.y += ROLLBACK_NUDGE;
-			ticksSinceTeleportSent = 0;
 
 			// TP our player back
 			this->Teleport(safeRollback, { rotationYaw, rotationPitch });
@@ -512,7 +509,7 @@ void EntityMPPlayer::CheckRespawnState() {
 	// NOTE:
 	// This function relies on the code in handle_packet.cpp to teleport the player to the appropriate respawn point
 	// That way the respawn point is loaded
-	const int checkRange = 32;
+	const int checkRange = 3;
 	if (!session || !session->pendingRespawn || !world->AABBinValidChunks(this->collider.Expand(checkRange, checkRange, checkRange)))
 		return;
 

@@ -784,6 +784,10 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 		pkt.dimension = Dimension::Nether;
 		pkt.Serialize(_session.stream);
 	}
+	_session.connState = ConnectionState::WaitingForSpawnChunks;
+	Packet::Respawn pkt;
+	pkt.dimension = TARGET_DIM;
+	pkt.Serialize(_session.stream);
 
 	auto world = _server.GetWorldForDimension(TARGET_DIM);
 	Int3 spawn = {};
@@ -797,18 +801,17 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	_session.position.pos = spawnLocation;
 	_session.pendingTeleport = spawnLocation;
 	_session.pendingPosition.reset();
-	_session.connState = ConnectionState::WaitingForSpawnChunks;
-
-	Packet::Respawn pkt;
-	pkt.dimension = TARGET_DIM;
-	pkt.Serialize(_session.stream);
 
 	Packet::SetTime stPkt;
 	stPkt.time = world->elapsedTicks;
 	stPkt.Serialize(_session.stream);
 
+	// Send inventory if keep inventory is true
 	if (Gamerule::Get<bool>(Gamerule::Id::KeepInventory))
 		PacketUtilities::SendInventory(_session, 0, _session.inventory);
+
+	// Reset our equipment profile for the entity tracker
+	_session.entityTracker->GetTrackerForEntityId(_session.entity->id)->equipmentProfile = {};
 }
 
 void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldManager& _world,
