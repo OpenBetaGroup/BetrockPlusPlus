@@ -102,6 +102,7 @@ enum class SuggestionSource : uint8_t {
 	Players,
 	Commands,
 	NestedCommand,
+	Custom,
 };
 
 struct Suggestion {
@@ -120,6 +121,7 @@ struct Node {
 	std::string description;
 	bool requiresOperator = false;
 	SuggestionSource suggestionSource = SuggestionSource::None;
+	std::function<std::vector<std::string>()> suggestionProvider;
 
 	// catchall string nodes follow typed or literal children so matches win.
 	std::vector<Node> children;
@@ -143,6 +145,14 @@ struct Node {
 		suggestionSource = source;
 		return *this;
 	}
+
+	// LLM disclosure
+	Node& suggests_from(std::function<std::vector<std::string>()> provider) {
+		suggestionSource = SuggestionSource::Custom;
+		suggestionProvider = std::move(provider);
+		return *this;
+	}
+	// End LLM disclosure
 
 	Node& then(Node child) {
 		if (child.type == NodeType::String || child.type == NodeType::GreedyString) {
@@ -455,6 +465,11 @@ private:
 					auto nested = suggest_nested({}, {}, 0, prefix, replaceStart, canOperate, players, depth + 1);
 					output.insert(output.end(), nested.begin(), nested.end());
 				}
+				break;
+			case SuggestionSource::Custom:
+				if (child.suggestionProvider)
+					for (const auto& value : child.suggestionProvider())
+						append_candidate(output, value, prefix, replaceStart);
 				break;
 			case SuggestionSource::None:
 				break;

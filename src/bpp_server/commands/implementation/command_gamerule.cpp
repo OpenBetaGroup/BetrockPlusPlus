@@ -65,6 +65,15 @@ std::string ListGamerules(const strategos::CmdNode& /*_cmd*/, void* _userData) {
 	return "";
 }
 
+// LLM disclosure
+std::vector<std::string> SuggestGamerules() {
+	std::vector<std::string> names;
+	for (const auto& [name, id] : Gamerule::GetAllNames())
+		names.push_back(name);
+	return names;
+}
+// End LLM disclosure
+
 } // namespace
 
 void RegisterGamerule(strategos::BrigadierContext& _dispatcher) {
@@ -73,6 +82,7 @@ void RegisterGamerule(strategos::BrigadierContext& _dispatcher) {
 	                            .op()
 	                            .then(strategos::Node::literal("list").executes(ListGamerules))
 	                            .then(strategos::Node::string("name")
+	                                      .suggests_from(SuggestGamerules)
 	                                      .executes(GetGamerule)
 	                                      .then(strategos::Node::string("value").executes(SetGamerule))));
 }
