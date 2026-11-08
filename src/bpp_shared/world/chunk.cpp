@@ -29,7 +29,7 @@ void Chunk::GenerateHeightMap() {
 }
 
 void Chunk::GenerateHeightMapColumn(Int2 _pos) {
-	for (int y = CHUNK_HEIGHT - 1; y >= 0; y--) {
+	for (int y = MAX_HEIGHT_VALUE - 1; y >= 0; y--) {
 		if (Blocks::blockProperties[GetBlock({ _pos.x, y, _pos.z })].lightOpacity > 0) {
 			SetHeightValue(_pos, uint8_t(y + 1));
 			return;
@@ -42,8 +42,7 @@ void Chunk::GenerateSkylightMap() {
 	GenerateHeightMap();
 
 	// Every slot that starts at or above the tallest column is open sky in every column, so light it in one go
-	const int bulkStart = std::min<int>(CHUNK_HEIGHT,
-	                                               (GetHighestPoint() + SUB_CHUNK_SIZE - 1) & ~(SUB_CHUNK_SIZE - 1));
+	const int bulkStart = std::min<int>(CHUNK_HEIGHT, (GetHighestPoint() + SUB_CHUNK_SIZE - 1) & ~(SUB_CHUNK_SIZE - 1));
 
 	for (int i = bulkStart / SUB_CHUNK_SIZE; i < SUB_CHUNK_COUNT; i++)
 		subChunks[size_t(i)].FillSkyLight(15);
@@ -55,8 +54,7 @@ void Chunk::GenerateSkylightMap() {
 				SetSkyLight({ x, y, z }, 15);
 			int skyLight = 15;
 			for (int y = height - 1; y >= 0; y--) {
-				skyLight -= std::max<int>(1,
-				                                     int(Blocks::blockProperties[GetBlock({ x, y, z })].lightOpacity));
+				skyLight -= std::max<int>(1, int(Blocks::blockProperties[GetBlock({ x, y, z })].lightOpacity));
 				skyLight = std::max<int>(0, skyLight);
 				SetSkyLight({ x, y, z }, uint8_t(skyLight));
 			}
@@ -83,8 +81,7 @@ void Chunk::RecalculateSkyLightColumn(Int2 _pos) {
 
 	int skyLight = 15;
 	for (int y = height - 1; y >= 0; y--) {
-		skyLight -= std::max<int>(1,
-		                                     int(Blocks::blockProperties[GetBlock({ _pos.x, y, _pos.z })].lightOpacity));
+		skyLight -= std::max<int>(1, int(Blocks::blockProperties[GetBlock({ _pos.x, y, _pos.z })].lightOpacity));
 		skyLight = std::max<int>(0, skyLight);
 		SetSkyLight({ _pos.x, y, _pos.z }, uint8_t(skyLight));
 	}

@@ -100,6 +100,9 @@ bool GenericPlace(WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Va
 	if (placePos == Int3{ -1, -1, -1 })
 		return false;
 
+	if (Blocks::blockProperties[_blockId].material.isSolid && placePos.y >= CHUNK_HEIGHT - 1)
+		return false;
+
 	_world.SetBlock(placePos, _blockId, _meta);
 	return true;
 }

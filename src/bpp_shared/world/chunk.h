@@ -81,6 +81,7 @@ enum class ChunkState : uint8_t {
 // Plus we could fall back to those if all 8 subchunks are filled anyways.
 struct Chunk {
 	static constexpr int VOLUME = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH;
+	static constexpr int MAX_HEIGHT_VALUE = CHUNK_HEIGHT - 1;
 	static_assert(CHUNK_HEIGHT % SUB_CHUNK_SIZE == 0, "CHUNK_HEIGHT must be a multiple of SUB_CHUNK_SIZE");
 	static_assert(SUB_CHUNK_SIZE == CHUNK_WIDTH, "SubChunk indexing assumes SUB_CHUNK_SIZE == CHUNK_WIDTH");
 
