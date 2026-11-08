@@ -507,11 +507,65 @@ ItemStack* EntityMPPlayer::GetHeldItem() {
 	return session->inventory.GetHeldItem();
 }
 
+// TODO: Should probably be in the base player entity
+void EntityMPPlayer::CheckRespawnState() {
+	// NOTE:
+	// This function relies on the code in handle_packet.cpp to teleport the player to the appropriate respawn point
+	// That way the respawn point is loaded
+	const int checkRange = 32;
+	if (!session || !session->pendingRespawn || !world->AABBinValidChunks(this->collider.Expand(checkRange, checkRange, checkRange)))
+		return;
+
+	// Get our respawn point
+	Int3 spawn = {};
+	bool bedPositionFindFailed = true;
+	if (session->hasBedSpawn) {
+		Int3 headPos = session->spawnPosition.WithOffset(Cardinal::Value::Down);
+		auto bedDir = GetDirectionFromMeta(BLOCK_BED, world->GetMetadata(headPos));
+		Int3 footPos = headPos.WithOffset(Cardinal::Opposite(bedDir));
+
+		if (world->GetBlockId(headPos) == BLOCK_BED) {
+			auto sleepPositions = Blocks::GetBedApproachSpots(*world, headPos, footPos);
+			if (!sleepPositions.empty()) {
+				bedPositionFindFailed = false;
+				spawn = sleepPositions[0];
+			}
+		}
+	}
+	if (bedPositionFindFailed) {
+		if (session->hasBedSpawn) {
+			Packet::ChatMessage pkt;
+			pkt.message = "Your home bed was missing or obstructed";
+			pkt.Serialize(session->stream);
+		}
+		session->hasBedSpawn = false;
+		spawn = world->GetSpawnPoint(true);
+	}
+	Vec3 spawnLocation = { double(spawn.x) + 0.5, double(spawn.y) + 0.01, double(spawn.z) + 0.5 };
+
+	this->Teleport(spawnLocation);
+	session->position.pos = spawnLocation;
+	session->pendingTeleport = spawnLocation;
+	session->pendingPosition.reset();
+	session->pendingRespawn = false;
+}
+
 void EntityMPPlayer::Tick() {
 	if (!session)
 		return;
 
+	// Check if we are respawning, if so don't run any logic until
+	// The chunks we are in are loaded and our respawn is confirmed
+	CheckRespawnState();
+	if (session->pendingRespawn)
+		return;
+
+	// If we are waiting for chunks then stay here
 	if (session->connState == ConnectionState::WaitingForSpawnChunks)
+		return;
+
+	// Pending teleports freeze our logic
+	if (session->pendingTeleport)
 		return;
 
 	if (!movedThisTick) {

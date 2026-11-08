@@ -61,6 +61,7 @@ struct PlayerSession {
 	std::optional<Vec3> pendingPosition = std::nullopt;
 	std::optional<Vec3> pendingTeleport = std::nullopt;
 	std::optional<Int2> pending2dTeleport = std::nullopt;
+	bool pendingRespawn = false;
 
 	// Our player entity
 	std::shared_ptr<EntityMPPlayer> entity;

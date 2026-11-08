@@ -764,10 +764,6 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	constexpr Dimension TARGET_DIM = Dimension::Overworld;
 	const bool changingDim = _session.dimension != TARGET_DIM;
 
-	Packet::Respawn pkt;
-	pkt.dimension = TARGET_DIM;
-	pkt.Serialize(_session.stream);
-
 	// Unregister the dead entity from the world it died in
 	auto oldWorld = _server.GetWorldForDimension(_session.dimension);
 	oldWorld->entityManager.RemoveEntity(_session.entity->id);
@@ -778,49 +774,34 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	newEntity->id = _session.entity->id;
 	_session.entity = newEntity;
 
-	if (changingDim)
-		_server.ResetDimensionState(_session, TARGET_DIM);
+	_server.ResetDimensionState(_session, TARGET_DIM);
+	if (!changingDim) {
+		// We are in the overworld but need the respawning screen to stay
+		// The java client will only show the loading terrain screen if the 
+		// Source dim and target dim are different
+		// Pain in my ass -Aids
+		Packet::Respawn pkt;
+		pkt.dimension = Dimension::Nether;
+		pkt.Serialize(_session.stream);
+	}
 
 	auto world = _server.GetWorldForDimension(TARGET_DIM);
 	Int3 spawn = {};
-	bool bedPositionFindFailed = true;
-	if (_session.hasBedSpawn) {
-		Int3 headPos = _session.spawnPosition.WithOffset(Cardinal::Value::Down);
-		auto bedDir = GetDirectionFromMeta(BLOCK_BED, world->GetMetadata(headPos));
-		Int3 footPos = headPos.WithOffset(Cardinal::Opposite(bedDir));
-		auto sleepPositions = Blocks::GetBedApproachSpots(*world, headPos, footPos);
-		if (!sleepPositions.empty()) {
-			bedPositionFindFailed = false;
-			spawn = sleepPositions[0];
-		}
-	}
-	if (bedPositionFindFailed) {
-		if (_session.hasBedSpawn)
-			SendChat(_session, "Your home bed was missing or obstructed");
-		_session.hasBedSpawn = false;
-		spawn = world->GetSpawnPoint(/*Random Adjust=*/true);
-	}
-	Vec3 spawnLocation = { double(spawn.x) + 0.5, double(spawn.y) + 0.01, double(spawn.z) + 0.5 };
+	spawn = _session.hasBedSpawn ? _session.spawnPosition : world->GetSpawnPoint(/*Random Adjust=*/true);
+	Vec3 spawnLocation = { double(spawn.x) + 0.5, double(CHUNK_HEIGHT) * 4.0, double(spawn.z) + 0.5 };
+	_session.pendingRespawn = true;
 
 	newEntity->Teleport(spawnLocation);
-	world->entityManager.AddEntity(newEntity, newEntity->id); // registers in exactly one world
+	world->entityManager.AddEntity(newEntity, newEntity->id);
 
 	_session.position.pos = spawnLocation;
 	_session.pendingTeleport = spawnLocation;
 	_session.pendingPosition.reset();
+	_session.connState = ConnectionState::WaitingForSpawnChunks;
 
-	if (changingDim) {
-		_session.connState = ConnectionState::WaitingForSpawnChunks;
-		return;
-	}
-
-	Packet::PlayerPositionAndRotation tpPkt;
-	tpPkt.position = { spawnLocation.x, spawnLocation.y + PLAYER_EYE_HEIGHT, spawnLocation.z };
-	tpPkt.cameraY = spawnLocation.y;
-	tpPkt.yaw = 0;
-	tpPkt.pitch = 0;
-	tpPkt.onGround = false;
-	tpPkt.Serialize(_session.stream);
+	Packet::Respawn pkt;
+	pkt.dimension = TARGET_DIM;
+	pkt.Serialize(_session.stream);
 
 	Packet::SetTime stPkt;
 	stPkt.time = world->elapsedTicks;

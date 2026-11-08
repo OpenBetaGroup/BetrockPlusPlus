@@ -375,16 +375,21 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 	_session.connState = ConnectionState::Playing;
 
 	// Register our entity with the world
+	// This variable should be called "isFirstJoin"...
+	// Oh well! 
 	if (!_session.entityRegistered)
 		sessionWorld.entityManager.AddEntity(_session.entity, _session.entity->id);
-	_session.entityRegistered = true;
 
 	// Give our player session a pointer to the entity tracker
 	_session.entityTracker = _session.dimension == Dimension::Overworld ? &_server.overworldEntityTracker
 	                                                                    : &_server.hellEntityTracker;
 
 	// Welcome message
-	Packet::ChatMessage welcomeMsg;
-	welcomeMsg.message = std::string("§eThis Server runs on ") + std::string(PROJECT_FULL_VERSION_LABEL);
-	welcomeMsg.Serialize(_session.stream);
+	if (!_session.entityRegistered) {
+		Packet::ChatMessage welcomeMsg;
+		welcomeMsg.message = std::string("§eThis Server runs on ") + std::string(PROJECT_FULL_VERSION_LABEL);
+		welcomeMsg.Serialize(_session.stream);
+	}
+
+	_session.entityRegistered = true;
 }
