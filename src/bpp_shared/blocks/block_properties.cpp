@@ -167,9 +167,12 @@ bool CanPumpkinPlaceAt(WorldAccess& _world, Int3 _pos) {
 	if (_world.GetBlockId(_pos) != BlockType::BLOCK_AIR)
 		return false;
 	const Material mat = _world.GetMaterial(_pos);
-	if (mat.type != MaterialType::SnowLayer) return false;
-	if (!mat.isLiquid) return false;
-	if (mat.isOpaque) return false;
+	if (mat.type != MaterialType::SnowLayer)
+		return false;
+	if (!mat.isLiquid)
+		return false;
+	if (mat.isOpaque)
+		return false;
 	return _world.GetMaterial(_pos.Offset(Cardinal::Value::Down)).isSolid;
 }
 
@@ -471,17 +474,15 @@ void RegisterBlockProperties() {
 	};
 
 	// Detector Rail
-	blockProperties[BlockType::BLOCK_RAIL_DETECTOR] = {
-		.material = Material::Circuits(),
-		.hardness = 0.7f,
-		.pushMobilityOverride = PushabilityFlag::Normal,
-		.lightOpacity = 0,
-		.stepSound = StepSound::Stone,
-		.isCollidable = false,
-		.isOpaqueCube = false,
-		.isNormalCube = false,
-		.ticksOnLoad = true
-	};
+	blockProperties[BlockType::BLOCK_RAIL_DETECTOR] = { .material = Material::Circuits(),
+		                                                .hardness = 0.7f,
+		                                                .pushMobilityOverride = PushabilityFlag::Normal,
+		                                                .lightOpacity = 0,
+		                                                .stepSound = StepSound::Stone,
+		                                                .isCollidable = false,
+		                                                .isOpaqueCube = false,
+		                                                .isNormalCube = false,
+		                                                .ticksOnLoad = true };
 
 	// Sticky Piston Base
 	blockProperties[BlockType::BLOCK_PISTON_STICKY] = {

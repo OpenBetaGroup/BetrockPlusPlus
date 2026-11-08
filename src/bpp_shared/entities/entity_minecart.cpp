@@ -268,12 +268,12 @@ void MinecartEntity::Tick() {
 		blockPos.y--;
 	}
 
-	const double MAX_VEL = 0.4;
-	const double SLOPE_ACCEL = 0.0078125;
-	const double RIDDEN_FRICTION = double(0.997f);
-	const double EMPTY_FRICTION = double(0.96f);
-	const double BOOST_ACCEL = 0.06;
-	const double BOOST_KICK = 0.02;
+	const double maxVel = 0.4;
+	const double slopeAccel = 0.0078125;
+	const double riddenFriction = double(0.997f);
+	const double emptyFriction = double(0.96f);
+	const double boostAccel = 0.06;
+	const double boostKick = 0.02;
 	auto thisRail = this->world->GetBlockId(blockPos);
 
 	if (RailManager::IsRail(thisRail)) {
@@ -298,8 +298,8 @@ void MinecartEntity::Tick() {
 		// Slopes pull the cart toward their low end
 		if (sloped) {
 			const int* low = ends[0][1] < 0 ? ends[0] : ends[1];
-			velocity.x += low[0] * SLOPE_ACCEL;
-			velocity.z += low[2] * SLOPE_ACCEL;
+			velocity.x += low[0] * slopeAccel;
+			velocity.z += low[2] * slopeAccel;
 		}
 
 		// Redirect horizontal velocity along the rail, keeping speed and picking the closer direction
@@ -337,8 +337,8 @@ void MinecartEntity::Tick() {
 			step.x *= 0.75;
 			step.z *= 0.75;
 		}
-		step.x = std::clamp(step.x, -MAX_VEL, MAX_VEL);
-		step.z = std::clamp(step.z, -MAX_VEL, MAX_VEL);
+		step.x = std::clamp(step.x, -maxVel, maxVel);
+		step.z = std::clamp(step.z, -maxVel, maxVel);
 
 		Vec3 requested = step;
 		Move(step);
@@ -359,11 +359,11 @@ void MinecartEntity::Tick() {
 
 		// Friction
 		if (passenger.lock()) {
-			velocity.x *= RIDDEN_FRICTION;
-			velocity.z *= RIDDEN_FRICTION;
+			velocity.x *= riddenFriction;
+			velocity.z *= riddenFriction;
 		} else {
-			velocity.x *= EMPTY_FRICTION;
-			velocity.z *= EMPTY_FRICTION;
+			velocity.x *= emptyFriction;
+			velocity.z *= emptyFriction;
 		}
 		// On a rail Y velocity is always cleared
 		velocity.y = 0.0;
@@ -393,24 +393,24 @@ void MinecartEntity::Tick() {
 		if (boosting) {
 			double currentSpeed = std::sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
 			if (currentSpeed > 0.01) {
-				velocity.x += velocity.x / currentSpeed * BOOST_ACCEL;
-				velocity.z += velocity.z / currentSpeed * BOOST_ACCEL;
+				velocity.x += velocity.x / currentSpeed * boostAccel;
+				velocity.z += velocity.z / currentSpeed * boostAccel;
 			} else if (thisDirection == Blocks::RailShape::FlatEastWest) {
 				if (world->IsBlockNormalCube({ blockPos.x - 1, blockPos.y, blockPos.z }))
-					velocity.x = BOOST_KICK;
+					velocity.x = boostKick;
 				else if (world->IsBlockNormalCube({ blockPos.x + 1, blockPos.y, blockPos.z }))
-					velocity.x = -BOOST_KICK;
+					velocity.x = -boostKick;
 			} else if (thisDirection == Blocks::RailShape::FlatNorthSouth) {
 				if (world->IsBlockNormalCube({ blockPos.x, blockPos.y, blockPos.z - 1 }))
-					velocity.z = BOOST_KICK;
+					velocity.z = boostKick;
 				else if (world->IsBlockNormalCube({ blockPos.x, blockPos.y, blockPos.z + 1 }))
-					velocity.z = -BOOST_KICK;
+					velocity.z = -boostKick;
 			}
 		}
 	} else {
 		// This is our free fall logic
-		this->velocity.x = std::clamp(this->velocity.x, -MAX_VEL, MAX_VEL);
-		this->velocity.z = std::clamp(this->velocity.z, -MAX_VEL, MAX_VEL);
+		this->velocity.x = std::clamp(this->velocity.x, -maxVel, maxVel);
+		this->velocity.z = std::clamp(this->velocity.z, -maxVel, maxVel);
 
 		if (this->onGround)
 			this->velocity *= 0.5;

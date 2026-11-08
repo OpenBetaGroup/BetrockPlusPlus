@@ -13,7 +13,7 @@ namespace {
 std::string GetTime(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	SendFeedback(ctx, "§eCurrent Time is " + std::to_string(ctx.world->elapsedTicks) + " (Day " +
-	                           std::to_string(int64_t(std::floor(ctx.world->elapsedTicks / DAY_LENGTH))) + ")");
+	                      std::to_string(int64_t(std::floor(ctx.world->elapsedTicks / DAY_LENGTH))) + ")");
 	return "";
 }
 

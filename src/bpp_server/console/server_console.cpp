@@ -51,13 +51,13 @@ bool HasInteractiveTerminal() {
 #endif
 }
 
-bool IsWhitespaceOnly(std::string_view line) {
-	return std::all_of(line.begin(), line.end(), [](unsigned char c) { return std::isspace(c) != 0; });
+bool IsWhitespaceOnly(std::string_view _line) {
+	return std::all_of(_line.begin(), _line.end(), [](unsigned char _c) { return std::isspace(_c) != 0; });
 }
 
-int CodePointCount(std::string_view text) {
+int CodePointCount(std::string_view _text) {
 	int count = 0;
-	for (unsigned char c : text)
+	for (unsigned char c : _text)
 		if ((c & 0xC0) != 0x80)
 			++count;
 	return count;
@@ -90,11 +90,11 @@ void ServerConsole::Start(const CommandManager& _commands) {
 		impl->editor.bind_key(replxx::Replxx::KEY::control('C'), cancel);
 		impl->editor.bind_key(replxx::Replxx::KEY::meta(replxx::Replxx::KEY::control('C')), cancel);
 		impl->editor.set_completion_callback(
-		    [this](const std::string& input, int& contextLen) { return Complete(input, contextLen); });
+		    [this](const std::string& _input, int& _contextLen) { return Complete(_input, _contextLen); });
 
-		Logger::SetTerminalSink([this](const char* data, int length) {
+		Logger::SetTerminalSink([this](const char* _data, int _length) {
 			if (impl)
-				impl->editor.write(data, length);
+				impl->editor.write(_data, _length);
 		});
 	}
 	readerDone.store(false);
@@ -159,16 +159,16 @@ void ServerConsole::UpdatePlayerNames(const std::vector<std::string>& _names) {
 		playerNames = _names;
 }
 
-replxx::Replxx::completions_t ServerConsole::Complete(std::string_view input, int& contextLen) const {
+replxx::Replxx::completions_t ServerConsole::Complete(std::string_view _input, int& _contextLen) const {
 	std::vector<strategos::Suggestion> suggestions;
 	{
 		std::lock_guard lock(namesMutex);
-		suggestions = commands->Suggest(input, true, std::span<const std::string>(playerNames));
+		suggestions = commands->Suggest(_input, true, std::span<const std::string>(playerNames));
 	}
-	size_t start = input.size();
+	size_t start = _input.size();
 	for (const auto& suggestion : suggestions)
 		start = std::min(start, suggestion.start);
-	contextLen = CodePointCount(input.substr(start));
+	_contextLen = CodePointCount(_input.substr(start));
 	std::vector<replxx::Replxx::Completion> completions;
 	completions.reserve(suggestions.size());
 	for (const auto& suggestion : suggestions)
@@ -176,14 +176,14 @@ replxx::Replxx::completions_t ServerConsole::Complete(std::string_view input, in
 	return completions;
 }
 
-void ServerConsole::QueueLine(std::string line) {
-	if (!line.empty() && line.back() == '\r')
-		line.pop_back();
-	if (IsWhitespaceOnly(line) || stopping.load())
+void ServerConsole::QueueLine(std::string _line) {
+	if (!_line.empty() && _line.back() == '\r')
+		_line.pop_back();
+	if (IsWhitespaceOnly(_line) || stopping.load())
 		return;
 	std::lock_guard lock(queueMutex);
 	if (!stopping.load())
-		commandQueue.push_back(std::move(line));
+		commandQueue.push_back(std::move(_line));
 }
 
 void ServerConsole::ReaderLoop() {

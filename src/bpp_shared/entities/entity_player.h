@@ -23,7 +23,7 @@ struct PlayerEntity : public MobileEntity {
 	Int3 bedPosition{ 0, 0, 0 };
 	Vec3 spawnPos = {};
 	std::weak_ptr<FishingBobberEntity> fishingBobber;
-	
+
 	// Also called "SleepTimer" in the player save
 	TickTime ticksInBed = 0;
 	float timeInPortal = 0.0f;
@@ -60,11 +60,11 @@ struct PlayerEntity : public MobileEntity {
 	virtual SleepFailureReason TrySleep(Int3 _pos);
 	virtual void WakeUp(bool _confirmSpawn = true);
 	virtual void UsePortal();
-	
+
 	float GetEyeHeight() override {
 		return 1.62f;
 	}
-	
+
 	float GetRidingYOffset() override {
 		return yOffset - 0.5f;
 	}

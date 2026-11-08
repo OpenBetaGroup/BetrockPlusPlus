@@ -21,11 +21,11 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -34,7 +34,7 @@ namespace Blocks {
 static bool CanPlaceChest(WorldManager& _world, Int3 _pos) {
 	// If any of the block surrounding us are double chests we cannot be placed
 	Cardinal::Value directions[4] = { Cardinal::Value::East, Cardinal::Value::West, Cardinal::Value::North,
-		                               Cardinal::Value::South };
+		                              Cardinal::Value::South };
 
 	auto isDoubleChest = [&](Int3 _npos) -> bool {
 		if (_world.GetBlockId(_npos) != BLOCK_CHEST)

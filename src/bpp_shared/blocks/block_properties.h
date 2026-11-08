@@ -50,7 +50,8 @@ struct BlockProperties {
 	float resistance = -1.0f;     // -1 = never explicitly set, fallback
 	float slipperiness = 0.6f;    // default friction, ice = 0.98f
 	float particleGravity = 1.0f; // how fast break particles fall
-	PushabilityFlag pushMobilityOverride = Invalid; // By default, pushMobility is in the material. This overrides that value if set >= 0.
+	PushabilityFlag pushMobilityOverride =
+	    Invalid; // By default, pushMobility is in the material. This overrides that value if set >= 0.
 
 	int tickRate = 10; // Used for self scheduling blocks
 

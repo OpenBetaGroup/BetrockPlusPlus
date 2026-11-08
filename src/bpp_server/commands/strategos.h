@@ -275,8 +275,8 @@ public:
 	}
 
 	// LLM disclosure
-	[[nodiscard]] auto suggest(std::string_view input, bool canOperate,
-	                           std::span<const std::string> players) const -> std::vector<Suggestion> {
+	[[nodiscard]] auto suggest(std::string_view input, bool canOperate, std::span<const std::string> players) const
+	    -> std::vector<Suggestion> {
 		size_t base = 0;
 		while (base < input.size() && input[base] == ' ')
 			++base;
@@ -288,7 +288,8 @@ public:
 		const auto command = input.substr(base);
 		auto tokens = tokenize(command);
 		const bool trailingSpace = !command.empty() && command.back() == ' ' &&
-		                           (tokens.empty() || tokens.back().data() + tokens.back().size() != command.data() + command.size());
+		                           (tokens.empty() ||
+		                            tokens.back().data() + tokens.back().size() != command.data() + command.size());
 		std::vector<size_t> offsets;
 		offsets.reserve(tokens.size());
 		for (auto token : tokens)
@@ -303,9 +304,11 @@ public:
 		}
 		auto result = suggest_at(rootNode, tokens, offsets, completed, prefix, replaceStart, canOperate, players, 0);
 		std::ranges::sort(result, {}, &Suggestion::text);
-		result.erase(std::unique(result.begin(), result.end(), [](const Suggestion& lhs, const Suggestion& rhs) {
-			return lhs.start == rhs.start && lhs.text == rhs.text;
-		}), result.end());
+		result.erase(std::unique(result.begin(), result.end(),
+		                         [](const Suggestion& lhs, const Suggestion& rhs) {
+			                         return lhs.start == rhs.start && lhs.text == rhs.text;
+		                         }),
+		             result.end());
 		return result;
 	}
 	// End LLM disclosure
@@ -390,9 +393,9 @@ public:
 private:
 	// LLM Disclosure
 	[[nodiscard]] auto suggest_at(const Node& root, std::span<const std::string_view> tokens,
-	                             std::span<const size_t> offsets, size_t completed, std::string_view prefix,
-	                             size_t replaceStart, bool canOperate, std::span<const std::string> players,
-	                             unsigned depth) const -> std::vector<Suggestion> {
+	                              std::span<const size_t> offsets, size_t completed, std::string_view prefix,
+	                              size_t replaceStart, bool canOperate, std::span<const std::string> players,
+	                              unsigned depth) const -> std::vector<Suggestion> {
 		std::vector<Suggestion> output;
 		const Node* current = &root;
 		size_t index = 0;
@@ -462,10 +465,10 @@ private:
 		return output;
 	}
 
-	[[nodiscard]] auto suggest_nested(std::span<const std::string_view> tokens,
-	                                 std::span<const size_t> offsets, size_t completed, std::string_view prefix,
-	                                 size_t replaceStart, bool canOperate, std::span<const std::string> players,
-	                                 unsigned depth) const -> std::vector<Suggestion> {
+	[[nodiscard]] auto suggest_nested(std::span<const std::string_view> tokens, std::span<const size_t> offsets,
+	                                  size_t completed, std::string_view prefix, size_t replaceStart, bool canOperate,
+	                                  std::span<const std::string> players, unsigned depth) const
+	    -> std::vector<Suggestion> {
 		std::vector<std::string_view> normalizedTokens(tokens.begin(), tokens.end());
 		std::vector<size_t> normalizedOffsets(offsets.begin(), offsets.end());
 		if (!prefix.empty() && prefix.front() == '/') {
@@ -480,12 +483,12 @@ private:
 				--completed;
 			}
 		}
-		return suggest_at(rootNode, normalizedTokens, normalizedOffsets, completed, prefix, replaceStart,
-		                  canOperate, players, depth);
+		return suggest_at(rootNode, normalizedTokens, normalizedOffsets, completed, prefix, replaceStart, canOperate,
+		                  players, depth);
 	}
 
-	static void append_candidate(std::vector<Suggestion>& output, std::string_view value,
-	                             std::string_view prefix, size_t start) {
+	static void append_candidate(std::vector<Suggestion>& output, std::string_view value, std::string_view prefix,
+	                             size_t start) {
 		if (value.starts_with(prefix))
 			output.push_back({ start, std::string(value) });
 	} // End LLM disclosure
@@ -493,8 +496,10 @@ private:
 	[[nodiscard]] static auto tokenize(std::string_view input) -> std::vector<std::string_view> {
 		std::vector<std::string_view> tokens;
 		for (size_t pos = 0; pos < input.size();) {
-			while (pos < input.size() && input[pos] == ' ') ++pos;
-			if (pos == input.size()) break;
+			while (pos < input.size() && input[pos] == ' ')
+				++pos;
+			if (pos == input.size())
+				break;
 
 			const size_t start = pos;
 			const bool selector = input[pos] == '@';
@@ -506,23 +511,33 @@ private:
 			for (; pos < input.size(); ++pos) {
 				const char c = input[pos];
 				if (quote) {
-					if (escaped) escaped = false;
-					else if (c == '\\') escaped = true;
-					else if (c == quote) quote = 0;
+					if (escaped)
+						escaped = false;
+					else if (c == '\\')
+						escaped = true;
+					else if (c == quote)
+						quote = 0;
 					continue;
 				}
 
 				if (!closers.empty()) {
-					if (c == '"' || c == '\'') quote = c;
-					else if (c == '[') closers.push_back(']');
-					else if (c == '{') closers.push_back('}');
+					if (c == '"' || c == '\'')
+						quote = c;
+					else if (c == '[')
+						closers.push_back(']');
+					else if (c == '{')
+						closers.push_back('}');
 					else if (c == ']' || c == '}') {
-						if (c != closers.back()) malformed = true;
-						else closers.pop_back();
+						if (c != closers.back())
+							malformed = true;
+						else
+							closers.pop_back();
 					}
-				} else if (selector && c == '[') closers.push_back(']');
+				} else if (selector && c == '[')
+					closers.push_back(']');
 
-				else if (c == ' ' && !malformed) break;
+				else if (c == ' ' && !malformed)
+					break;
 			}
 			tokens.push_back(input.substr(start, pos - start));
 		}
@@ -578,7 +593,7 @@ private:
 	[[nodiscard]] static auto get_consumed_tokens(const Node& node, std::span<const std::string_view> tokens,
 	                                              size_t token_idx) -> size_t {
 		if (node.type == NodeType::GreedyString)
-		return tokens.size() - token_idx - 1;
+			return tokens.size() - token_idx - 1;
 		if (node.type == NodeType::Vec3 && tokens.size() > token_idx + 2)
 			return 2;
 		return 0;
@@ -597,7 +612,7 @@ private:
 		case NodeType::String:
 			data = std::string(token);
 			return true;
-			
+
 		case NodeType::GreedyString: {
 			const size_t offset = static_cast<size_t>(token.data() - original.data());
 			data = std::string(original.substr(offset));

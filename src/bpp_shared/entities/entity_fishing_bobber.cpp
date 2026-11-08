@@ -18,7 +18,8 @@ FishingBobberEntity::FishingBobberEntity(std::shared_ptr<PlayerEntity> _owner, V
 	this->owner = _owner;
 	SetSize({ 0.25f, 0.25f });
 
-	if (!_owner) return;
+	if (!_owner)
+		return;
 
 	Teleport({ _owner->position.x, _owner->position.y + _owner->GetEyeHeight() - _owner->yOffset, _owner->position.z },
 	         { _owner->rotationYaw, _owner->rotationPitch });
@@ -30,7 +31,8 @@ FishingBobberEntity::FishingBobberEntity(std::shared_ptr<PlayerEntity> _owner, V
 
 	RebuildCollider();
 	float length = _direction.Length();
-	if (length == 0.0f) return;
+	if (length == 0.0f)
+		return;
 
 	_direction.x /= length;
 	_direction.y /= length;
@@ -47,7 +49,8 @@ FishingBobberEntity::FishingBobberEntity(std::shared_ptr<PlayerEntity> _owner, V
 void FishingBobberEntity::Tick() {
 	Entity::Tick();
 
-	if (isDead || !world || !entityManager) return;
+	if (isDead || !world || !entityManager)
+		return;
 	auto player = owner.lock();
 	if (!player) {
 		isDead = true;
@@ -58,8 +61,7 @@ void FishingBobberEntity::Tick() {
 
 	// detach if player has died/bad held item/moved too far
 	if (player->isDead || !heldStack || heldStack->id != Items::Id::FISHING_ROD ||
-		player->position.DistanceSquared(position) > 1024.0) {
-
+	    player->position.DistanceSquared(position) > 1024.0) {
 		if (player->fishingBobber.lock().get() == this)
 			player->fishingBobber.reset();
 
@@ -152,7 +154,7 @@ void FishingBobberEntity::Tick() {
 			velocity.y -= double(rand.NextFloat() * rand.NextFloat() * rand.NextFloat()) * 0.2;
 		} else {
 			const Int3 above{ MathHelper::FloorDouble(position.x), MathHelper::FloorDouble(position.y) + 1,
-			                  MathHelper::FloorDouble(position.z) };
+				              MathHelper::FloorDouble(position.z) };
 			int wait = world->CanRainHitSpot(above) ? 300 : 500;
 			if (world->rand.NextInt(wait) == 0) {
 				catchableTicks = world->rand.NextInt(30) + 10;
@@ -162,13 +164,13 @@ void FishingBobberEntity::Tick() {
 
 		// scales with how much of the bobber is submerged
 		double fraction = 0.0;
-		constexpr int slices = 5;
-		for (int i = 0; i < slices; ++i) {
-			double minY = collider.minY + (collider.maxY - collider.minY) * double(i) / slices;
-			double maxY = collider.minY + (collider.maxY - collider.minY) * double(i + 1) / slices;
+		constexpr int SLICES = 5;
+		for (int i = 0; i < SLICES; ++i) {
+			double minY = collider.minY + (collider.maxY - collider.minY) * double(i) / SLICES;
+			double maxY = collider.minY + (collider.maxY - collider.minY) * double(i + 1) / SLICES;
 			if (world->IsAabbInFluidLevel({ collider.minX, minY, collider.minZ, collider.maxX, maxY, collider.maxZ },
 			                              Material::Water()))
-				fraction += 1.0 / slices;
+				fraction += 1.0 / SLICES;
 		}
 
 		double waterFraction = fraction;
@@ -177,7 +179,9 @@ void FishingBobberEntity::Tick() {
 			drag *= 0.9f;
 			velocity.y *= 0.8;
 		}
-	} else { velocity.y -= 0.03; }
+	} else {
+		velocity.y -= 0.03;
+	}
 
 	velocity.x *= drag;
 	velocity.y *= drag;

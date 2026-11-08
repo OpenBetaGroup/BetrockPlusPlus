@@ -736,7 +736,8 @@ struct EntityMovement : BasePacket {
 	}
 
 	void Deserialize(NetworkStream& _stream) override {
-		entityId = _stream.Read<EntityId>();}
+		entityId = _stream.Read<EntityId>();
+	}
 };
 
 // Used for setting an entitys relative position

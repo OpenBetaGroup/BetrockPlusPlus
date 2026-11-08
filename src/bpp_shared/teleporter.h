@@ -14,4 +14,4 @@ namespace Teleporter {
 void PlaceAtValidTransferSpot(WorldManager& _world, Entity& _entity);
 bool PlaceInExistingPortal(WorldManager& _world, Entity& _entity);
 bool CreatePortal(WorldManager& _world, Entity& _entity);
-} 
+} // namespace Teleporter

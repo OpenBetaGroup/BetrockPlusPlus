@@ -42,28 +42,28 @@ void CommandManager::Init(Server* _server) {
 	Logger::Info << "Registered " << dispatcher.root().children.size() << " command(s)!" << "\n";
 }
 
-std::vector<strategos::Suggestion> CommandManager::Suggest(std::string_view input, bool canOperate,
-		std::span<const std::string> players) const {
-	return dispatcher.suggest(input, canOperate, players);
+std::vector<strategos::Suggestion> CommandManager::Suggest(std::string_view _input, bool _canOperate,
+                                                           std::span<const std::string> _players) const {
+	return dispatcher.suggest(_input, _canOperate, _players);
 }
 
-bool CommandManager::Parse(std::string_view line, CommandContext& ctx) {
-	ctx.server = server;
-	ctx.manager = this;
-	ctx.dispatcher = &dispatcher;
-	ctx.executionSucceeded = true;
-	while (!line.empty() && line.front() == ' ')
-		line.remove_prefix(1);
-	if (!line.empty() && line.front() == '/')
-		line.remove_prefix(1);
-	while (!line.empty() && line.front() == ' ')
-		line.remove_prefix(1);
+bool CommandManager::Parse(std::string_view _line, CommandContext& _ctx) {
+	_ctx.server = server;
+	_ctx.manager = this;
+	_ctx.dispatcher = &dispatcher;
+	_ctx.executionSucceeded = true;
+	while (!_line.empty() && _line.front() == ' ')
+		_line.remove_prefix(1);
+	if (!_line.empty() && _line.front() == '/')
+		_line.remove_prefix(1);
+	while (!_line.empty() && _line.front() == ' ')
+		_line.remove_prefix(1);
 	try {
-		if (line.empty()) {
-			SendFeedback(ctx, "§c" ERROR_REASON_NO_CMD);
+		if (_line.empty()) {
+			SendFeedback(_ctx, "§c" ERROR_REASON_NO_CMD);
 			return false;
 		}
-		auto result = dispatcher.execute(line, &ctx, [](void* userData) { return IsOperator(CmdCtx(userData)); });
+		auto result = dispatcher.execute(_line, &_ctx, [](void* _userData) { return IsOperator(CmdCtx(_userData)); });
 		if (!result) {
 			const auto& err = result.error();
 			std::string message = err.message;
@@ -71,20 +71,20 @@ bool CommandManager::Parse(std::string_view line, CommandContext& ctx) {
 				message = ERROR_OPERATOR;
 			else if (err.error == strategos::ParseError::UnknownCommand && err.position == 0)
 				message = ERROR_REASON_NO_EXIST;
-			SendFeedback(ctx, "§c" + message);
+			SendFeedback(_ctx, "§c" + message);
 			return false;
 		}
 		if (!result->empty()) {
-			SendFeedback(ctx, "§c" + *result);
+			SendFeedback(_ctx, "§c" + *result);
 			return false;
 		}
-		return ctx.executionSucceeded;
+		return _ctx.executionSucceeded;
 	} catch (const std::exception& e) {
-		Logger::Info << e.what() << " on /" << std::string(line) << "\n";
-		SendFeedback(ctx, "§c" ERROR_REASON_ERROR);
+		Logger::Info << e.what() << " on /" << std::string(_line) << "\n";
+		SendFeedback(_ctx, "§c" ERROR_REASON_ERROR);
 	} catch (...) {
-		Logger::Error << "Non-standard exception on /" << std::string(line) << "\n";
-		SendFeedback(ctx, "§c" ERROR_REASON_ERROR);
+		Logger::Error << "Non-standard exception on /" << std::string(_line) << "\n";
+		SendFeedback(_ctx, "§c" ERROR_REASON_ERROR);
 	}
 	return false;
 }

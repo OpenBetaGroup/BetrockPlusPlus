@@ -17,17 +17,17 @@
 #include "entities/entity_zombie.h"
 #include "enums/items.h"
 #include "generator/overworld/tree_gen.h"
-#include "helpers/direction_fixer.h"
 #include "helpers/block_volume.h"
+#include "helpers/direction_fixer.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -307,8 +307,8 @@ void RegisterPlantBehaviors() {
 		return false;
 	};
 
-	auto onCactusPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face,
-	                        BlockType _blockId, uint8_t _meta) -> bool {
+	auto onCactusPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face, BlockType _blockId,
+	                        uint8_t _meta) -> bool {
 		auto position = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
 		if (position == Int3{ -1, -1, -1 })
 			return false;
@@ -357,7 +357,7 @@ void RegisterPlantBehaviors() {
 		};
 
 		// There is water so max hydration
-		if (waterNearby(_world, _pos) || _world.CanRainHitSpot(_pos + Int3{0, 1, 0})) {
+		if (waterNearby(_world, _pos) || _world.CanRainHitSpot(_pos + Int3{ 0, 1, 0 })) {
 			if (_meta < 7) {
 				_world.SetMeta(_pos, 7);
 			}

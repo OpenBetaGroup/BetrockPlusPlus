@@ -40,10 +40,8 @@ struct LightRegion {
 			return false;
 
 		int oldVol = (max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1);
-		int nx1 = std::min<int>(min.x, _x1), ny1 = std::min<int>(min.y, _y1),
-		    nz1 = std::min<int>(min.z, _z1);
-		int nx2 = std::max<int>(max.x, _x2), ny2 = std::max<int>(max.y, _y2),
-		    nz2 = std::max<int>(max.z, _z2);
+		int nx1 = std::min<int>(min.x, _x1), ny1 = std::min<int>(min.y, _y1), nz1 = std::min<int>(min.z, _z1);
+		int nx2 = std::max<int>(max.x, _x2), ny2 = std::max<int>(max.y, _y2), nz2 = std::max<int>(max.z, _z2);
 		int newVol = (nx2 - nx1 + 1) * (ny2 - ny1 + 1) * (nz2 - nz1 + 1);
 		if (newVol - oldVol > 2)
 			return false;

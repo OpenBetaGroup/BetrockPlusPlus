@@ -9,10 +9,10 @@
 #include "direction.h"
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <vector>
-#include <optional>
 
 #if defined(__has_include)
 #if __has_include(<glm/glm.hpp>)

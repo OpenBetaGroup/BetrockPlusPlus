@@ -33,10 +33,8 @@ static void SetDetectorRailState(WorldManager& _world, Int3 _pos, uint8_t _meta)
 	bool powered = (_meta & 8) != 0;
 	bool detectedMinecart = false;
 	double inset = 0.125;
-	AABB detectorBox = {
-		_pos.x + inset, static_cast<double>(_pos.y), _pos.z + inset,
-		_pos.x + 1 - inset, _pos.y + 0.25, _pos.z + 1 - inset
-	};
+	AABB detectorBox = { _pos.x + inset, static_cast<double>(_pos.y), _pos.z + inset, _pos.x + 1 - inset,
+		                 _pos.y + 0.25,  _pos.z + 1 - inset };
 	EntityType type = EntityType::MINECART;
 	auto minecarts = _world.entityManager.GetEntitiesWithinAabbOfType(detectorBox, type);
 	detectedMinecart = minecarts.size() > 0;
@@ -153,9 +151,9 @@ void RegisterRailBehaviors() {
 	blockBehaviors[BLOCK_RAIL_DETECTOR].onTick = [](WorldManager& _world, Int3 _pos, uint8_t _meta,
 	                                                Java::Random& /*_random*/) -> void {
 		if ((_meta & 8) != 0)
-			SetDetectorRailState(_world, _pos, _meta);	
+			SetDetectorRailState(_world, _pos, _meta);
 	};
-		
+
 	// Powered rail
 	blockBehaviors[BLOCK_RAIL_POWERED].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                      Cardinal::Value _face, BlockType _blockId,

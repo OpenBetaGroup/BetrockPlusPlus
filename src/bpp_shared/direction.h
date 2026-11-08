@@ -7,8 +7,8 @@
 
 #pragma once
 #include "./helpers/java/java_math.h"
-#include <string_view>
 #include <array>
+#include <string_view>
 namespace Axis {
 // Axis Directions
 enum class Value : uint8_t {
@@ -17,7 +17,7 @@ enum class Value : uint8_t {
 	UpDown = 2,
 	None,
 };
-}
+} // namespace Axis
 
 namespace Cardinal {
 // Cardinal Directions
@@ -33,7 +33,7 @@ enum class Value : uint8_t {
 	Down = 5,
 	None,
 };
-inline constexpr Value ALL[6]        = { Value::North, Value::South, Value::East, Value::West, Value::Up, Value::Down };
+inline constexpr Value ALL[6] = { Value::North, Value::South, Value::East, Value::West, Value::Up, Value::Down };
 inline constexpr Value HORIZONTAL[4] = { Value::North, Value::South, Value::East, Value::West };
 
 Value Opposite(const Value _dir) noexcept;
@@ -48,7 +48,7 @@ std::string_view Str(const Value _dir) noexcept;
 
 namespace Axis {
 // Axis Directions
-inline constexpr Value ALL[3]        = { Value::NorthSouth, Value::EastWest, Value::UpDown };
+inline constexpr Value ALL[3] = { Value::NorthSouth, Value::EastWest, Value::UpDown };
 inline constexpr Value HORIZONTAL[2] = { Value::NorthSouth, Value::EastWest };
 
 Value ToLeft(const Value _axis) noexcept;

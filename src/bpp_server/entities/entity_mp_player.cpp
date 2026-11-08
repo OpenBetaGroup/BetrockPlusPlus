@@ -17,17 +17,17 @@ void EntityMPPlayer::UsePortal() {
 	if (!this->session || !this->session->server)
 		return;
 
-	switch(this->dim) {
-		case Dimension::Overworld:
-			if (!Gamerule::Get<bool>(Gamerule::Id::AllowEnteringNetherUsingPortals))
-				return;
-			this->session->server->SendPlayerToDimension(Dimension::Nether, *this->session);
-			break;
-		case Dimension::Nether:
-			this->session->server->SendPlayerToDimension(Dimension::Overworld, *this->session);
-			break;
-		default:
+	switch (this->dim) {
+	case Dimension::Overworld:
+		if (!Gamerule::Get<bool>(Gamerule::Id::AllowEnteringNetherUsingPortals))
 			return;
+		this->session->server->SendPlayerToDimension(Dimension::Nether, *this->session);
+		break;
+	case Dimension::Nether:
+		this->session->server->SendPlayerToDimension(Dimension::Overworld, *this->session);
+		break;
+	default:
+		return;
 	}
 }
 
@@ -494,10 +494,10 @@ void EntityMPPlayer::Move(Vec3& _velocity) {
 
 void EntityMPPlayer::OnEnterPortal() {
 	PlayerEntity::OnEnterPortal();
-	
+
 	// Force close gui
 	if (this->session) {
-		if (session->activeInteraction) 
+		if (session->activeInteraction)
 			session->activeInteraction->OnInteractionClosed(*session->entity);
 		PacketUtilities::CloseContainer(*session);
 	}
@@ -521,7 +521,6 @@ void EntityMPPlayer::Tick() {
 		Move(none);
 		onGround = savedOnGround;
 	}
-
 
 	// Always trust rotations
 	this->rotationYaw = session->rotation.x;

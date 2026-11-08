@@ -286,7 +286,7 @@ void RegisterAll() {
 			success = Blocks::blockBehaviors[BLOCK_SIGN_WALL].onBlockPlaced(
 			    _world, placePos, _user, _face, BLOCK_SIGN_WALL, GetMetaFromDirection(BLOCK_SIGN_WALL, _face));
 		}
-		if (success) 
+		if (success)
 			_stack->DecrementCount(1);
 	};
 

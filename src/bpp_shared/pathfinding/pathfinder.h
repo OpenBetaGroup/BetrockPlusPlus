@@ -31,11 +31,11 @@ class Pathfinder {
 public:
 	WorldManager* world = nullptr;
 
-	Pathfinder(){};
+	Pathfinder() {};
 	Pathfinder(WorldManager* _world) : world(_world) {};
 
-	[[nodiscard]] std::vector<Int3> FindPath(Int3 _start, Int3 _goal, float _width = 0.6f,
-	                                          float _height = 1.8f, float _maxDistance = 16.0f);
+	[[nodiscard]] std::vector<Int3> FindPath(Int3 _start, Int3 _goal, float _width = 0.6f, float _height = 1.8f,
+	                                         float _maxDistance = 16.0f);
 
 private:
 	enum class ColumnResult {

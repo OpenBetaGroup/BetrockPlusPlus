@@ -11,21 +11,21 @@
 #include "addon/addon_impl.h"
 #include "addon/addon_manager.h"
 #include "base_types.h"
+#include "commands/command.h"
 #include "config/list_parser.h"
 #include "dimensions.h"
 #include "gamerules.h"
 #include "logger.h"
 #include "packet/packet_utils.h"
+#include "teleporter.h"
 #include "trackers/inventory_tracker.h"
 #include "world.h"
-#include "teleporter.h"
-#include "commands/command.h"
 #include <algorithm>
+#include <climits>
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <future>
-#include <climits>
-#include <cstdint>
 #include <string>
 
 #include "platform/platform_caps.h"
@@ -69,32 +69,34 @@ bool Server::CanExecuteCommands() const noexcept {
 	return !stopped && !shutdownRequested.load();
 }
 
-bool Server::ExecuteCommand(std::string_view command, PlayerSession* sender) noexcept {
-	if (!CanExecuteCommands()) return false;
+bool Server::ExecuteCommand(std::string_view _command, PlayerSession* _sender) noexcept {
+	if (!CanExecuteCommands())
+		return false;
 
 	try {
 		std::shared_ptr<PlayerSession> owned;
-		if (sender) {
+		if (_sender) {
 			for (const auto& player : players) {
-				if (player.get() == sender) {
+				if (player.get() == _sender) {
 					owned = player;
 					break;
 				}
 			}
-			if (!owned || !owned->stream.IsConnected() || owned->connState != ConnectionState::Playing ||
-			    !owned->entity)
+			if (!owned || !owned->stream.IsConnected() || owned->connState != ConnectionState::Playing || !owned->entity)
 				return false;
 		}
 
 		CommandContext ctx;
-		ctx.sender = sender;
-		ctx.session = sender;
-		ctx.executionEntity = sender ? sender->entity.get() : nullptr;
-		ctx.world = sender ? GetWorldForDimension(sender->dimension) : &gameRuntime.world;
+		ctx.sender = _sender;
+		ctx.session = _sender;
+		ctx.executionEntity = _sender ? _sender->entity.get() : nullptr;
+		ctx.world = _sender ? GetWorldForDimension(_sender->dimension) : &gameRuntime.world;
 		ctx.server = this;
 
-		return commandManager.Parse(command, ctx);
-	} catch (...) { return false; }
+		return commandManager.Parse(_command, ctx);
+	} catch (...) {
+		return false;
+	}
 }
 
 Server::~Server() {
@@ -148,7 +150,8 @@ void Server::SendPlayerToDimension(Dimension _dim, PlayerSession& _session, std:
 		dest.z *= 8.0;
 	}
 	_session.entity->Teleport(dest);
-	_session.pendingPortalPlacement = !_destOverride.has_value();;
+	_session.pendingPortalPlacement = !_destOverride.has_value();
+	;
 	_session.portalAreaLoaded = false;
 
 	Packet::Respawn pkt;
@@ -342,10 +345,10 @@ void Server::Startup() {
 #ifdef ONLINE_MODE_AUTHENTICATION
 	if (!auth.onlineMode) {
 		Logger::Warning << "**** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!\n"
-		                    << "The server will make no attempt to authenticate usernames. Beware.\n"
-		                    << "While this makes the game possible to play without internet access,\n"
-		                    << "it also opens up the ability for hackers to connect with any username they choose.\n"
-		                    << "To change this, set \"online-mode\" to \"true\" in the server.properties file.\n";
+		                << "The server will make no attempt to authenticate usernames. Beware.\n"
+		                << "While this makes the game possible to play without internet access,\n"
+		                << "it also opens up the ability for hackers to connect with any username they choose.\n"
+		                << "To change this, set \"online-mode\" to \"true\" in the server.properties file.\n";
 	}
 #endif
 
@@ -442,8 +445,8 @@ void Server::Startup() {
 	// Get spawn ready
 	int spawnChunkDistance = this->spawnChunkRadius;
 	int totalSpawnChunks = (spawnChunkDistance + spawnChunkDistance + 1) * (spawnChunkDistance + spawnChunkDistance + 1);
-	Logger::Info << "Server spawn is "
-	                    << Int2(int(gameRuntime.world.spawnPoint.x), int(gameRuntime.world.spawnPoint.z)) << "\n";
+	Logger::Info << "Server spawn is " << Int2(int(gameRuntime.world.spawnPoint.x), int(gameRuntime.world.spawnPoint.z))
+	             << "\n";
 
 	Logger::Info << "Preparing spawn chunks..\n";
 	if (Gamerule::Get<bool>(Gamerule::Id::SpawnChunks)) {
@@ -569,7 +572,7 @@ void Server::Run() {
 			const double wallSec = std::chrono::duration<double>(now - tpsWindowStart).count();
 
 			averageTickMs = std::chrono::duration<double, std::milli>(avgTotalTickDuration).count() /
-			double(avgTickCount);
+			                double(avgTickCount);
 			// Skip the first sample (ticks == 0): its window only covers one tick
 			if (ticks > 0 && wallSec > 0.0)
 				averageTickPerSecond = double(tpsWindowTicks) / wallSec;
@@ -600,8 +603,8 @@ void Server::Run() {
 			auto overshoot = std::chrono::duration<double, std::milli>(Clock::now() - nextTickTime).count();
 			nextTickTime = Clock::now();
 			Logger::Warning << "Can't keep up with ticks! (tick avg " << averageTickMs.load() << "ms, overshoot "
-			                    << overshoot << "ms, budget "
-			                    << std::chrono::duration<double, std::milli>(period).count() << "ms)\n";
+			                << overshoot << "ms, budget " << std::chrono::duration<double, std::milli>(period).count()
+			                << "ms)\n";
 		}
 	}
 
@@ -682,8 +685,7 @@ void Server::AcceptNewPlayers() {
 		if (clientSocket < 0)
 			return; // queue is empty
 		auto session = std::make_shared<PlayerSession>(clientSocket, gameRuntime);
-		if (pendingTotal >= K_MAX_PENDING_TOTAL ||
-		    (!clientIp.empty() && pendingPerIp[clientIp] >= K_MAX_PENDING_PER_IP))
+		if (pendingTotal >= K_MAX_PENDING_TOTAL || (!clientIp.empty() && pendingPerIp[clientIp] >= K_MAX_PENDING_PER_IP))
 			continue; // dropping the session closes the socket; don't spend a kick packet on a flooder
 		++pendingTotal;
 		if (!clientIp.empty())
@@ -734,14 +736,14 @@ void Server::QueueTickSteps(int _steps) {
 		pendingTickSteps += _steps;
 }
 
-bool Server::BeginTickSample(SampleMode mode, int ticks, PlayerSession* requester) {
+bool Server::BeginTickSample(SampleMode _mode, int _ticks, PlayerSession* _requester) {
 	if (pendingSampleMode != SampleMode::None || activeSampleMode != SampleMode::None)
 		return false;
 	sampleRequester.reset();
-	sampleToConsole = requester == nullptr;
-	if (requester) {
+	sampleToConsole = _requester == nullptr;
+	if (_requester) {
 		for (const auto& session : players) {
-			if (session.get() == requester && session->connState == ConnectionState::Playing) {
+			if (session.get() == _requester && session->connState == ConnectionState::Playing) {
 				sampleRequester = session;
 				break;
 			}
@@ -751,8 +753,8 @@ bool Server::BeginTickSample(SampleMode mode, int ticks, PlayerSession* requeste
 			return false;
 		}
 	}
-	pendingSampleMode = mode;
-	requestedSampleTicks = ticks;
+	pendingSampleMode = _mode;
+	requestedSampleTicks = _ticks;
 	collectedSampleTicks = 0;
 	samplingStartsNextTick = true;
 	return true;
@@ -808,8 +810,6 @@ void Server::Tick() {
 
 			// Update our break state
 			this->UpdateBlockBreaking(*session, *GetWorldForDimension(session->dimension));
-
-
 		}
 		connStateManager.HandleConnectionState(*session, *this);
 
@@ -822,7 +822,8 @@ void Server::Tick() {
 		session->newlyUnloaded.clear();
 	}
 	const bool advanceSimulation = !tickFrozen || pendingTickSteps > 0;
-	const uint64_t autosaveIntervalTicks = std::max<uint64_t>(1, static_cast<uint64_t>(std::llround(GetTickRate() * Gamerule::Get<double>(Gamerule::Id::AutosaveInterval))));
+	const uint64_t autosaveIntervalTicks = std::max<uint64_t>(
+	    1, static_cast<uint64_t>(std::llround(GetTickRate() * Gamerule::Get<double>(Gamerule::Id::AutosaveInterval))));
 	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % autosaveIntervalTicks == 0) {
 		for (const auto& session : players) {
 			if (session->connState != ConnectionState::WaitingForSpawnChunks &&
@@ -950,25 +951,25 @@ void Server::Tick() {
 			// The report writes to session streams, make sure the write thread is done with them
 			writePool.wait();
 			auto requester = sampleRequester.lock();
-			const bool connected = sampleToConsole || (requester &&
-			    std::any_of(players.begin(), players.end(), [&](const auto& player) {
-				    return player == requester && player->connState == ConnectionState::Playing;
-			    }));
+			const bool connected = sampleToConsole ||
+			                       (requester && std::any_of(players.begin(), players.end(), [&](const auto& _player) {
+				                        return _player == requester && _player->connState == ConnectionState::Playing;
+			                        }));
 			if (connected) {
 				if (activeSampleMode == SampleMode::Health) {
-					const std::array<std::pair<TickTask, const char*>, 11> tasks = {{
-						{ TickTask::TotalTick, "Total Tick" },
-						{ TickTask::Network, "Network" },
-						{ TickTask::Autosave, "Autosave" },
-						{ TickTask::OffTickTasks, "Off-Tick Tasks" },
-						{ TickTask::MobSpawning, "Mob Spawning" },
-						{ TickTask::ChunkLoading, "Chunk Loading" },
-						{ TickTask::ChunkUnloading, "Chunk Unloading" },
-						{ TickTask::BlockUpdates, "Block Updates" },
-						{ TickTask::EntityTicks, "Entity Ticks" },
-						{ TickTask::BlockEntityTicks, "Block Entity Ticks" },
-						{ TickTask::Environment, "Environment" }
-					}};
+					const std::array<std::pair<TickTask, const char*>, 11> tasks = {
+						{ { TickTask::TotalTick, "Total Tick" },
+						  { TickTask::Network, "Network" },
+						  { TickTask::Autosave, "Autosave" },
+						  { TickTask::OffTickTasks, "Off-Tick Tasks" },
+						  { TickTask::MobSpawning, "Mob Spawning" },
+						  { TickTask::ChunkLoading, "Chunk Loading" },
+						  { TickTask::ChunkUnloading, "Chunk Unloading" },
+						  { TickTask::BlockUpdates, "Block Updates" },
+						  { TickTask::EntityTicks, "Entity Ticks" },
+						  { TickTask::BlockEntityTicks, "Block Entity Ticks" },
+						  { TickTask::Environment, "Environment" } }
+					};
 					for (const auto& [task, name] : tasks) {
 						const double mean = std::chrono::duration<double, std::milli>(tickProfiler.Get(task)).count() /
 						                    collectedSampleTicks;
@@ -978,17 +979,17 @@ void Server::Tick() {
 				} else {
 					std::vector<std::pair<TickEntityKey, TickProfiler::EntitySample>> entities(
 					    tickProfiler.EntitySamples().begin(), tickProfiler.EntitySamples().end());
-					std::sort(entities.begin(), entities.end(), [](const auto& a, const auto& b) {
-						return a.second.elapsed > b.second.elapsed;
-					});
+					std::sort(entities.begin(), entities.end(),
+					          [](const auto& _a, const auto& _b) { return _a.second.elapsed > _b.second.elapsed; });
 					SendCommandFeedback(sampleToConsole ? nullptr : requester.get(), "§7Entity tick cost (top 10):");
 					for (size_t i = 0; i < std::min<size_t>(10, entities.size()); ++i) {
 						const auto& [key, sample] = entities[i];
-						SendCommandFeedback(sampleToConsole ? nullptr : requester.get(),
-						                   std::format("§7dim {} entity {} type {}: {} ticks, {:.3f} ms",
-						                            int(static_cast<int8_t>(key.dimension)), int32_t(key.id),
-						                            int(static_cast<uint8_t>(key.type)), sample.count,
-						                            std::chrono::duration<double, std::milli>(sample.elapsed).count()));
+						SendCommandFeedback(
+						    sampleToConsole ? nullptr : requester.get(),
+						    std::format("§7dim {} entity {} type {}: {} ticks, {:.3f} ms",
+						                int(static_cast<int8_t>(key.dimension)), int32_t(key.id),
+						                int(static_cast<uint8_t>(key.type)), sample.count,
+						                std::chrono::duration<double, std::milli>(sample.elapsed).count()));
 					}
 				}
 			}
@@ -1007,8 +1008,7 @@ void Server::Tick() {
 		if (!session || !session->stream.IsConnected() || session->connState != ConnectionState::Playing ||
 		    !session->entity)
 			continue;
-		if (eligibleCount >= playerNamesSnapshot.size() ||
-		    playerNamesSnapshot[eligibleCount] != session->username)
+		if (eligibleCount >= playerNamesSnapshot.size() || playerNamesSnapshot[eligibleCount] != session->username)
 			namesChanged = true;
 		++eligibleCount;
 	}
@@ -1217,18 +1217,18 @@ std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
 	// Force disconnect players that quit
 	std::vector<std::shared_ptr<PlayerSession>> removed;
 	players.erase(std::remove_if(players.begin(), players.end(),
-	                             [&removed](const auto& session) {
-		                             if (session->stream.IsConnected())
+	                             [&removed](const auto& _session) {
+		                             if (_session->stream.IsConnected())
 			                             return false;
-		                             removed.push_back(session);
+		                             removed.push_back(_session);
 		                             return true;
 	                             }),
 	              players.end());
 
 	for (auto& session : removed) {
 		if (session->entity) {
-			Logger::Info << "Disconnected client " << session->username
-			                    << " with entity id " << session->entity->id << "\n";
+			Logger::Info << "Disconnected client " << session->username << " with entity id " << session->entity->id
+			             << "\n";
 			SendGlobalChatMessage("§e" + session->username + " left the game.");
 
 			const bp_player_leave_event event{ &session->apiPlayer };

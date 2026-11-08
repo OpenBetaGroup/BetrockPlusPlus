@@ -51,7 +51,7 @@ void OnProgress(EEIP_PROGRESS_EVENT ev, void*) {
 		break;
 	}
 }
-}
+} // namespace
 
 bool Platform::Init() {
 	SifInitRpc(0);

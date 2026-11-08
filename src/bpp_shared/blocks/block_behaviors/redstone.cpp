@@ -25,11 +25,11 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -170,8 +170,7 @@ static bool TorchHasAnySupport(WorldManager& _world, Int3 _pos) {
 	return false;
 }
 
-static bool PlaceTorchLike(WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face,
-                           BlockType _blockId) {
+static bool PlaceTorchLike(WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face, BlockType _blockId) {
 	Int3 target = _pos;
 	Cardinal::Value attachFace = _face;
 
@@ -357,8 +356,8 @@ void RegisterRedstoneBehaviors() {
 
 		// Matches vanilla order
 		static constexpr std::array<Cardinal::Value, 5> CHECK_ORDER = { Cardinal::Value::East, Cardinal::Value::West,
-			                                                             Cardinal::Value::South,
-			                                                             Cardinal::Value::North, Cardinal::Value::Up };
+			                                                            Cardinal::Value::South, Cardinal::Value::North,
+			                                                            Cardinal::Value::Up };
 
 		// Attach to the first support block we find
 		for (Cardinal::Value face : CHECK_ORDER) {
@@ -406,8 +405,8 @@ void RegisterRedstoneBehaviors() {
 			return; // Already valid
 
 		static constexpr std::array<Cardinal::Value, 5> CHECK_ORDER = { Cardinal::Value::East, Cardinal::Value::West,
-			                                                             Cardinal::Value::South,
-			                                                             Cardinal::Value::North, Cardinal::Value::Up };
+			                                                            Cardinal::Value::South, Cardinal::Value::North,
+			                                                            Cardinal::Value::Up };
 
 		for (Cardinal::Value face : CHECK_ORDER) {
 			if (CanTorchAttachTo(_world, _pos, face)) {
@@ -462,8 +461,7 @@ void RegisterRedstoneBehaviors() {
 	};
 
 	blockBehaviors[BLOCK_REDSTONE].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
-	                                                  Cardinal::Value _face, BlockType _blockId,
-	                                                  uint8_t _meta) -> bool {
+	                                                  Cardinal::Value _face, BlockType _blockId, uint8_t _meta) -> bool {
 		BlockType existing = _world.GetBlockId(_pos);
 		Int3 sourceBlock = _pos.WithOffset(Cardinal::Opposite(_face));
 
@@ -563,8 +561,8 @@ void RegisterRedstoneBehaviors() {
 
 		// Matches vanilla order
 		static constexpr std::array<Cardinal::Value, 5> CHECK_ORDER = { Cardinal::Value::East, Cardinal::Value::West,
-			                                                             Cardinal::Value::South,
-			                                                             Cardinal::Value::North, Cardinal::Value::Up };
+			                                                            Cardinal::Value::South, Cardinal::Value::North,
+			                                                            Cardinal::Value::Up };
 
 		// Attach to the first support block we find
 		for (Cardinal::Value face : CHECK_ORDER) {
@@ -613,8 +611,8 @@ void RegisterRedstoneBehaviors() {
 
 		// Matches vanilla order
 		static constexpr std::array<Cardinal::Value, 5> CHECK_ORDER = { Cardinal::Value::East, Cardinal::Value::West,
-			                                                             Cardinal::Value::South,
-			                                                             Cardinal::Value::North, Cardinal::Value::Up };
+			                                                            Cardinal::Value::South, Cardinal::Value::North,
+			                                                            Cardinal::Value::Up };
 
 		// Attach to the first support block we find
 		for (Cardinal::Value face : CHECK_ORDER) {

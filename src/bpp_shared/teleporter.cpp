@@ -5,8 +5,8 @@
  *
 */
 
-#include "world/world.h"
 #include "constants.h"
+#include "world/world.h"
 #include <algorithm>
 
 namespace Teleporter {
@@ -18,15 +18,13 @@ bool PlaceInExistingPortal(WorldManager& _world, Entity& _entity);
 bool CreatePortal(WorldManager& _world, Entity& _entity);
 
 namespace {
-constexpr Cardinal::Value PORTAL_FACINGS[4] = { Cardinal::Value::South, Cardinal::Value::East,
-	                                            Cardinal::Value::North, Cardinal::Value::West };
+constexpr Cardinal::Value PORTAL_FACINGS[4] = { Cardinal::Value::South, Cardinal::Value::East, Cardinal::Value::North,
+	                                            Cardinal::Value::West };
 
-constexpr Cardinal::Value HORIZONTAL_DIRS[4] = { Cardinal::Value::West, Cardinal::Value::East,
-	                                             Cardinal::Value::North, Cardinal::Value::South };
+constexpr Cardinal::Value HORIZONTAL_DIRS[4] = { Cardinal::Value::West, Cardinal::Value::East, Cardinal::Value::North,
+	                                             Cardinal::Value::South };
 Int3 PortalPoint(Int3 _base, Cardinal::Value _axis, int _w, int _h, int _depth = 0) {
-	return _base.WithOffset(_axis, _w - 1)
-	    .WithOffset(Cardinal::ToLeft(_axis), _depth)
-	    .WithOffset(Cardinal::Value::Up, _h);
+	return _base.WithOffset(_axis, _w - 1).WithOffset(Cardinal::ToLeft(_axis), _depth).WithOffset(Cardinal::Value::Up, _h);
 }
 
 bool HasRoomForPortal(WorldManager& _world, Int3 _base, Cardinal::Value _axis, int _depth) {
@@ -49,10 +47,7 @@ bool HasRoomForPortal(WorldManager& _world, Int3 _base, Cardinal::Value _axis, i
 
 bool FindPortalSite(WorldManager& _world, const Vec3& _origin, int _startFacing, int _facingCount, int _depth,
                     Int3& _bestPos, Cardinal::Value& _bestFacing) {
-	const Int2 center = {
-		MathHelper::FloorDouble(_origin.x),
-		MathHelper::FloorDouble(_origin.z)
-	};
+	const Int2 center = { MathHelper::FloorDouble(_origin.x), MathHelper::FloorDouble(_origin.z) };
 	double closest = -1.0;
 
 	for (int x = center.x - NEW_PORTAL_SEARCH_RADIUS; x <= center.x + NEW_PORTAL_SEARCH_RADIUS; x++) {
@@ -116,8 +111,8 @@ bool PlaceInExistingPortal(WorldManager& _world, Entity& _entity) {
 				continue;
 
 			// Clip the search box to this chunk
-			const int x0 = std::max(minX, cx * CHUNK_WIDTH), x1 = std::min(maxX, cx * CHUNK_WIDTH + (CHUNK_WIDTH-1));
-			const int z0 = std::max(minZ, cz * CHUNK_WIDTH), z1 = std::min(maxZ, cz * CHUNK_WIDTH + (CHUNK_WIDTH-1));
+			const int x0 = std::max(minX, cx * CHUNK_WIDTH), x1 = std::min(maxX, cx * CHUNK_WIDTH + (CHUNK_WIDTH - 1));
+			const int z0 = std::max(minZ, cz * CHUNK_WIDTH), z1 = std::min(maxZ, cz * CHUNK_WIDTH + (CHUNK_WIDTH - 1));
 
 			for (int x = x0; x <= x1; x++) {
 				double dx = x + 0.5 - pos.x;
@@ -165,11 +160,8 @@ bool PlaceInExistingPortal(WorldManager& _world, Entity& _entity) {
 }
 
 bool CreatePortal(WorldManager& _world, Entity& _entity) {
-	Int3 base = {
-		MathHelper::FloorDouble(_entity.position.x),
-		MathHelper::FloorDouble(_entity.position.y),
-		MathHelper::FloorDouble(_entity.position.z)
-	};
+	Int3 base = { MathHelper::FloorDouble(_entity.position.x), MathHelper::FloorDouble(_entity.position.y),
+		          MathHelper::FloorDouble(_entity.position.z) };
 	Cardinal::Value axis = PORTAL_FACINGS[0];
 	const int startFacing = _world.rand.NextInt(4);
 

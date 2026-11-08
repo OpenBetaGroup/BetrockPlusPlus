@@ -114,7 +114,7 @@ void BetacraftHeartbeat::Start() {
 		const std::string ip = FetchPublicIp();
 		if (ip.empty()) {
 			Logger::Error << "Betacraft heartbeat is enabled but betacraft-socket is empty and public IP "
-			                        "lookup failed. Set betacraft-socket to host:port.\n";
+			                 "lookup failed. Set betacraft-socket to host:port.\n";
 			running.store(false);
 			enabled = false;
 			return;
@@ -125,7 +125,7 @@ void BetacraftHeartbeat::Start() {
 
 	if (privateKey.empty()) {
 		Logger::Warning << "Betacraft heartbeat has no private key. Contact Moresteck on the Betacraft Discord "
-		                       "to verify this address, then set betacraft-private-key.\n";
+		                   "to verify this address, then set betacraft-private-key.\n";
 	}
 
 	worker = std::thread([this]() { ThreadMain(); });
@@ -310,7 +310,7 @@ void BetacraftHeartbeat::ThreadMain() {
 			++failsInARow;
 			if (failsInARow <= 5)
 				Logger::Warning << "Failed to ping the Betacraft server list. Check betacraft-* settings in "
-				                       "server.properties.\n";
+				                   "server.properties.\n";
 		}
 
 		for (int i = 0; i < kPingIntervalSeconds * 10 && running.load() && !shutdownRequested.load(); ++i)

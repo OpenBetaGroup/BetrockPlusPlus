@@ -22,11 +22,11 @@ private:
 	NoiseOctavesSimplex humidityNoiseGen;
 	NoiseOctavesSimplex weirdnessNoiseGen;
 	// Always the same
-	static constexpr Vec2 temperatureBaseScale = {0.025f, 0.025f};
+	static constexpr Vec2 temperatureBaseScale = { 0.025f, 0.025f };
 	static constexpr double temperatureFactor = 1.0 / 4.0;
-	static constexpr Vec2 humidityBaseScale = {0.05f, 0.05f};
+	static constexpr Vec2 humidityBaseScale = { 0.05f, 0.05f };
 	static constexpr double humidityFactor = 1.0 / 3.0;
-	static constexpr Vec2 weirdnessBaseScale = {0.25f, 0.25f};
+	static constexpr Vec2 weirdnessBaseScale = { 0.25f, 0.25f };
 	static constexpr double weirdnessFactor = 10.0 / 17.0;
 
 public:
@@ -36,7 +36,7 @@ public:
 	void GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std::span<double> _temperature,
 	                      std::span<double> _humidity, std::span<double> _weirdness, Int2 _blockPos);
 	void GenerateTemperature(std::span<double> _temperature, std::span<double> _weirdness, Int2 _chunkPos, Int2 _max);
-	
+
 	static bool BiomeHasRain(Biome _biome) {
 		switch (_biome) {
 		case BIOME_DESERT:

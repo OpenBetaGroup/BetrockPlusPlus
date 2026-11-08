@@ -13,6 +13,8 @@
 #include "entities/entity_chicken.h"
 #include "entities/entity_cow.h"
 #include "entities/entity_creeper.h"
+#include "entities/entity_fireball.h"
+#include "entities/entity_ghast.h"
 #include "entities/entity_minecart.h"
 #include "entities/entity_painting.h"
 #include "entities/entity_pig.h"
@@ -20,21 +22,18 @@
 #include "entities/entity_skeleton.h"
 #include "entities/entity_slime.h"
 #include "entities/entity_spider.h"
+#include "entities/entity_squid.h"
+#include "entities/entity_wolf.h"
 #include "entities/entity_zombie.h"
 #include "entities/entity_zombie_pig.h"
-#include "entities/entity_wolf.h"
-#include "entities/entity_squid.h"
-#include "entities/entity_fireball.h"
-#include "entities/entity_ghast.h"
-#include "networking/packets.h"
 #include "nbt/nbt_textifier.h"
+#include "networking/packets.h"
 #include <exception>
 
 #include <memory>
 #include <utility>
 
 namespace {
-
 
 std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 	switch (_type) {
@@ -77,7 +76,8 @@ std::shared_ptr<Entity> GetEntityShared(EntityType _type) {
 
 std::optional<Tag> ParseSummonNbt(const strategos::CmdNode& _cmd) {
 	auto nbtText = _cmd.get_arg<std::string>("nbt");
-	if (!nbtText) return std::nullopt;
+	if (!nbtText)
+		return std::nullopt;
 
 	try {
 		TextNBTifier parser;
@@ -91,7 +91,6 @@ std::optional<Tag> ParseSummonNbt(const strategos::CmdNode& _cmd) {
 		throw std::runtime_error(std::string("Invalid entity NBT: ") + exception.what());
 	}
 }
-
 
 std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
@@ -112,7 +111,8 @@ std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 		return "Failed to create entity: " + *entityType;
 
 	try {
-		if (auto nbt = ParseSummonNbt(_cmd)) entity->LoadFromNbt(*nbt);
+		if (auto nbt = ParseSummonNbt(_cmd))
+			entity->LoadFromNbt(*nbt);
 	} catch (const std::exception& exception) {
 		return exception.what();
 	}
@@ -133,7 +133,8 @@ std::string SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
 		return ERROR_REASON_PARAMETERS;
 
 	auto position = ResolveCmdPos(ctx, *pos);
-	if (!position) return position.error();
+	if (!position)
+		return position.error();
 	Vec3 ePos = *position;
 	auto eTypeEnum = GetEntityTypeFromString(*entityType);
 	if (eTypeEnum == EntityType::NONE)
@@ -143,7 +144,8 @@ std::string SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
 		return "Failed to create entity: " + *entityType;
 
 	try {
-		if (auto nbt = ParseSummonNbt(_cmd)) entity->LoadFromNbt(*nbt);
+		if (auto nbt = ParseSummonNbt(_cmd))
+			entity->LoadFromNbt(*nbt);
 	} catch (const std::exception& exception) {
 		return exception.what();
 	}
@@ -159,14 +161,14 @@ std::string SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
 } // namespace
 
 void RegisterSummon(strategos::BrigadierContext& _dispatcher) {
-	_dispatcher.add_command(strategos::Node::literal("summon")
-	                            .describe("Summons a smart entity")
-	                            .op()
-	                            .then(strategos::Node::string("entityType")
-	                                      .executes(SummonEntity)
-	                                      .then(strategos::Node::greedy_string("nbt").executes(SummonEntity))
-	                                      .then(strategos::Node::vec3("pos")
-	                                                .executes(SummonEntityAtPos)
-	                                                .then(strategos::Node::greedy_string("nbt")
-	                                                          .executes(SummonEntityAtPos)))));
+	_dispatcher.add_command(
+	    strategos::Node::literal("summon")
+	        .describe("Summons a smart entity")
+	        .op()
+	        .then(strategos::Node::string("entityType")
+	                  .executes(SummonEntity)
+	                  .then(strategos::Node::greedy_string("nbt").executes(SummonEntity))
+	                  .then(strategos::Node::vec3("pos")
+	                            .executes(SummonEntityAtPos)
+	                            .then(strategos::Node::greedy_string("nbt").executes(SummonEntityAtPos)))));
 }

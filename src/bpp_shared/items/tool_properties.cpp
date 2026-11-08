@@ -260,7 +260,7 @@ void AttackWithItem(Entity& _targetEntity, Entity& _sourceEntity, ItemStack* _st
 	// Players alert wolves
 	auto player = dynamic_cast<PlayerEntity*>(&_sourceEntity);
 	if (player) {
-		_sourceEntity.entityManager->AlertWolves(*player, _targetEntity, /*ignoreSitting=*/ true);
+		_sourceEntity.entityManager->AlertWolves(*player, _targetEntity, /*ignoreSitting=*/true);
 	}
 
 	// ItemSword.hitEntity damages 1; ItemTool.hitEntity damages 2

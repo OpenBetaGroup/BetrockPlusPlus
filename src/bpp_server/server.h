@@ -20,6 +20,7 @@ extern std::atomic<bool> shutdownRequested;
 #include "chunk_io/chunk_sender.h"
 #include "commands/command_manager.h"
 #include "config/config.h"
+#include "console/server_console.h"
 #include "items/item_properties.h"
 #include "items/tool_properties.h"
 #include "networking/network_stream.h"
@@ -28,17 +29,16 @@ extern std::atomic<bool> shutdownRequested;
 #include "packet/packet_dispatcher.h"
 #include "player_conn/player_session.h"
 #include "player_conn/server_pconnstate_manager.h"
-#include "console/server_console.h"
 #include "runtime.h"
 #include "server_socket.h"
 #include "strings/ucs2.h"
-#include "username.h"
-#include "trackers/entity_tracker.h"
-#include "world/world_event_broadcaster.h"
 #include "tick_profiler.h"
+#include "trackers/entity_tracker.h"
+#include "username.h"
+#include "world/world_event_broadcaster.h"
 #include <chrono>
-#include <string_view>
 #include <memory>
+#include <string_view>
 #include <thread>
 #include <unordered_set>
 #include <vector>
@@ -55,6 +55,7 @@ public:
 
 	Config config;
 	Config gamerulesConfig;
+
 private:
 	int serverViewRadius = BPP_DEFAULT_VIEW_DISTANCE;
 	int spawnChunkRadius = 5;
@@ -153,7 +154,9 @@ public:
 		return _dim == Dimension::Nether ? &this->gameRuntime.worldHell : &this->gameRuntime.world;
 	}
 
-	uint16_t GetMaxPlayers() const noexcept { return maximumPlayers; }
+	uint16_t GetMaxPlayers() const noexcept {
+		return maximumPlayers;
+	}
 	bool CanExecuteCommands() const noexcept;
 	bool ExecuteCommand(std::string_view _command, PlayerSession* _sender = nullptr) noexcept;
 
@@ -162,16 +165,25 @@ public:
 	}
 
 	bool TryForceBreak(PlayerSession& _session, WorldManager& _world);
-	double GetTickRate() const noexcept { return tickRate; }
+	double GetTickRate() const noexcept {
+		return tickRate;
+	}
 	void SetTickRate(double _rate);
-	bool IsTickFrozen() const noexcept { return tickFrozen; }
+	bool IsTickFrozen() const noexcept {
+		return tickFrozen;
+	}
 	bool ToggleTickFreeze();
 	void QueueTickSteps(int _steps);
-	enum class SampleMode : uint8_t { None, Health, Entities };
+	enum class SampleMode : uint8_t {
+		None,
+		Health,
+		Entities
+	};
 	bool BeginTickSample(SampleMode _mode, int _ticks, PlayerSession* _requester);
 	void ResetDimensionState(PlayerSession& _session, Dimension _dim);
 	void SendEntityToDimension(Dimension _dim, std::shared_ptr<Entity> _entity);
-	void SendPlayerToDimension(Dimension _dim, PlayerSession& _session, std::optional<Vec3> _destOverride = std::nullopt);
+	void SendPlayerToDimension(Dimension _dim, PlayerSession& _session,
+	                           std::optional<Vec3> _destOverride = std::nullopt);
 
 	// Entity trackers are so we can send entity updates to players and vice versa.
 	EntityTracker overworldEntityTracker;

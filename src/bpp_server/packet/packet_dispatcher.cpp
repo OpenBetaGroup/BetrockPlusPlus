@@ -27,17 +27,16 @@ bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, Wor
 		return true;
 
 	auto& tracker = _session.dimension == Dimension::Overworld ? _server.overworldEntityTracker
-	                                                            : _server.hellEntityTracker;
+	                                                           : _server.hellEntityTracker;
 
 	switch (_packetId) {
 	case PacketId::KeepAlive:
-		Handle<Packet::KeepAlive>(_session, [&](auto& pkt) { HandlePacket::KeepAlive(pkt, _session); });
+		Handle<Packet::KeepAlive>(_session, [&](auto& _pkt) { HandlePacket::KeepAlive(_pkt, _session); });
 		break;
 	case PacketId::ChatMessage:
-		Handle<Packet::ChatMessage>(_session, [&](auto& pkt) {
+		Handle<Packet::ChatMessage>(_session, [&](auto& _pkt) {
 			HandlePacket::ChatMessage(
-			    pkt, _session, _server.players, _sessionWorld, _server.commandManager, [](PlayerSession&) {},
-			    _server);
+			    _pkt, _session, _server.players, _sessionWorld, _server.commandManager, [](PlayerSession&) {}, _server);
 		});
 		break;
 	case PacketId::SetTime: {
@@ -46,48 +45,50 @@ bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, Wor
 		break;
 	}
 	case PacketId::InteractWithEntity:
-		Handle<Packet::InteractWithEntity>(
-		    _session, [&](auto& pkt) { HandlePacket::InteractWithEntity(pkt, _session, _sessionWorld); });
+		Handle<Packet::InteractWithEntity>(_session, [&](auto& _pkt) {
+			HandlePacket::InteractWithEntity(_pkt, _session, _sessionWorld);
+		});
 		break;
 	case PacketId::Respawn:
-		Handle<Packet::Respawn>(_session, [&](auto& pkt) { HandlePacket::Respawn(pkt, _session, _server); });
+		Handle<Packet::Respawn>(_session, [&](auto& _pkt) { HandlePacket::Respawn(_pkt, _session, _server); });
 		break;
 	case PacketId::PlayerMovement:
-		Handle<Packet::PlayerMovement>(_session, [&](auto& pkt) { HandlePacket::PlayerMovement(pkt, _session); });
+		Handle<Packet::PlayerMovement>(_session, [&](auto& _pkt) { HandlePacket::PlayerMovement(_pkt, _session); });
 		break;
 	case PacketId::PlayerPosition:
 		Handle<Packet::PlayerPosition>(_session,
-		                               [&](auto& pkt) { HandlePacket::PlayerPosition(pkt, _session, _server); });
+		                               [&](auto& _pkt) { HandlePacket::PlayerPosition(_pkt, _session, _server); });
 		break;
 	case PacketId::PlayerRotation:
-		Handle<Packet::PlayerRotation>(_session, [&](auto& pkt) { HandlePacket::PlayerRotation(pkt, _session); });
+		Handle<Packet::PlayerRotation>(_session, [&](auto& _pkt) { HandlePacket::PlayerRotation(_pkt, _session); });
 		break;
 	case PacketId::PlayerPositionAndRotation:
-		Handle<Packet::PlayerPositionAndRotation>(
-		    _session, [&](auto& pkt) { HandlePacket::PlayerPositionAndRotation(pkt, _session, _server); });
+		Handle<Packet::PlayerPositionAndRotation>(_session, [&](auto& _pkt) {
+			HandlePacket::PlayerPositionAndRotation(_pkt, _session, _server);
+		});
 		break;
 	case PacketId::MineBlock:
-		Handle<Packet::MineBlock>(
-		    _session, [&](auto& pkt) { HandlePacket::MineBlock(pkt, _session, _sessionWorld, _server); });
+		Handle<Packet::MineBlock>(_session,
+		                          [&](auto& _pkt) { HandlePacket::MineBlock(_pkt, _session, _sessionWorld, _server); });
 		break;
 	case PacketId::PlaceBlock:
-		Handle<Packet::PlaceBlock>(_session, [&](auto& pkt) {
-			HandlePacket::PlaceBlock(pkt, _session, _sessionWorld, _server.gameRuntime, _server);
+		Handle<Packet::PlaceBlock>(_session, [&](auto& _pkt) {
+			HandlePacket::PlaceBlock(_pkt, _session, _sessionWorld, _server.gameRuntime, _server);
 		});
 		break;
 	case PacketId::SetHotbarSlot:
-		Handle<Packet::SetHotbarSlot>(_session, [&](auto& pkt) { HandlePacket::SetHotbarSlot(pkt, _session); });
+		Handle<Packet::SetHotbarSlot>(_session, [&](auto& _pkt) { HandlePacket::SetHotbarSlot(_pkt, _session); });
 		break;
 	case PacketId::InteractWithBlock:
-		Handle<Packet::InteractWithBlock>(
-		    _session, [&](auto& pkt) { HandlePacket::InteractWithBlock(pkt, _session, _sessionWorld); });
+		Handle<Packet::InteractWithBlock>(_session, [&](auto& _pkt) {
+			HandlePacket::InteractWithBlock(_pkt, _session, _sessionWorld);
+		});
 		break;
 	case PacketId::Animation:
-		Handle<Packet::Animation>(_session, [&](auto& pkt) { HandlePacket::Animation(pkt, _session, tracker); });
+		Handle<Packet::Animation>(_session, [&](auto& _pkt) { HandlePacket::Animation(_pkt, _session, tracker); });
 		break;
 	case PacketId::PlayerAction:
-		Handle<Packet::PlayerAction>(_session,
-		                             [&](auto& pkt) { HandlePacket::PlayerAction(pkt, _session, tracker); });
+		Handle<Packet::PlayerAction>(_session, [&](auto& _pkt) { HandlePacket::PlayerAction(_pkt, _session, tracker); });
 		break;
 	case PacketId::PlayerInput: { // Consumed but unused
 		Packet::PlayerInput pkt;
@@ -95,18 +96,18 @@ bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, Wor
 		break;
 	}
 	case PacketId::CloseContainer:
-		Handle<Packet::CloseContainer>(_session, [&](auto& pkt) { HandlePacket::CloseContainer(pkt, _session); });
+		Handle<Packet::CloseContainer>(_session, [&](auto& _pkt) { HandlePacket::CloseContainer(_pkt, _session); });
 		break;
 	case PacketId::ClickSlot:
-		Handle<Packet::ClickSlot>(_session, [&](auto& pkt) { HandlePacket::ClickSlot(pkt, _session); });
+		Handle<Packet::ClickSlot>(_session, [&](auto& _pkt) { HandlePacket::ClickSlot(_pkt, _session); });
 		break;
 	case PacketId::ContainerTransaction:
-		Handle<Packet::ContainerTransaction>(
-		    _session, [&](auto& pkt) { HandlePacket::ContainerTransaction(pkt, _session); });
+		Handle<Packet::ContainerTransaction>(_session,
+		                                     [&](auto& _pkt) { HandlePacket::ContainerTransaction(_pkt, _session); });
 		break;
 	case PacketId::UpdateSign:
-		Handle<Packet::UpdateSign>(_session, [&](auto& pkt) {
-			HandlePacket::UpdateSign(pkt, _session, _sessionWorld, _server.players);
+		Handle<Packet::UpdateSign>(_session, [&](auto& _pkt) {
+			HandlePacket::UpdateSign(_pkt, _session, _sessionWorld, _server.players);
 		});
 		break;
 	case PacketId::Disconnect: {

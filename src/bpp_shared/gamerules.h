@@ -6,10 +6,10 @@
 */
 
 #pragma once
-#include <string>
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -67,18 +67,17 @@ enum class Id {
 	// It just marks the max value our gamerules could have
 	// This will mostly be used by later added gamerules,
 	// aka ones added via commands or similar.
-	// They'll all be after this index! 
+	// They'll all be after this index!
 	Max,
 	// NOTE: Should NEVER be used! Only there to indicate non-existent gamerule!!!!
 	Invalid
 };
 
-using Type = std::variant<
-	bool,
-	int32_t, // Should we allow 64-bit ints ?
-	double,
-	std::string // Do we need strings for any gamerules?
->;
+using Type = std::variant<bool,
+                          int32_t, // Should we allow 64-bit ints ?
+                          double,
+                          std::string // Do we need strings for any gamerules?
+                          >;
 
 struct Entry {
 	std::string name;
@@ -99,28 +98,28 @@ bool SetRaw(const std::string& _name, const Type& _value);
 // Access via ID
 template <typename T>
 T Get(const Id _id, const T& _default = T{}) {
-    const Type v = GetRaw(_id);
-    if (const T* p = std::get_if<T>(&v))
-        return *p;
-    return _default;
+	const Type v = GetRaw(_id);
+	if (const T* p = std::get_if<T>(&v))
+		return *p;
+	return _default;
 }
 template <typename T>
 bool Set(const Id _id, const T& _value) {
-    using Stored = std::conditional_t<std::is_convertible_v<T, std::string>, std::string, T>;
-    return SetRaw(_id, Type{Stored(_value)});
+	using Stored = std::conditional_t<std::is_convertible_v<T, std::string>, std::string, T>;
+	return SetRaw(_id, Type{ Stored(_value) });
 }
 // Access via string
 template <typename T>
 T Get(const std::string& _name, const T& _default = T{}) {
-    const Type v = GetRaw(_name);
-    if (const T* p = std::get_if<T>(&v))
-        return *p;
-    return _default;
+	const Type v = GetRaw(_name);
+	if (const T* p = std::get_if<T>(&v))
+		return *p;
+	return _default;
 }
 template <typename T>
 bool Set(const std::string& _name, const T& _value) {
-    using Stored = std::conditional_t<std::is_convertible_v<T, std::string>, std::string, T>;
-    return SetRaw(_name, Type{Stored(_value)});
+	using Stored = std::conditional_t<std::is_convertible_v<T, std::string>, std::string, T>;
+	return SetRaw(_name, Type{ Stored(_value) });
 }
 // Add and remove for Addon system
 bool Add(const std::string& _name, const Type& _value);

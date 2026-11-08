@@ -23,8 +23,10 @@ void Shutdown();
 #else
 // This is just the generic fallback for any platforms that don't make use of this
 // Run at program start. Used for initializing network stack, etc.
-inline bool Init() { return true; }
+inline bool Init() {
+	return true;
+}
 // Run at the end of the program. Can be used for clean-up of network stack, etc.
 inline void Shutdown() {}
 #endif
-}
+} // namespace Platform

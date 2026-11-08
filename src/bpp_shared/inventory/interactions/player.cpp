@@ -11,16 +11,16 @@
 PlayerInventoryInteraction::PlayerInventoryInteraction(InventoryPlayer* _inv, Runtime& _gameRuntime)
     : CraftingInventoryInteraction(_inv, _inv, _inv, _gameRuntime, { 2, 2 }), playerInventory(_inv) {}
 
-void PlayerInventoryInteraction::OnInteractionClosed(PlayerEntity& player) {
+void PlayerInventoryInteraction::OnInteractionClosed(PlayerEntity& _player) {
 	// Drop the crafting grid items on inventory close
 	for (size_t i = 1; i <= 4; i++) {
 		ItemStack& stack = inventory->slots[i];
-		player.DropItem(stack);
+		_player.DropItem(stack);
 		stack = ItemStack{};
 	}
 	// Drop the cursor
 	if (carried.id != Items::INVALID) {
-		player.DropItem(carried);
+		_player.DropItem(carried);
 		carried = ItemStack{};
 	}
 }

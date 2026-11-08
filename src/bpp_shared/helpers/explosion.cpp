@@ -116,9 +116,11 @@ std::unordered_set<Int3> DoExplosion(WorldManager& _world, Entity* _exploder, Ve
 			dz /= offsetLength;
 			double blockDensity = getBlockDensity(_position, entity->collider);
 			double impactStrength = (1.0 - distanceFraction) * blockDensity;
-			entity->AttackEntityFrom(_exploder, int((impactStrength * impactStrength + impactStrength) / 2.0 * 8.0 *
-			                                            double(expandedExplosionSize) +
-			                                        1.0), DamageType::Explosion);
+			entity->AttackEntityFrom(_exploder,
+			                         int((impactStrength * impactStrength + impactStrength) / 2.0 * 8.0 *
+			                                 double(expandedExplosionSize) +
+			                             1.0),
+			                         DamageType::Explosion);
 			entity->velocity.x += dx * impactStrength;
 			entity->velocity.y += dy * impactStrength;
 			entity->velocity.z += dz * impactStrength;

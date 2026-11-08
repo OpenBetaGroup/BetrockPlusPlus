@@ -42,7 +42,8 @@ std::string ShowHardware(const strategos::CmdNode&, void* _userData) {
 	SendFeedback(ctx, std::format("§6OS: §f{}", info.os.empty() ? "Unknown" : info.os));
 	SendFeedback(ctx, std::format("§6Kernel: §f{}", info.kernel.empty() ? "Unknown" : info.kernel));
 	SendFeedback(ctx, std::format("§6CPU: §f{}", FormatCpu(info)));
-	SendFeedback(ctx, std::format("§6Memory: §f{}", info.memoryTotalBytes ? FormatBytes(info.memoryTotalBytes) : "Unknown"));
+	SendFeedback(ctx,
+	             std::format("§6Memory: §f{}", info.memoryTotalBytes ? FormatBytes(info.memoryTotalBytes) : "Unknown"));
 	SendFeedback(ctx, std::format("§6Swap: §f{}", info.swapTotalBytes ? FormatBytes(info.swapTotalBytes) : "None"));
 	return "";
 }

@@ -37,53 +37,53 @@ namespace Java {
 	 * @brief Casts a double to a 64-bit integer
 	 */
 constexpr inline int64_t DoubleToInt64(const double _value) noexcept {
-    constexpr double LIMIT = 0x1p63; // Exactly 2^63
-    if (_value >= LIMIT) [[unlikely]]
-        return INT64_MAX;
-    if (_value <= -LIMIT) [[unlikely]]
-        return INT64_MIN;
-    if (_value != _value) [[unlikely]]
-        return 0;
-    return static_cast<int64_t>(_value);
+	constexpr double LIMIT = 0x1p63; // Exactly 2^63
+	if (_value >= LIMIT) [[unlikely]]
+		return INT64_MAX;
+	if (_value <= -LIMIT) [[unlikely]]
+		return INT64_MIN;
+	if (_value != _value) [[unlikely]]
+		return 0;
+	return static_cast<int64_t>(_value);
 }
 /**
 	 * @brief Casts a double to a 32-bit integer
 	 */
 constexpr inline int32_t DoubleToInt32(const double _value) {
-    constexpr double LIMIT = 0x1p31;
-    if (_value >= LIMIT) [[unlikely]]
-        return INT32_MAX;
-    if (_value <= -LIMIT) [[unlikely]]
-        return INT32_MIN;
-    if (_value != _value) [[unlikely]]
-        return 0;
-    return static_cast<int32_t>(_value);
+	constexpr double LIMIT = 0x1p31;
+	if (_value >= LIMIT) [[unlikely]]
+		return INT32_MAX;
+	if (_value <= -LIMIT) [[unlikely]]
+		return INT32_MIN;
+	if (_value != _value) [[unlikely]]
+		return 0;
+	return static_cast<int32_t>(_value);
 }
 /**
 	 * @brief Casts a float to a 64-bit integer
 	 */
 constexpr inline int64_t FloatToInt64(const float _value) {
-    constexpr float LIMIT = 0x1p63;
-    if (_value >= LIMIT) [[unlikely]]
-        return INT64_MAX;
-    if (_value <= -LIMIT) [[unlikely]]
-        return INT64_MIN;
-    if (_value != _value) [[unlikely]]
-        return 0;
-    return static_cast<int64_t>(_value);
+	constexpr float LIMIT = 0x1p63;
+	if (_value >= LIMIT) [[unlikely]]
+		return INT64_MAX;
+	if (_value <= -LIMIT) [[unlikely]]
+		return INT64_MIN;
+	if (_value != _value) [[unlikely]]
+		return 0;
+	return static_cast<int64_t>(_value);
 }
 /**
 	 * @brief Casts a float to a 32-bit integer
 	 */
 constexpr inline int32_t FloatToInt32(const float _value) {
-    constexpr float LIMIT = 0x1p31;
-    if (_value >= LIMIT) [[unlikely]]
-        return INT32_MAX;
-    if (_value <= -LIMIT) [[unlikely]]
-        return INT32_MIN;
-    if (_value != _value) [[unlikely]]
-        return 0;
-    return static_cast<int32_t>(_value);
+	constexpr float LIMIT = 0x1p31;
+	if (_value >= LIMIT) [[unlikely]]
+		return INT32_MAX;
+	if (_value <= -LIMIT) [[unlikely]]
+		return INT32_MIN;
+	if (_value != _value) [[unlikely]]
+		return 0;
+	return static_cast<int32_t>(_value);
 }
 }; // namespace Java
 

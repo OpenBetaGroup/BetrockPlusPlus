@@ -36,8 +36,8 @@ bool CanNeighborBurn(WorldManager& _world, Int3 _pos) {
 	if (!Gamerule::Get<bool>(Gamerule::Id::FireSpread))
 		return false;
 	static constexpr std::array<Cardinal::Value, 6> ALL_DIRS = { Cardinal::Value::West,  Cardinal::Value::East,
-		                                                          Cardinal::Value::Down,  Cardinal::Value::Up,
-		                                                          Cardinal::Value::North, Cardinal::Value::South };
+		                                                         Cardinal::Value::Down,  Cardinal::Value::Up,
+		                                                         Cardinal::Value::North, Cardinal::Value::South };
 	for (Cardinal::Value dir : ALL_DIRS) {
 		if (CanBlockCatchFire(_world, _pos.WithOffset(dir)))
 			return true;
@@ -67,8 +67,8 @@ static int GetChanceOfNeighborsEncouragingFire(WorldManager& _world, Int3 _pos) 
 		return 0;
 
 	static constexpr std::array<Cardinal::Value, 6> ALL_DIRS = { Cardinal::Value::West,  Cardinal::Value::East,
-		                                                          Cardinal::Value::Down,  Cardinal::Value::Up,
-		                                                          Cardinal::Value::North, Cardinal::Value::South };
+		                                                         Cardinal::Value::Down,  Cardinal::Value::Up,
+		                                                         Cardinal::Value::North, Cardinal::Value::South };
 	int maxChance = 0;
 	for (auto dir : ALL_DIRS) {
 		maxChance = GetChanceToEncourageFire(_world, _pos.WithOffset(dir), maxChance);
@@ -151,14 +151,15 @@ void RegisterFireBehaviors() {
 			return;
 		const bool onNetherrack = _world.GetBlockId(_pos.WithOffset(Cardinal::Value::Down)) == BLOCK_NETHERRACK;
 
-		auto CanRainSeeAroundPosition = [&](Int3 _checkPos) -> bool {
-			return _world.CanRainHitSpot(_checkPos) || _world.CanRainHitSpot(_checkPos.WithOffset(Cardinal::Value::East)) ||
+		auto canRainSeeAroundPosition = [&](Int3 _checkPos) -> bool {
+			return _world.CanRainHitSpot(_checkPos) ||
+			       _world.CanRainHitSpot(_checkPos.WithOffset(Cardinal::Value::East)) ||
 			       _world.CanRainHitSpot(_checkPos.WithOffset(Cardinal::Value::West)) ||
 			       _world.CanRainHitSpot(_checkPos.WithOffset(Cardinal::Value::North)) ||
 			       _world.CanRainHitSpot(_checkPos.WithOffset(Cardinal::Value::South));
 		};
 
-		if (!onNetherrack && CanRainSeeAroundPosition(_pos)) {
+		if (!onNetherrack && canRainSeeAroundPosition(_pos)) {
 			_world.SetBlock(_pos, BLOCK_AIR);
 			return;
 		}
@@ -206,8 +207,7 @@ void RegisterFireBehaviors() {
 
 					int spreadChance = (chance + 40) / (meta + 30);
 					if (spreadChance > 0 && _random.NextInt(spreadDifficulty) <= spreadChance &&
-					    !CanRainSeeAroundPosition({ x, y, z })
-					) {
+					    !canRainSeeAroundPosition({ x, y, z })) {
 						int newMeta = meta + _random.NextInt(5) / 4;
 						if (newMeta > 15)
 							newMeta = 15;

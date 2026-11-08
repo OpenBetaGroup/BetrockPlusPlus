@@ -19,7 +19,6 @@ std::string CrashServer(const strategos::CmdNode& /*_cmd*/, void* /*_userData*/)
 } // namespace
 
 void RegisterCrash(strategos::BrigadierContext& _dispatcher) {
-	_dispatcher.add_command(strategos::Node::literal("crash")
-	                            .describe("Crashes the server with a seg-fault")
-	                            .executes(CrashServer));
+	_dispatcher.add_command(
+	    strategos::Node::literal("crash").describe("Crashes the server with a seg-fault").executes(CrashServer));
 }

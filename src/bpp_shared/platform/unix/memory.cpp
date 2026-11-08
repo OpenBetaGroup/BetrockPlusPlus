@@ -45,11 +45,11 @@ double GetMemoryUsage(const MemoryUnit _unit) {
 
 // Get the current memory page size in Bytes (Cached after first use)
 size_t GetPageSize() {
-	static const size_t pageSize = []() -> size_t {
+	static const size_t PAGE_SIZE = []() -> size_t {
 		const long size = sysconf(_SC_PAGESIZE);
 		return size > 0 ? static_cast<size_t>(size) : 4096;
 	}();
-	return pageSize;
+	return PAGE_SIZE;
 }
 
 #if defined(__GLIBC__)

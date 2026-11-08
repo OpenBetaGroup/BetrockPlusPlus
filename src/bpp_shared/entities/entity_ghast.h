@@ -12,7 +12,7 @@ struct GhastEntity : public HostileEntity {
 	int courseChangeCooldown = 0;
 	int aggroCooldown = 0;
 
-	// Counts up while we can see our target 
+	// Counts up while we can see our target
 	// Fire at 20 ticks then resets to -40
 	int attackCounter = 0;
 

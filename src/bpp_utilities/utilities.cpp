@@ -6,8 +6,8 @@
 */
 #include "utilities.h"
 #include "blocks/block_properties_behaviors.h"
-#include "helpers/file_handle.h"
 #include "helpers/deflate_pool.h"
+#include "helpers/file_handle.h"
 #include "nbt/nbt.h"
 #include "world/storage/region_manager.h"
 #include "world/storage/save_manager.h"
@@ -81,14 +81,14 @@ bool isAlphaLevel(const std::string& _dir) {
 }
 
 bool convertAlphaLevel(std::string& _dir) {
-	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize, size_t& _decompressedSize) -> std::unique_ptr<char[]> {
+	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize,
+	                          size_t& _decompressedSize) -> std::unique_ptr<char[]> {
 		// TODO: Where does 81920 come from??? Who wrote this? Keeping it just because it seems to not have fucked up thus far...
-		auto r = Deflate::Decompress(
-			Deflate::Format::Gzip,
-			{ reinterpret_cast<const uint8_t*>(_compressedData), _compressedSize },
-			_decompressedSize ? _decompressedSize : 81920
-		);
-		if (!r) return nullptr;
+		auto r = Deflate::Decompress(Deflate::Format::Gzip,
+		                             { reinterpret_cast<const uint8_t*>(_compressedData), _compressedSize },
+		                             _decompressedSize ? _decompressedSize : 81920);
+		if (!r)
+			return nullptr;
 		auto out = std::make_unique<char[]>(r->size());
 		std::memcpy(out.get(), r->data(), r->size());
 		_decompressedSize = r->size();
@@ -344,8 +344,8 @@ bool convertAlphaLevel(std::string& _dir) {
 		fs::rename(oldDir, _dir, restoreEc);
 		if (restoreEc) {
 			Logger::Error << "Failed to restore original world after failed conversion! Your original "
-			                        "world is at '"
-			                     << oldDir << "'.\n";
+			                 "world is at '"
+			              << oldDir << "'.\n";
 		}
 		return false;
 	}
@@ -398,14 +398,14 @@ bool convertBetrockServerLevel(std::string& _dir) {
 		return pos;
 	};
 
-	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize, size_t& _decompressedSize) -> std::unique_ptr<char[]> {
+	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize,
+	                          size_t& _decompressedSize) -> std::unique_ptr<char[]> {
 		// TODO: Where does 81920 come from??? Who wrote this? Keeping it just because it seems to not have fucked up thus far...
-		auto r = Deflate::Decompress(
-			Deflate::Format::Gzip,
-			{ reinterpret_cast<const uint8_t*>(_compressedData), _compressedSize },
-			_decompressedSize ? _decompressedSize : 81920
-		);
-		if (!r) return nullptr;
+		auto r = Deflate::Decompress(Deflate::Format::Gzip,
+		                             { reinterpret_cast<const uint8_t*>(_compressedData), _compressedSize },
+		                             _decompressedSize ? _decompressedSize : 81920);
+		if (!r)
+			return nullptr;
 		auto out = std::make_unique<char[]>(r->size());
 		std::memcpy(out.get(), r->data(), r->size());
 		_decompressedSize = r->size();

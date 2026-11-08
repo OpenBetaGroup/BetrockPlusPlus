@@ -301,8 +301,9 @@ static int GetDustPowerLevel(WorldManager& _world, Int3 _pos) {
 			}
 
 			// A lever or button or pressure plate sitting directly beside us
-			if (dy == _pos.y && (checkId == BLOCK_LEVER || checkId == BLOCK_BUTTON_STONE ||
-			                     checkId == BLOCK_PRESSURE_PLATE_STONE || checkId == BLOCK_PRESSURE_PLATE_WOOD || checkId == BLOCK_RAIL_DETECTOR)) {
+			if (dy == _pos.y &&
+			    (checkId == BLOCK_LEVER || checkId == BLOCK_BUTTON_STONE || checkId == BLOCK_PRESSURE_PLATE_STONE ||
+			     checkId == BLOCK_PRESSURE_PLATE_WOOD || checkId == BLOCK_RAIL_DETECTOR)) {
 				auto neighborBlock = _world.GetBlockId(dPos);
 				auto neighborMeta = _world.GetMetadata(dPos);
 				auto neighborProfile = RedstoneManager::GetComponentProfile(neighborBlock, neighborMeta);
@@ -564,27 +565,27 @@ void RedstoneManager::RefreshWireAt(WorldManager& _world, Int3 _pos) {
 }
 
 bool RedstoneManager::GetProfileInDirection(const ComponentProfile _profile, const Cardinal::Value _dir) {
-	switch(_dir) {
-		case Cardinal::Value::North:
-			return _profile.powerNZ;
-		case Cardinal::Value::South:
-			return _profile.powerZ;
-		case Cardinal::Value::West:
-			return _profile.powerNX;
-		case Cardinal::Value::East:
-			return _profile.powerX;	
-		case Cardinal::Value::Down:
-			return _profile.powerBelow;	
-		default:
-			return false;
+	switch (_dir) {
+	case Cardinal::Value::North:
+		return _profile.powerNZ;
+	case Cardinal::Value::South:
+		return _profile.powerZ;
+	case Cardinal::Value::West:
+		return _profile.powerNX;
+	case Cardinal::Value::East:
+		return _profile.powerX;
+	case Cardinal::Value::Down:
+		return _profile.powerBelow;
+	default:
+		return false;
 	}
 }
 
-// TODO: 
+// TODO:
 bool IsValidPoweringComponent(BlockType _block) {
 	return _block == BLOCK_REDSTONE_TORCH_ON || _block == BLOCK_REDSTONE_REPEATER_ON || _block == BLOCK_LEVER ||
-		     _block == BLOCK_BUTTON_STONE || _block == BLOCK_PRESSURE_PLATE_STONE || _block == BLOCK_PRESSURE_PLATE_WOOD ||
-		     _block == BLOCK_RAIL_DETECTOR;
+	       _block == BLOCK_BUTTON_STONE || _block == BLOCK_PRESSURE_PLATE_STONE ||
+	       _block == BLOCK_PRESSURE_PLATE_WOOD || _block == BLOCK_RAIL_DETECTOR;
 }
 
 bool RedstoneManager::IsRepeaterInputPowered(WorldManager& _world, Int3 _pos, uint8_t _meta) {

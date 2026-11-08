@@ -36,9 +36,11 @@ std::string FillArea(const strategos::CmdNode& _cmd, void* _userData) {
 		return "Invalid Block Id!";
 
 	auto fromResult = ResolveCmdPos(ctx, *fromCmd);
-	if (!fromResult) return fromResult.error();
+	if (!fromResult)
+		return fromResult.error();
 	auto toResult = ResolveCmdPos(ctx, *toCmd);
-	if (!toResult) return toResult.error();
+	if (!toResult)
+		return toResult.error();
 	Vec3 from = *fromResult;
 	Vec3 to = *toResult;
 	Int3 pos0{ static_cast<int32_t>(std::floor(from.x)), static_cast<int32_t>(std::floor(from.y)),

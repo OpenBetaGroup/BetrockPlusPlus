@@ -19,6 +19,7 @@
 #include "client_pos.h"
 #include "dimensions.h"
 #include "entities/entity_manager.h"
+#include "gamerules.h"
 #include "generator/overworld/biome_gen.h"
 #include "helpers/aabb.h"
 #include "helpers/explosion.h"
@@ -39,7 +40,6 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
-#include "gamerules.h"
 
 #ifdef BUILD_SERVER
 #include "addon/addon_impl.h"
@@ -332,8 +332,8 @@ public:
 		int sz = this->spawnPoint.z;
 		const int32_t radius = Gamerule::Get<int32_t>(Gamerule::Id::RespawnRadius);
 		if (radius > 0) {
-			sx += rand.NextInt(radius*2) - radius;
-			sz += rand.NextInt(radius*2) - radius;
+			sx += rand.NextInt(radius * 2) - radius;
+			sz += rand.NextInt(radius * 2) - radius;
 		}
 		int sy = FindTopSolidBlock(sx, sz);
 		return { sx, sy, sz };

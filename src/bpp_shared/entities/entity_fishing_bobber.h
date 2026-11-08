@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-only
  */
- 
+
 #pragma once
 #include "entity.h"
 #include <memory>
@@ -18,9 +18,15 @@ struct FishingBobberEntity : public Entity {
 	FishingBobberEntity(std::shared_ptr<PlayerEntity> _owner, Vec3 _direction);
 
 	void Tick() override;
-	bool CanBeCollidedWith() override { return false; }
-	bool IsCatchable() const { return catchableTicks > 0; }
-	bool IsInGround() const { return inGround; }
+	bool CanBeCollidedWith() override {
+		return false;
+	}
+	bool IsCatchable() const {
+		return catchableTicks > 0;
+	}
+	bool IsInGround() const {
+		return inGround;
+	}
 
 private:
 	Int3 tilePosition = { -1, -1, -1 };

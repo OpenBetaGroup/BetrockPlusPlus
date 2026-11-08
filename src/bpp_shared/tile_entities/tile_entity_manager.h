@@ -26,4 +26,4 @@ struct TileEntityManager {
 
 namespace TileEntityHelper {
 std::shared_ptr<TileEntity> CreateTileEntityShared(const Tag& _nbt);
-}
+} // namespace TileEntityHelper

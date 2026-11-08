@@ -49,14 +49,14 @@ inline constexpr int GEN_TEST_WARMUP_RUNS = 1;
 inline constexpr double GEN_TEST_STALL_TIMEOUT_SECONDS = 60.0;
 
 inline const std::array<std::string, 8> GEN_TEST_SEEDS = {
-	"404", 
+	"404",
 	"3257840388504953787", // Pack.png
 	"Gargamel",
 	"Glacier",
-    "2409838883250561605",
-    "worstseedever",
-    "JASON",
-    "Doom",
+	"2409838883250561605",
+	"worstseedever",
+	"JASON",
+	"Doom",
 };
 
 // Timings for a set of finished worlds.
@@ -174,7 +174,7 @@ inline std::optional<double> GenerateFinishedWorld(WorldManager& _world, int _ra
 			lastProgress = now;
 		} else if (std::chrono::duration<double>(now - lastProgress).count() > GEN_TEST_STALL_TIMEOUT_SECONDS) {
 			Logger::Error << std::format("Chunk gen test stalled with {}/{} generated and {}/{} populated.\n",
-			                                    generated, totalChunks, populated, populatableChunks);
+			                             generated, totalChunks, populated, populatableChunks);
 			return std::nullopt;
 		}
 	}
@@ -190,9 +190,9 @@ inline void DeleteAllChunks(WorldManager& _world) {
 }
 
 inline void LogStats(const std::string& _label, const GenSpeedStats& _stats) {
-	Logger::Info << std::format("{} min {:.3f}s | max {:.3f}s | avg {:.3f}s | {:.0f} chunks/s ({} worlds)\n",
-	                                   _label, _stats.minTime, _stats.maxTime, _stats.AverageTime(),
-	                                   _stats.ChunksPerSecond(), _stats.worlds);
+	Logger::Info << std::format("{} min {:.3f}s | max {:.3f}s | avg {:.3f}s | {:.0f} chunks/s ({} worlds)\n", _label,
+	                            _stats.minTime, _stats.maxTime, _stats.AverageTime(), _stats.ChunksPerSecond(),
+	                            _stats.worlds);
 }
 
 } // namespace Detail
@@ -215,7 +215,7 @@ inline GenSpeedResult PerformChunkGenSpeedTest(WorldManager& _world) {
 	result.overall.chunksPerWorld = chunksPerWorld;
 
 	Logger::Info << std::format("Chunk gen test: {} seeds x {} worlds at render distance {} ({} chunks each)\n",
-	                        GEN_TEST_SEEDS.size(), GEN_TEST_RUNS_PER_SEED, radius, chunksPerWorld);
+	                            GEN_TEST_SEEDS.size(), GEN_TEST_RUNS_PER_SEED, radius, chunksPerWorld);
 
 	bool ok = true;
 
@@ -243,7 +243,8 @@ inline GenSpeedResult PerformChunkGenSpeedTest(WorldManager& _world) {
 			}
 			seedStats.Add(*seconds);
 			result.overall.Add(*seconds);
-			Logger::Info << std::format("  seed \"{}\" run {}/{}: {:.3f}s\n", seed, run, GEN_TEST_RUNS_PER_SEED, *seconds);
+			Logger::Info << std::format("  seed \"{}\" run {}/{}: {:.3f}s\n", seed, run, GEN_TEST_RUNS_PER_SEED,
+			                            *seconds);
 		}
 
 		if (seedStats.worlds > 0) {

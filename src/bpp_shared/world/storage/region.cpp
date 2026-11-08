@@ -8,18 +8,18 @@
 
 #include "region.h"
 #include "chunk.h"
+#include "helpers/deflate_pool.h"
+#include "helpers/endian_convert.h"
 #include "logger.h"
 #include "nbt/nbt.h"
 #include "nbt/nbt_textifier.h"
 #include "platform/memory.h"
 #include "tile_entities/tile_entity_manager.h"
-#include "helpers/endian_convert.h"
-#include "helpers/deflate_pool.h"
-#include <memory>
-#include <string>
-#include <fstream>
 #include <algorithm>
 #include <cstdint>
+#include <fstream>
+#include <memory>
+#include <string>
 
 namespace {
 constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;
@@ -33,13 +33,13 @@ constexpr size_t BASE_MEMORY_ALLOCATION_GUESS = CHUNK_DATA_SIZE + HEIGHT_MAP_DAT
 // First guess for how big a chunk's decompressed NBT is,
 // rounded up to a whole number of memory pages
 size_t InitialDecompressedSize() {
-	static const size_t size = []() -> size_t {
+	static const size_t SIZE = []() -> size_t {
 		const size_t page = std::max<size_t>(GetPageSize(), 1);
 		return ((BASE_MEMORY_ALLOCATION_GUESS + page - 1) / page) * page;
 	}();
-	return size;
+	return SIZE;
 }
-}
+} // namespace
 
 bool Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
                       std::shared_ptr<const std::vector<Tag>> _entities) {

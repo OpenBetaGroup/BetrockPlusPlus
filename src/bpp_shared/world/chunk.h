@@ -13,6 +13,7 @@
 #include "helpers/math_helper.h"
 #include "helpers/packed_array.h"
 #include "nbt/nbt.h"
+#include "subchunk.h"
 #include "tile_entities/tile_entity.h"
 #include <algorithm>
 #include <array>
@@ -20,7 +21,6 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
-#include "subchunk.h"
 #include <memory>
 #include <numeric_structs.h>
 

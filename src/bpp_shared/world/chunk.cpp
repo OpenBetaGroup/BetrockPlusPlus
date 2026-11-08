@@ -176,7 +176,7 @@ void SubChunk::FillRegion(Int3 _a, Int3 _b, BlockType _type, uint8_t _meta) {
 		if (fullFootprint) {
 			const uint8_t packed = uint8_t(_meta | (_meta << 4));
 			std::memset(meta->data.data() + size_t(_a.y) * SIZE * SIZE / 2, packed,
-            	size_t(_b.y - _a.y + 1) * SIZE * SIZE / 2);
+			            size_t(_b.y - _a.y + 1) * SIZE * SIZE / 2);
 		} else {
 			for (int y = _a.y; y <= _b.y; y++)
 				for (int z = _a.z; z <= _b.z; z++)

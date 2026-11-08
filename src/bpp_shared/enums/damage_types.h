@@ -11,18 +11,18 @@
 // Used primarily for determining what kind of damage killed a mob, for death messages
 
 enum class DamageType : int8_t {
-    None,
-    Fall,
-    Drown,
-    Burn,
-    Lava,
-    Punch,
-    Arrow,
-    Explosion,
-    Lightning,
-    Suffocation,
-    Command,
-    Void,
-    Cactus,
-    Item
+	None,
+	Fall,
+	Drown,
+	Burn,
+	Lava,
+	Punch,
+	Arrow,
+	Explosion,
+	Lightning,
+	Suffocation,
+	Command,
+	Void,
+	Cactus,
+	Item
 };

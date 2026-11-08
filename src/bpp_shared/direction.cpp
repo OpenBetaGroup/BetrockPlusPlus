@@ -121,7 +121,7 @@ std::string_view Str(const Value _dir) noexcept {
 	}
 }
 
-}
+} // namespace Cardinal
 
 // Axis Directions
 namespace Axis {
@@ -155,7 +155,6 @@ Value FromAngle(const float _yaw) noexcept {
 	}
 }
 
-
 bool IsHorizontal(const Value _axis) noexcept {
 	switch (_axis) {
 	case Value::NorthSouth:
@@ -173,13 +172,13 @@ bool IsVertical(const Value _axis) noexcept {
 std::array<Cardinal::Value, 2> ToCardinal(const Value _dir) noexcept {
 	switch (_dir) {
 	case Value::NorthSouth:
-		return {Cardinal::Value::North, Cardinal::Value::South};
+		return { Cardinal::Value::North, Cardinal::Value::South };
 	case Value::EastWest:
-		return {Cardinal::Value::East, Cardinal::Value::West};
+		return { Cardinal::Value::East, Cardinal::Value::West };
 	case Value::UpDown:
-		return {Cardinal::Value::Up, Cardinal::Value::Down};
+		return { Cardinal::Value::Up, Cardinal::Value::Down };
 	default:
-		return {Cardinal::Value::None, Cardinal::Value::None};
+		return { Cardinal::Value::None, Cardinal::Value::None };
 	}
 }
 
@@ -196,4 +195,4 @@ std::string_view Str(const Value _axis) noexcept {
 	}
 }
 
-}
+} // namespace Axis

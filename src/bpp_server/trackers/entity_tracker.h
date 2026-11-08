@@ -103,7 +103,8 @@ struct EntityTracker {
 	void SendMetadataState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession);
 	void UpdateEquipmentState(TrackedEntry& _trackedEntry);
 	void SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession);
-	void SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType, std::shared_ptr<PlayerSession> _session);
+	void SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType,
+	              std::shared_ptr<PlayerSession> _session);
 
 	// With my strict goal of keeping strict separation we cannot put this as a virtual in the actual entity class itself
 	TrackingProfile GetTrackingProfile(Entity& _entity) {
@@ -159,7 +160,7 @@ struct EntityTracker {
 			return { 0, 0, false };
 
 			Logger::Warning << "EntityTracker: no tracking profile for entity type '" + std::to_string(int(type)) +
-			                           "'\n";
+			                       "'\n";
 		}
 	}
 };

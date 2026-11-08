@@ -31,7 +31,7 @@ struct FireballEntity : public Entity {
 			return;
 		}
 		this->owner = _owner;
-		this->Teleport(_owner->position, { _owner->rotationYaw, _owner->rotationPitch});
+		this->Teleport(_owner->position, { _owner->rotationYaw, _owner->rotationPitch });
 		this->velocity = {};
 		_acceleration.x += rand.NextGaussian() * 0.4;
 		_acceleration.y += rand.NextGaussian() * 0.4;
@@ -48,6 +48,7 @@ struct FireballEntity : public Entity {
 	bool CanBeCollidedWith() override {
 		return true;
 	}
+
 private:
 	// These are leftovers we serialize / deserialize from entity arrow
 	// For vanilla save compat!!
@@ -85,7 +86,7 @@ private:
 
 	bool AttackEntityFrom(Entity* _entity, int /*_damage*/, DamageType /*_type*/) override {
 		this->forceVelocityUpdate = true;
-		
+
 		if (_entity) {
 			auto lookVec = _entity->GetLookVector(_entity->rotationYaw, _entity->rotationPitch);
 			this->velocity = lookVec;

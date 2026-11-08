@@ -47,7 +47,7 @@ struct WolfEntity : public AnimalEntity {
 			return true;
 		return IsTamed() && (_item == Items::Id::PORKCHOP || _item == Items::Id::PORKCHOP_COOKED);
 	}
-	
+
 	int GetAttackStrength() {
 		return IsTamed() ? 4 : 2;
 	}

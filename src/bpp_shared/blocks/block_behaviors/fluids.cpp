@@ -21,11 +21,11 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -99,8 +99,8 @@ static bool IsOpenForFlow(WorldManager& _world, Int3 _pos, MaterialType _fluidMa
 	return !BlocksFlow(block) && (material.type != _fluidMaterialType || _world.GetMetadata(_pos) != 0);
 }
 
-static constexpr Cardinal::Value FLOW_DIR[4] = { Cardinal::Value::West, Cardinal::Value::East,
-	                                              Cardinal::Value::North, Cardinal::Value::South };
+static constexpr Cardinal::Value FLOW_DIR[4] = { Cardinal::Value::West, Cardinal::Value::East, Cardinal::Value::North,
+	                                             Cardinal::Value::South };
 
 static int CalculateFlowCost(WorldManager& _world, Int3 _pos, int _depth, int _cameFrom,
                              MaterialType _fluidMaterialType) {
@@ -266,7 +266,7 @@ static Vec3 GetFluidFlowVector(WorldManager& _world, Int3 _pos) {
 
 	// Same as FLOW_DIR, so could maybe be reused for that?
 	static constexpr Cardinal::Value NEIGHBOR_BLOCKS[4] = { Cardinal::Value::West, Cardinal::Value::East,
-		                                                     Cardinal::Value::North, Cardinal::Value::South };
+		                                                    Cardinal::Value::North, Cardinal::Value::South };
 	// Get the contribution of our horizontal neighbors
 	for (int i = 0; i < 4; i++) {
 		Int3 neighborPos = _pos.WithOffset(NEIGHBOR_BLOCKS[i]);

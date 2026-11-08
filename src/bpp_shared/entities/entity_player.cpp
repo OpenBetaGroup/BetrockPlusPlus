@@ -114,11 +114,11 @@ void PlayerEntity::WakeUp(bool /*_confirmSpawn*/) {
 		Int3 wakeupSpot = sleepPositions[0];
 		constexpr double GROUND_NUDGE = 0.06;
 		Vec3 teleportPos = { double(wakeupSpot.x) + 0.5, double(wakeupSpot.y) + double(this->yOffset) + GROUND_NUDGE,
-		                     double(wakeupSpot.z) + 0.5 };
+			                 double(wakeupSpot.z) + 0.5 };
 		this->Teleport(teleportPos, { rotationYaw, rotationPitch });
 	} else {
 		Vec3 teleportPos = { double(footPos.x) + 0.5, double(footPos.y) + double(this->yOffset) + 0.1,
-		                     double(footPos.z) + 0.5 };
+			                 double(footPos.z) + 0.5 };
 		this->Teleport(teleportPos, { rotationYaw, rotationPitch });
 	}
 }

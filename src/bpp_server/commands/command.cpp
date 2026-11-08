@@ -7,16 +7,16 @@
 
 #include "command.h"
 #include "../../bpp_shared/helpers/identifiers.h"
-#include "../server.h"
-#include "username.h"
-#include "items.h"
-#include "command_manager.h"
 #include "../entities/entity_mp_player.h"
-#include <algorithm>
+#include "../server.h"
+#include "command_manager.h"
+#include "items.h"
 #include "nbt/nbt_textifier.h"
+#include "username.h"
+#include <algorithm>
 #include <cerrno>
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <string>
 
@@ -78,8 +78,7 @@ ItemStack ParseItemStack(const std::string& _itemArg, std::optional<int> _count)
 	return item;
 }
 
-void SendChunkedList(const CommandContext& _ctx, const std::string& _header,
-                     const std::vector<std::string>& _entries) {
+void SendChunkedList(const CommandContext& _ctx, const std::string& _header, const std::vector<std::string>& _entries) {
 	SendFeedback(_ctx, _header);
 	std::string line = "§7";
 	for (size_t i = 0; i < _entries.size(); i++) {
@@ -113,28 +112,36 @@ struct SelectorArguments {
 	std::vector<std::pair<Tag, bool>> nbt;
 };
 
-std::string_view TrimSelector(std::string_view value) {
-	while (!value.empty() && std::isspace(static_cast<unsigned char>(value.front()))) value.remove_prefix(1);
-	while (!value.empty() && std::isspace(static_cast<unsigned char>(value.back()))) value.remove_suffix(1);
-	return value;
+std::string_view TrimSelector(std::string_view _value) {
+	while (!_value.empty() && std::isspace(static_cast<unsigned char>(_value.front())))
+		_value.remove_prefix(1);
+	while (!_value.empty() && std::isspace(static_cast<unsigned char>(_value.back())))
+		_value.remove_suffix(1);
+	return _value;
 }
 
 std::optional<EntityType> ParseSelectorEntityType(std::string_view _name) {
 	const EntityType type = GetEntityTypeFromString(_name);
-	if (type == EntityType::NONE) return std::nullopt;
+	if (type == EntityType::NONE)
+		return std::nullopt;
 	return type;
 }
 
 std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string_view _arguments) {
 	SelectorArguments result;
-	if (TrimSelector(_arguments).empty()) return result;
+	if (TrimSelector(_arguments).empty())
+		return result;
 
 	size_t start = 0;
 	while (start < _arguments.size()) {
 		size_t end = start, equal = std::string_view::npos;
 		std::vector<char> closers;
 
-		enum class Quote : char { None, Single, Double };
+		enum class Quote : char {
+			None,
+			Single,
+			Double
+		};
 		Quote quote = Quote::None;
 		bool escaped = false;
 
@@ -143,21 +150,29 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 			switch (quote) {
 			case Quote::Single:
 			case Quote::Double:
-				if (escaped) escaped = false;
-				else if (c == '\\') escaped = true;
+				if (escaped)
+					escaped = false;
+				else if (c == '\\')
+					escaped = true;
 				else if ((quote == Quote::Single && c == '\'') || (quote == Quote::Double && c == '"'))
 					quote = Quote::None;
 				break;
 			case Quote::None:
-				if (c == '"') quote = Quote::Double;
-				else if (c == '\'') quote = Quote::Single;
-				else if (c == '[' || c == '{') closers.push_back(c == '[' ? ']' : '}');
+				if (c == '"')
+					quote = Quote::Double;
+				else if (c == '\'')
+					quote = Quote::Single;
+				else if (c == '[' || c == '{')
+					closers.push_back(c == '[' ? ']' : '}');
 				else if (c == ']' || c == '}') {
-					if (closers.empty() || c != closers.back()) return std::unexpected("Malformed selector");
+					if (closers.empty() || c != closers.back())
+						return std::unexpected("Malformed selector");
 					closers.pop_back();
 				} else if (closers.empty()) {
-					if (c == ',') goto argument_end;
-					if (c == '=' && equal == std::string_view::npos) equal = end;
+					if (c == ',')
+						goto argument_end;
+					if (c == '=' && equal == std::string_view::npos)
+						equal = end;
 				}
 				break;
 			}
@@ -169,101 +184,144 @@ std::expected<SelectorArguments, std::string> ParseSelectorArguments(std::string
 		auto key = TrimSelector(_arguments.substr(start, equal - start));
 		auto value = TrimSelector(_arguments.substr(equal + 1, end - equal - 1));
 
-		if (key.empty() || value.empty()) return std::unexpected("Malformed selector");
+		if (key.empty() || value.empty())
+			return std::unexpected("Malformed selector");
 		if (key == "type") {
-			if (result.type) return std::unexpected("Duplicate selector argument: type");
-			if (value.front() == '!') { result.negateType = true; value.remove_prefix(1); }
-			if (value.empty()) return std::unexpected("Malformed selector");
+			if (result.type)
+				return std::unexpected("Duplicate selector argument: type");
+			if (value.front() == '!') {
+				result.negateType = true;
+				value.remove_prefix(1);
+			}
+			if (value.empty())
+				return std::unexpected("Malformed selector");
 
 			result.type = ParseSelectorEntityType(value);
-			if (!result.type) return std::unexpected("Unknown selector entity type: " + std::string(value));
-		} else if (key == "distance")
-		{
-			if (result.minDistance || result.maxDistance) return std::unexpected("Duplicate selector argument: distance");
-			const auto invalid = [&] { return std::unexpected("Invalid selector distance: " + std::string(value)); };
+			if (!result.type)
+				return std::unexpected("Unknown selector entity type: " + std::string(value));
+		} else if (key == "distance") {
+			if (result.minDistance || result.maxDistance)
+				return std::unexpected("Duplicate selector argument: distance");
+			const auto invalid = [&] {
+				return std::unexpected("Invalid selector distance: " + std::string(value));
+			};
 
-			auto bound = [](std::string_view text) -> std::optional<double> {
-				if (text.empty() || text.front() == '+' ||
-					text.find_first_not_of("0123456789.eE+-") != std::string_view::npos)
+			auto bound = [](std::string_view _text) -> std::optional<double> {
+				if (_text.empty() || _text.front() == '+' ||
+				    _text.find_first_not_of("0123456789.eE+-") != std::string_view::npos)
 					return std::nullopt;
 
-				const std::string buffer(text); // strtod needs a null-terminated string
+				const std::string buffer(_text); // strtod needs a null-terminated string
 				char* parsedEnd = nullptr;
 				errno = 0;
 				const double number = std::strtod(buffer.c_str(), &parsedEnd);
-				if (parsedEnd != buffer.c_str() + buffer.size() || errno == ERANGE ||
-					!std::isfinite(number) || number < 0)
+				if (parsedEnd != buffer.c_str() + buffer.size() || errno == ERANGE || !std::isfinite(number) ||
+				    number < 0)
 					return std::nullopt;
 				return number;
 			};
 			const auto dots = value.find("..");
-			if (value.find("...") != std::string_view::npos) return invalid();
+			if (value.find("...") != std::string_view::npos)
+				return invalid();
 			if (dots == std::string_view::npos) {
 				result.minDistance = result.maxDistance = bound(value);
-				if (!result.minDistance) return invalid();
+				if (!result.minDistance)
+					return invalid();
 			} else {
 				const auto min = value.substr(0, dots), max = value.substr(dots + 2);
-				if (min.empty() && max.empty()) return invalid();
+				if (min.empty() && max.empty())
+					return invalid();
 
 				if (!min.empty()) {
 					result.minDistance = bound(min);
-					if (!result.minDistance) return invalid();
+					if (!result.minDistance)
+						return invalid();
 				}
 
 				if (!max.empty()) {
 					result.maxDistance = bound(max);
-					if (!result.maxDistance) return invalid();
+					if (!result.maxDistance)
+						return invalid();
 				}
-				if (result.minDistance && result.maxDistance && *result.minDistance > *result.maxDistance) return invalid();
+				if (result.minDistance && result.maxDistance && *result.minDistance > *result.maxDistance)
+					return invalid();
 			}
-		} else if (key == "nbt")
-		{
+		} else if (key == "nbt") {
 			bool negate = value.front() == '!';
-			if (negate) value.remove_prefix(1);
+			if (negate)
+				value.remove_prefix(1);
 			if (value.empty() || (value.front() != '{' && value.front() != '[') ||
-			    (value.front() == '{' && value.back() != '}') ||
-			    (value.front() == '[' && value.back() != ']'))
+			    (value.front() == '{' && value.back() != '}') || (value.front() == '[' && value.back() != ']'))
 				return std::unexpected("Malformed selector");
 
-			try { result.nbt.emplace_back(TextNBTifier{}.Parse(std::string(value)), negate); }
-			catch (const std::runtime_error& error) { return std::unexpected("Invalid selector NBT: " + std::string(error.what()));}
-		} else return std::unexpected("Unknown selector argument: " + std::string(key));
+			try {
+				result.nbt.emplace_back(TextNBTifier{}.Parse(std::string(value)), negate);
+			} catch (const std::runtime_error& error) {
+				return std::unexpected("Invalid selector NBT: " + std::string(error.what()));
+			}
+		} else
+			return std::unexpected("Unknown selector argument: " + std::string(key));
 
-		if (end == _arguments.size()) break;
+		if (end == _arguments.size())
+			break;
 		start = end + 1;
-		if (TrimSelector(_arguments.substr(start)).empty()) return std::unexpected("Malformed selector");
+		if (TrimSelector(_arguments.substr(start)).empty())
+			return std::unexpected("Malformed selector");
 	}
 	return result;
 }
 
 } // namespace
 
-
 EntityType GetEntityTypeFromString(std::string_view _name) {
-	if (_name.starts_with("minecraft:")) _name.remove_prefix(10);
-	static constexpr std::pair<std::string_view, EntityType> types[] = {
-	    {"item", EntityType::ITEM}, {"player", EntityType::PLAYER}, {"fish", EntityType::FISH},
-	    {"fireball", EntityType::FIREBALL}, {"boat", EntityType::BOAT}, {"minecart", EntityType::MINECART},
-	    {"storage_minecart", EntityType::STORAGE_MINECART}, {"furnace_minecart", EntityType::FURNACE_MINECART},
-	    {"lit_tnt", EntityType::LIT_TNT}, {"arrow", EntityType::ARROW}, {"thrown_snowball", EntityType::THROWN_SNOWBALL},
-	    {"thrown_egg", EntityType::THROWN_EGG}, {"falling_sand", EntityType::FALLING_SAND},
-	    {"falling_gravel", EntityType::FALLING_GRAVEL}, {"fishing_bobber", EntityType::FISHING_BOBBER},
-	    {"creeper", EntityType::CREEPER}, {"skeleton", EntityType::SKELETON}, {"spider", EntityType::SPIDER},
-	    {"giant_zombie", EntityType::GIANT_ZOMBIE}, {"zombie", EntityType::ZOMBIE}, {"slime", EntityType::SLIME},
-	    {"ghast", EntityType::GHAST}, {"zombie_pigman", EntityType::ZOMBIE_PIGMAN}, {"pig", EntityType::PIG},
-	    {"sheep", EntityType::SHEEP}, {"cow", EntityType::COW}, {"chicken", EntityType::CHICKEN},
-	    {"squid", EntityType::SQUID}, {"wolf", EntityType::WOLF}, {"painting", EntityType::PAINTING},
-	    {"lightning_bolt", EntityType::LIGHTNING_BOLT},
+	if (_name.starts_with("minecraft:"))
+		_name.remove_prefix(10);
+	static constexpr std::pair<std::string_view, EntityType> TYPES[] = {
+		{ "item", EntityType::ITEM },
+		{ "player", EntityType::PLAYER },
+		{ "fish", EntityType::FISH },
+		{ "fireball", EntityType::FIREBALL },
+		{ "boat", EntityType::BOAT },
+		{ "minecart", EntityType::MINECART },
+		{ "storage_minecart", EntityType::STORAGE_MINECART },
+		{ "furnace_minecart", EntityType::FURNACE_MINECART },
+		{ "lit_tnt", EntityType::LIT_TNT },
+		{ "arrow", EntityType::ARROW },
+		{ "thrown_snowball", EntityType::THROWN_SNOWBALL },
+		{ "thrown_egg", EntityType::THROWN_EGG },
+		{ "falling_sand", EntityType::FALLING_SAND },
+		{ "falling_gravel", EntityType::FALLING_GRAVEL },
+		{ "fishing_bobber", EntityType::FISHING_BOBBER },
+		{ "creeper", EntityType::CREEPER },
+		{ "skeleton", EntityType::SKELETON },
+		{ "spider", EntityType::SPIDER },
+		{ "giant_zombie", EntityType::GIANT_ZOMBIE },
+		{ "zombie", EntityType::ZOMBIE },
+		{ "slime", EntityType::SLIME },
+		{ "ghast", EntityType::GHAST },
+		{ "zombie_pigman", EntityType::ZOMBIE_PIGMAN },
+		{ "pig", EntityType::PIG },
+		{ "sheep", EntityType::SHEEP },
+		{ "cow", EntityType::COW },
+		{ "chicken", EntityType::CHICKEN },
+		{ "squid", EntityType::SQUID },
+		{ "wolf", EntityType::WOLF },
+		{ "painting", EntityType::PAINTING },
+		{ "lightning_bolt", EntityType::LIGHTNING_BOLT },
 	};
-	for (const auto& [name, type] : types) if (name == _name) return type;
+	for (const auto& [name, type] : TYPES)
+		if (name == _name)
+			return type;
 	return EntityType::NONE;
 }
 
-std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(
-    std::string_view _target, const CommandContext& _ctx, std::string_view _command) {
+std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(std::string_view _target,
+                                                                               const CommandContext& _ctx,
+                                                                               std::string_view _command) {
 	auto targets = ResolveCmdTargets(_target, _ctx);
 
-	if (!targets) return std::unexpected(targets.error());
+	if (!targets)
+		return std::unexpected(targets.error());
 
 	std::vector<CommandTarget> players;
 	players.reserve(targets->size());
@@ -279,11 +337,11 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(
 }
 
 std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::string_view _target,
-                                                                        const CommandContext& _ctx) {
+                                                                         const CommandContext& _ctx) {
 	if (_target.empty() || _target.front() != '@') {
 		auto player = _ctx.server->GetSessionByUsername(std::string(_target));
-		if (!player || !player->entity || player->entity->isDead ||
-		    player->connState != ConnectionState::Playing || !player->stream.IsConnected())
+		if (!player || !player->entity || player->entity->isDead || player->connState != ConnectionState::Playing ||
+		    !player->stream.IsConnected())
 			return std::unexpected(std::string(_target) + " is not connected!");
 
 		return std::vector<CommandTarget>{ { player->entity.get(), player.get() } };
@@ -297,17 +355,22 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 			return std::unexpected("Malformed selector");
 		arguments = selector.substr(bracket + 1, selector.size() - bracket - 2);
 		selector = selector.substr(0, bracket);
-		if (TrimSelector(arguments).empty()) return std::unexpected("Malformed selector");
+		if (TrimSelector(arguments).empty())
+			return std::unexpected("Malformed selector");
 	} else if (selector.find(']') != std::string_view::npos || selector.find('{') != std::string_view::npos ||
-	           selector.find('}') != std::string_view::npos) return std::unexpected("Malformed selector");
+	           selector.find('}') != std::string_view::npos)
+		return std::unexpected("Malformed selector");
 
-	const bool known = selector == "@p" || selector == "@r" || selector == "@a" ||
-	                   selector == "@e" || selector == "@s" || selector == "@n";
+	const bool known = selector == "@p" || selector == "@r" || selector == "@a" || selector == "@e" ||
+	                   selector == "@s" || selector == "@n";
 
-	if (!known) return std::unexpected("Unknown selector");
+	if (!known)
+		return std::unexpected("Unknown selector");
 	auto filters = ParseSelectorArguments(arguments);
-	if (!filters) return std::unexpected(filters.error());
-	if (!_ctx.world) return std::vector<CommandTarget>{};
+	if (!filters)
+		return std::unexpected(filters.error());
+	if (!_ctx.world)
+		return std::vector<CommandTarget>{};
 
 	const auto fromEntity = [](Entity* _entity) {
 		auto* player = dynamic_cast<EntityMPPlayer*>(_entity);
@@ -317,8 +380,7 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 	std::vector<CommandTarget> eligible;
 	if (selector == "@a" || selector == "@r" || selector == "@p") {
 		for (const auto& session : _ctx.server->GetPlayers()) {
-			if (!session || !session->stream.IsConnected() ||
-				session->connState != ConnectionState::Playing ||
+			if (!session || !session->stream.IsConnected() || session->connState != ConnectionState::Playing ||
 			    !session->entity || session->entity->isDead ||
 			    _ctx.server->GetWorldForDimension(session->dimension) != _ctx.world)
 				continue;
@@ -326,43 +388,49 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 		}
 	} else if (selector == "@e" || selector == "@n") {
 		for (const auto& entity : _ctx.world->entityManager.entities)
-			if (entity && !entity->isDead) eligible.push_back(fromEntity(entity.get()));
+			if (entity && !entity->isDead)
+				eligible.push_back(fromEntity(entity.get()));
 	} else if (selector == "@s" && _ctx.executionEntity && !_ctx.executionEntity->isDead &&
 	           _ctx.executionEntity->world == _ctx.world) {
 		eligible.push_back(fromEntity(_ctx.executionEntity));
 	}
 
 	const Vec3 origin = _ctx.executionEntity ? _ctx.executionEntity->position : Vec3{};
-	const auto distance = [&origin](Entity* entity) {
-		return entity->position.DistanceSquared(origin);
+	const auto distance = [&origin](Entity* _entity) {
+		return _entity->position.DistanceSquared(origin);
 	};
 
 	const double squareLimit = std::sqrt(std::numeric_limits<double>::max());
-	std::erase_if(eligible, [&](const CommandTarget& target) {
-		if (filters->type && ((target.entity->type == *filters->type) == filters->negateType)) return true;
+	std::erase_if(eligible, [&](const CommandTarget& _target) {
+		if (filters->type && ((_target.entity->type == *filters->type) == filters->negateType))
+			return true;
 		if (filters->minDistance || filters->maxDistance) {
-			const double squared = distance(target.entity);
-	
+			const double squared = distance(_target.entity);
+
 			if (filters->minDistance &&
 			    (*filters->minDistance > squareLimit || squared < *filters->minDistance * *filters->minDistance))
 				return true;
 			if (filters->maxDistance && *filters->maxDistance <= squareLimit &&
-			    squared > *filters->maxDistance * *filters->maxDistance) return true;
+			    squared > *filters->maxDistance * *filters->maxDistance)
+				return true;
 		}
 
 		if (!filters->nbt.empty()) {
 			std::optional<Tag> actual;
 
-			if (target.entity->entityManager) {
-				if (target.session) actual = target.session->SerializeToNbt();
-				else actual = target.entity->SerializeToNbt();
+			if (_target.entity->entityManager) {
+				if (_target.session)
+					actual = _target.session->SerializeToNbt();
+				else
+					actual = _target.entity->SerializeToNbt();
 			}
 
 			const bool represented = actual && actual->type == TAG_COMPOUND;
 
 			for (const auto& [pattern, negate] : filters->nbt) {
 				const bool matches = represented && actual->Matches(pattern);
-				if (matches == negate) return true;
+				if (matches == negate)
+					return true;
 			}
 		}
 		return false;
@@ -372,8 +440,9 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 		if (eligible.empty())
 			return eligible;
 		auto* tracker = _ctx.server->GetEntityTrackerForDimension(_ctx.world->thisDimension);
-		return std::vector<CommandTarget>{ eligible[static_cast<size_t>(tracker->rand.NextInt(
-			static_cast<int32_t>(eligible.size())))] };
+		return std::vector<CommandTarget>{
+			eligible[static_cast<size_t>(tracker->rand.NextInt(static_cast<int32_t>(eligible.size())))]
+		};
 	}
 
 	if (selector == "@p" || selector == "@n") {
@@ -381,13 +450,13 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 			const double da = distance(_a.entity), db = distance(_b.entity);
 			return da == db ? _a.entity->id < _b.entity->id : da < db;
 		});
-		if (eligible.size() > 1) eligible.resize(1);
+		if (eligible.size() > 1)
+			eligible.resize(1);
 	}
 	return eligible;
 }
 
-std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx,
-                                              const strategos::Vec3& _position) {
+std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx, const strategos::Vec3& _position) {
 	if (!_ctx.executionEntity &&
 	    (_position.is_relative(strategos::Axis::X) || _position.is_relative(strategos::Axis::Y) ||
 	     _position.is_relative(strategos::Axis::Z)))
@@ -395,4 +464,3 @@ std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx,
 	const Vec3 origin = _ctx.executionEntity ? _ctx.executionEntity->position : Vec3{};
 	return ResolveCmdVec3(_position, origin);
 }
-

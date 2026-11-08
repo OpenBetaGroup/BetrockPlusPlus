@@ -90,8 +90,7 @@ bool RailManager::IsActuallyConnected(WorldManager& _world, Int3 _pos, Cardinal:
 
 int RailManager::GetAdjacentTrackCount(WorldManager& _world, Int3 _pos) {
 	int count = 0;
-	for (auto dir :
-	     { Cardinal::Value::North, Cardinal::Value::South, Cardinal::Value::East, Cardinal::Value::West }) {
+	for (auto dir : { Cardinal::Value::North, Cardinal::Value::South, Cardinal::Value::East, Cardinal::Value::West }) {
 		if (FindRailConnection(_world, _pos, dir) != _pos)
 			count++;
 	}
@@ -382,8 +381,7 @@ void RailManager::RefreshRail(WorldManager& _world, Int3 _pos, BlockType _block,
 			continue;
 
 		auto neighborBlock = _world.GetBlockId(neighborPos);
-		auto neighborShape = DetermineRailShapeWithAddition(_world, neighborPos, neighborBlock,
-		                                                    Cardinal::Opposite(dir));
+		auto neighborShape = DetermineRailShapeWithAddition(_world, neighborPos, neighborBlock, Cardinal::Opposite(dir));
 		uint8_t neighborMeta = EncodeMeta(_world, neighborPos, neighborBlock, neighborShape);
 		_world.SetMeta(neighborPos, neighborMeta);
 

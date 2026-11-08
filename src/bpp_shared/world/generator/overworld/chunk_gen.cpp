@@ -181,7 +181,7 @@ void OverworldGenerator::GenerateTerrain(Chunk& _chunk) {
 	GenerateTerrainNoise(Int3{ _chunk.cpos.x * 4, 0, _chunk.cpos.z * 4 }, MAX);
 
 	// Fill subchunks with water
-	_chunk.FillSlices(0, WATER_LEVEL-1, BLOCK_WATER_STILL);
+	_chunk.FillSlices(0, WATER_LEVEL - 1, BLOCK_WATER_STILL);
 
 	// Write water surface
 	for (int32_t x = 0; x < CHUNK_WIDTH; ++x) {
@@ -218,15 +218,9 @@ void OverworldGenerator::GenerateTerrain(Chunk& _chunk) {
 				    (terrainNoiseField[size_t(((sampleX + 1) * MAX.z + sampleZ + 1) * MAX.y + sampleY + 1)] -
 				     corner110) *
 				    verticalLerpStep;
-				
-				const bool allAir =	corner000 <= 0.0 &&
-									corner010 <= 0.0 &&
-									corner100 <= 0.0 &&
-									corner110 <= 0.0 &&
-									corner001 <= 0.0 &&
-									corner011 <= 0.0 &&
-									corner101 <= 0.0 &&
-									corner111 <= 0.0;
+
+				const bool allAir = corner000 <= 0.0 && corner010 <= 0.0 && corner100 <= 0.0 && corner110 <= 0.0 &&
+				                    corner001 <= 0.0 && corner011 <= 0.0 && corner101 <= 0.0 && corner111 <= 0.0;
 				if (allAir)
 					continue;
 

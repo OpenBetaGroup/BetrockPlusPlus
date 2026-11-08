@@ -22,11 +22,11 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 #include <algorithm>
@@ -37,7 +37,7 @@ namespace Blocks {
 std::vector<Int3> GetBedApproachSpots(WorldManager& _world, Int3 _headPos, Int3 _footPos) {
 	std::vector<Int3> spots;
 	Cardinal::Value dirs[4] = { Cardinal::Value::North, Cardinal::Value::South, Cardinal::Value::East,
-		                         Cardinal::Value::West };
+		                        Cardinal::Value::West };
 	for (Int3 bedPos : { _headPos, _footPos }) {
 		for (auto dir : dirs) {
 			Int3 candidate = bedPos.WithOffset(dir);
@@ -71,7 +71,8 @@ bool TriggerNightmareSpawns(WorldManager& _world, PlayerEntity& _player, Int3 _h
 			_headPos.z + (_world.rand.NextInt(32) - _world.rand.NextInt(32)),
 		};
 
-		int startY = std::clamp<int>(_headPos.y + (_world.rand.NextInt(16) - _world.rand.NextInt(16)), 1, CHUNK_HEIGHT - 1);
+		int startY = std::clamp<int>(_headPos.y + (_world.rand.NextInt(16) - _world.rand.NextInt(16)), 1,
+		                             CHUNK_HEIGHT - 1);
 
 		// Search for an open spot
 		int y = startY;

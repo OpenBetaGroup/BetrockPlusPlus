@@ -65,14 +65,14 @@ Tag TextNBTifier::LinkTag(std::vector<Token>* _tokens, size_t& _stepper, std::st
 	auto& nextToken = _tokens->at(nextIndex);
 	switch (token.identifier) {
 	case COMPOUND_BEGIN: {
-		auto Tag = LinkCompound(_tokens, _stepper, _tagName);
+		auto tag = LinkCompound(_tokens, _stepper, _tagName);
 		_tagName = "";
-		return Tag;
+		return tag;
 	}
 	case LIST_BEGIN: {
-		auto Tag = LinkList(_tokens, _stepper, _tagName);
+		auto tag = LinkList(_tokens, _stepper, _tagName);
 		_tagName = "";
-		return Tag;
+		return tag;
 	}
 	case COLON:
 	case COMMA:
@@ -318,8 +318,7 @@ void TextNBTifier::LexLiteral(std::vector<Token>* _tokens, size_t& /*_stepper*/)
 	while (IndexInBounds(stepper)) {
 		const char c = Peek();
 
-		if (c == ':' || c == ',' || c == '{' || c == '}' ||
-		    c == '[' || c == ']') {
+		if (c == ':' || c == ',' || c == '{' || c == '}' || c == '[' || c == ']') {
 			isIdentifier = c == ':';
 			break;
 		}

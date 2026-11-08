@@ -21,11 +21,11 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -144,7 +144,7 @@ void RegisterDoorBehaviors() {
 		    if (_face == Cardinal::Value::Up || _face == Cardinal::Value::Down)
 			    return false;
 
-			// Pop off if we aren't supported
+		    // Pop off if we aren't supported
 		    auto meta = GetMetaFromDirection(BLOCK_TRAPDOOR, Cardinal::Opposite(_face));
 		    auto direction = GetDirectionFromMeta(BLOCK_TRAPDOOR, meta);
 		    auto supportPos = _pos.WithOffset(direction);

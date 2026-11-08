@@ -20,7 +20,7 @@ MarkerPlacement MakeMarker(const Icon _icon, const float _rotation, const Byte2 
 void AppendPixel(std::vector<uint8_t>& _mapData, const uint8_t _value) {
 	if (_mapData.size() > INT8_MAX) {
 		Logger::Warning << "Attempted to write too much map data in a single packet! Rejected! (" << _mapData.size()
-		                    << "/" << INT8_MAX << ")\n";
+		                << "/" << INT8_MAX << ")\n";
 		return;
 	}
 	_mapData.push_back(_value);

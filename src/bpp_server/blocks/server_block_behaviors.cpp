@@ -12,6 +12,7 @@
 #include "entities/entity_skeleton.h"
 #include "entities/entity_spider.h"
 #include "entities/entity_zombie.h"
+#include "gamerules.h"
 #include "inventory/interactions/chest.h"
 #include "inventory/interactions/crafting_table.h"
 #include "inventory/interactions/dispenser.h"
@@ -20,7 +21,6 @@
 #include "items/tool_properties.h"
 #include "pathfinding/pathfinder.h"
 #include "tile_entities/tile_entity.h"
-#include "gamerules.h"
 
 namespace ServerBlock {
 BlockBehavior blockBehaviors[BLOCK_MAX] = {};

@@ -6,8 +6,8 @@
  *
 */
 #include "logger.h"
-#include "style.h"
 #include "strings/ucs2.h"
+#include "style.h"
 
 // Reference for Escape Codes
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
@@ -48,11 +48,11 @@ std::string GetCurrentTimeString(bool _fileFormat = false) {
 	if (_fileFormat)
 		ss << std::put_time(std::localtime(&inTimeT), "%Y-%m-%d-%H-%M-%S");
 	else
-		#ifdef LOGGER_SHORT_TIME
+#ifdef LOGGER_SHORT_TIME
 		ss << std::put_time(std::localtime(&inTimeT), "%H:%M:%S");
-	#else
-	ss << std::put_time(std::localtime(&inTimeT), "%Y-%m-%d %H:%M:%S");
-	#endif
+#else
+		ss << std::put_time(std::localtime(&inTimeT), "%Y-%m-%d %H:%M:%S");
+#endif
 	return ss.str();
 }
 
@@ -81,7 +81,7 @@ void Init() {
 // Best to run this at regular intervals,
 // or for important messages, like warnings or errors
 void Flush() {
-    if (logFile.is_open())
+	if (logFile.is_open())
 		logFile.flush();
 }
 
@@ -92,9 +92,9 @@ void Close() {
 	logFile.close();
 }
 
-void SetTerminalSink(std::function<void(const char*, int)> sink) {
+void SetTerminalSink(std::function<void(const char*, int)> _sink) {
 	std::lock_guard lock(terminalMutex);
-	terminalSink = std::move(sink);
+	terminalSink = std::move(_sink);
 }
 
 void WriteTerminal(std::string _message, bool _toStderr = false) {
@@ -204,4 +204,4 @@ void Log(std::string _message, LogLevel _level) {
 void LogStyled(const std::string& _message) {
 	WriteStyledMessage(_message);
 }
-};
+}; // namespace Logger

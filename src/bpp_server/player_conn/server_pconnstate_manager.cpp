@@ -8,9 +8,9 @@
 #include "../packet/packet_utils.h"
 #include "../server.h"
 #include "addon/addon_impl.h"
+#include "teleporter.h"
 #include "username.h"
 #include "version.h"
-#include "teleporter.h"
 
 void PlayerConnStateManager::HandleConnectionState(PlayerSession& _session, Server& _server) {
 	switch (_session.connState) {
@@ -126,7 +126,8 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	// because the session with this username already exists when you're connecting to the server
 	auto it = std::find_if(players.begin(), players.end(),
 	                       [&incoming, &_session](const std::shared_ptr<PlayerSession>& _player) {
-		                       return _player && _player.get() != &_session && UsernameEquals(_player->username, incoming.username);
+		                       return _player && _player.get() != &_session &&
+		                              UsernameEquals(_player->username, incoming.username);
 	                       });
 
 	if (it != players.end()) {
@@ -176,7 +177,8 @@ void PlayerConnStateManager::HandleVerifyingUsername(PlayerSession& _session, Se
 void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _server) {
 	// Initialize our entity first as the player session depends on it
 	if (!_session.entity)
-		_session.entity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
+		_session.entity = std::make_shared<EntityMPPlayer>(
+		    std::string(_session.username.begin(), _session.username.end()));
 
 	// Load player data before building the Login response so we know which dimension they're in
 	auto playerNbt = _server.gameRuntime.saveManager.GetPlayerNbt(
@@ -227,9 +229,9 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	_session.position.pos.y += 0.01;
 
 	// Log that we logged in!
-	Logger::Info << "Player " << _session.username << " logged in with entity ID " << _session.entity->id
-	                    << " at (" << _session.position.pos.x << ", " << _session.position.pos.y << ", "
-	                    << _session.position.pos.z << ")\n";
+	Logger::Info << "Player " << _session.username << " logged in with entity ID " << _session.entity->id << " at ("
+	             << _session.position.pos.x << ", " << _session.position.pos.y << ", " << _session.position.pos.z
+	             << ")\n";
 
 	// Update our last trusted position and rotation
 	_session.entity->position = _session.position.pos;
@@ -301,9 +303,8 @@ static bool PortalAreaReady(WorldManager& _world, const Vec3& _pos) {
 void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server& _server) {
 	WorldManager& sessionWorld = _session.dimension == Dimension::Nether ? _server.gameRuntime.worldHell
 	                                                                     : _server.gameRuntime.world;
-	_session.position.viewDistanceOverride = _session.pendingPortalPlacement
-	                                            ? PORTAL_SEARCH_CHUNK_RADIUS + 1
-	                                            : (_session.portalAreaLoaded ? 0 : 3);
+	_session.position.viewDistanceOverride = _session.pendingPortalPlacement ? PORTAL_SEARCH_CHUNK_RADIUS + 1
+	                                                                         : (_session.portalAreaLoaded ? 0 : 3);
 	_server.chunkSender.Enqueue(_session, sessionWorld, _server.flushChunkCount);
 	_server.chunkSender.Flush(_session);
 

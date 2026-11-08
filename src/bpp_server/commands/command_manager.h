@@ -39,7 +39,7 @@ class CommandManager {
 public:
 	void Init(Server* _server);
 	std::vector<strategos::Suggestion> Suggest(std::string_view input, bool canOperate,
-	    std::span<const std::string> players) const;
+	                                           std::span<const std::string> players) const;
 	bool Parse(std::string_view _cmdString, CommandContext& _ctx);
 	const strategos::BrigadierContext& Dispatcher() const noexcept {
 		return dispatcher;

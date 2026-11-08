@@ -15,10 +15,10 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -52,7 +52,7 @@ static bool CanPushBlock(WorldManager& _world, BlockType _block, Int3 _pos, bool
 
 	auto props = Blocks::blockProperties[_block];
 	PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
-	                                                               : props.material.mobilityFlag;
+	                                                              : props.material.mobilityFlag;
 	if (props.hardness == -1.0f || mobilityFlag == PushabilityFlag::Immovable ||
 	    (!_allowBreakable && mobilityFlag == PushabilityFlag::NoPush))
 		return false;
@@ -81,7 +81,7 @@ static bool CanExtend(WorldManager& _world, Int3 _pos) {
 
 			auto props = Blocks::blockProperties[blockId];
 			PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
-			                                                      : props.material.mobilityFlag;
+			                                                              : props.material.mobilityFlag;
 			if (mobilityFlag != PushabilityFlag::NoPush) {
 				if (pushCount >= MAX_PUSH_COUNT)
 					return false; // Too many blocks
@@ -133,7 +133,7 @@ static bool TryExtend(WorldManager& _world, Int3 _pos) {
 				return false;
 			auto props = Blocks::blockProperties[blockId];
 			PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
-			                                                      : props.material.mobilityFlag;
+			                                                              : props.material.mobilityFlag;
 			if (mobilityFlag != PushabilityFlag::NoPush) {
 				if (pushCount >= MAX_PUSH_COUNT)
 					return false; // Too many blocks
@@ -200,7 +200,7 @@ static void Retract(WorldManager& _world, Int3 _pos) {
 		}
 		auto props = Blocks::blockProperties[pullId];
 		PushabilityFlag mobilityFlag = props.pushMobilityOverride > 0 ? props.pushMobilityOverride
-		                                                      : props.material.mobilityFlag;
+		                                                              : props.material.mobilityFlag;
 		bool cantPull = wasMoving || pullId == BLOCK_AIR || !CanPushBlock(_world, pullId, pullPos, false) ||
 		                (mobilityFlag != PushabilityFlag::Normal && pullId != BLOCK_PISTON &&
 		                 pullId != BLOCK_PISTON_STICKY);
@@ -370,8 +370,8 @@ void RegisterPistonBehaviors() {
 	};
 
 	// Pistons
-	auto onPistonPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face,
-	                        BlockType _blockId, uint8_t /*_meta*/) -> bool {
+	auto onPistonPlace = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face, BlockType _blockId,
+	                        uint8_t /*_meta*/) -> bool {
 		uint8_t orientation;
 
 		if (std::abs(_placer.position.x - _pos.x) < 2.0 && std::abs(_placer.position.z - _pos.z) < 2.0) {

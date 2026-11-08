@@ -9,11 +9,11 @@
 
 #include "addon_impl.h"
 #include "addon.h"
-#include "server.h"
 #include "base_structs.h"
 #include "blocks.h"
-#include "version.h"
 #include "logger.h"
+#include "server.h"
+#include "version.h"
 
 static constexpr Addon* InternalGetAddon(const bp_api* _api) {
 	return static_cast<Addon*>(_api->internal);
@@ -159,12 +159,15 @@ void SetPlayerData(const bp_api* _api, bp_player* _player, void* _data) {
 
 bool ExecuteAddonCommand(const bp_api* _api, bp_player* _sender, const char* _command) noexcept {
 	try {
-		if (!_api || !_api->internal || !_command) return false;
+		if (!_api || !_api->internal || !_command)
+			return false;
 
 		Addon* addon = InternalGetAddon(_api);
-		if (!addon || !addon->server) return false;
+		if (!addon || !addon->server)
+			return false;
 		Server* server = addon->server;
-		if (!server->CanExecuteCommands()) return false;
+		if (!server->CanExecuteCommands())
+			return false;
 
 		std::shared_ptr<PlayerSession> sender;
 		if (_sender) {
@@ -174,13 +177,15 @@ bool ExecuteAddonCommand(const bp_api* _api, bp_player* _sender, const char* _co
 					break;
 				}
 			}
-			if (!sender) return false;
+			if (!sender)
+				return false;
 		}
 
 		return server->ExecuteCommand(_command, sender.get());
-	} catch (...) { return false; }
+	} catch (...) {
+		return false;
+	}
 }
-
 
 bp_api MakeAddonAPI() {
 	return bp_api{

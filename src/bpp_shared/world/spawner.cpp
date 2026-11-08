@@ -10,6 +10,7 @@
 #include "entities/entity_chicken.h"
 #include "entities/entity_cow.h"
 #include "entities/entity_creeper.h"
+#include "entities/entity_ghast.h"
 #include "entities/entity_mob.h"
 #include "entities/entity_pig.h"
 #include "entities/entity_sheep.h"
@@ -20,14 +21,14 @@
 #include "entities/entity_wolf.h"
 #include "entities/entity_zombie.h"
 #include "entities/entity_zombie_pig.h"
-#include "entities/entity_ghast.h"
 #include "world.h"
 
 EntitySpawner::EntitySpawner() {
 	// Water
 	SpawnCategory water;
 	water.spawnMaterial = Material::Water();
-	water.spawnListDefault = { { std::make_shared<SquidEntity>(), []() { return std::make_shared<SquidEntity>(); }, 10 } };
+	water.spawnListDefault = { { std::make_shared<SquidEntity>(), []() { return std::make_shared<SquidEntity>(); },
+		                         10 } };
 	water.spawnListForest = water.spawnListDefault;
 	water.cap = 5;
 	categories.push_back(water);
@@ -67,7 +68,8 @@ EntitySpawner::EntitySpawner() {
 		{ std::make_shared<SlimeEntity>(), []() { return std::make_shared<SlimeEntity>(); }, 10 },
 	};
 	hostile.spawnListNether = {
-		{ std::make_shared<GhastEntity>(), []() { return std::make_shared<GhastEntity>(); }, 10, /*maxSpawnedInChunk=*/1 },
+		{ std::make_shared<GhastEntity>(), []() { return std::make_shared<GhastEntity>(); }, 10,
+		  /*maxSpawnedInChunk=*/1 },
 		{ std::make_shared<ZombiePigEntity>(), []() { return std::make_shared<ZombiePigEntity>(); }, 10 },
 	};
 	hostile.cap = 70;
@@ -140,8 +142,8 @@ void EntitySpawner::TrySpawnEntities(WorldManager& _world, const std::vector<Cli
 				continue;
 
 			Int3 anchorPos = { cpos.x * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH),
-			                   _world.rand.NextInt(CHUNK_HEIGHT),
-			                   cpos.z * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH) };
+				               _world.rand.NextInt(CHUNK_HEIGHT),
+				               cpos.z * CHUNK_WIDTH + _world.rand.NextInt(CHUNK_WIDTH) };
 
 			// The anchor must not be a solid cube, and its material must be the category's spawn material
 			if (_world.IsBlockNormalCube(anchorPos) || _world.GetMaterial(anchorPos) != category.spawnMaterial)

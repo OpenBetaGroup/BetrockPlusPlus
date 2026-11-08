@@ -21,7 +21,7 @@ struct EntityMPPlayer : public PlayerEntity {
 	double simulatedFallDistance = 0.0;
 	Vec3 firstUpPosition = {};
 	Vec3 previousVelocity = {};
-	
+
 	EntityMPPlayer() : PlayerEntity() {
 		hasPhysics = false;
 	}

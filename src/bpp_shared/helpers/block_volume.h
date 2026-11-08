@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <cassert>
 #include "numeric_structs.h"
+#include <cassert>
 
 template <typename F>
 void ForEachBlockInVolume(Int3 _center, int _ext, F&& _fn) {

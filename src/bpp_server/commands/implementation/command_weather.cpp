@@ -58,9 +58,9 @@ std::string GetWeather(const strategos::CmdNode&, void* _userData) {
 
 	SendFeedback(ctx, std::format("§eWeather: {}", WeatherName(weather.GetWeatherState())));
 	SendFeedback(ctx, std::format("§eRain {} in {}", weather.isRaining ? "stops" : "starts",
-	                                   FormatTicks(weather.rainTimer)));
+	                              FormatTicks(weather.rainTimer)));
 	SendFeedback(ctx, std::format("§eThunder {} in {}", weather.isThundering ? "stops" : "starts",
-	                                   FormatTicks(weather.thunderTimer)));
+	                              FormatTicks(weather.thunderTimer)));
 	return "";
 }
 

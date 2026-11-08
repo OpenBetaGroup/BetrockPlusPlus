@@ -42,7 +42,8 @@ std::string BanPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 		return ERROR_PLAYER_NAME_REQUIRED;
 	if (!targetName->empty() && targetName->front() == '@') {
 		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Ban");
-		if (!targets) return targets.error();
+		if (!targets)
+			return targets.error();
 
 		for (const CommandTarget& target : *targets) {
 			auto& name = target.session->username;
@@ -53,7 +54,8 @@ std::string BanPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 			}
 
 			ctx.server->bannedUsernames.push_back(name);
-			if (!ctx.server->SaveBannedPlayers()) return "Failed to save banned players!";
+			if (!ctx.server->SaveBannedPlayers())
+				return "Failed to save banned players!";
 			ctx.server->DisconnectPlayer("You are banned from this server!", *target.session);
 			SendFeedback(ctx, std::format("{} has been banned!", name));
 		}
@@ -82,10 +84,10 @@ std::string PardonPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 		return ERROR_PLAYER_NAME_REQUIRED;
 	if (!targetName->empty() && targetName->front() == '@') {
 		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Pardon");
-		if (!targets) return targets.error();
+		if (!targets)
+			return targets.error();
 
 		for (const CommandTarget& target : *targets) {
-
 			const auto& name = target.session->username;
 			auto it = std::find(ctx.server->bannedUsernames.begin(), ctx.server->bannedUsernames.end(), name);
 			if (it == ctx.server->bannedUsernames.end()) {
@@ -94,7 +96,8 @@ std::string PardonPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 			}
 
 			ctx.server->bannedUsernames.erase(it);
-			if (!ctx.server->SaveBannedPlayers()) return "Failed to save banned players!";
+			if (!ctx.server->SaveBannedPlayers())
+				return "Failed to save banned players!";
 			SendFeedback(ctx, std::format("{} has been pardoned!", name));
 		}
 		return "";
@@ -174,13 +177,13 @@ std::string BanListIps(const strategos::CmdNode&, void* _userData) {
 } // namespace
 
 void RegisterBan(strategos::BrigadierContext& _dispatcher) {
-	_dispatcher.add_command(strategos::Node::literal("ban")
-	                            .describe("Bans a player from the server")
-	                            .op()
-	                            .executes(BanPlayer)
-	                            .then(strategos::Node::string("username")
-	                                      .suggests(strategos::SuggestionSource::Players)
-	                                      .executes(BanPlayer)));
+	_dispatcher.add_command(
+	    strategos::Node::literal("ban")
+	        .describe("Bans a player from the server")
+	        .op()
+	        .executes(BanPlayer)
+	        .then(
+	            strategos::Node::string("username").suggests(strategos::SuggestionSource::Players).executes(BanPlayer)));
 	_dispatcher.add_command(strategos::Node::literal("pardon")
 	                            .describe("Removes a player from the ban list")
 	                            .op()
@@ -188,12 +191,11 @@ void RegisterBan(strategos::BrigadierContext& _dispatcher) {
 	                            .then(strategos::Node::string("username")
 	                                      .suggests(strategos::SuggestionSource::Players)
 	                                      .executes(PardonPlayer)));
-	_dispatcher.add_command(strategos::Node::literal("ban-ip")
-	                            .describe("Bans an IP address, or a connected player's IP, from the server")
-	                            .op()
-	                            .then(strategos::Node::string("target")
-	                                      .suggests(strategos::SuggestionSource::Players)
-	                                      .executes(BanIp)));	/*
+	_dispatcher.add_command(
+	    strategos::Node::literal("ban-ip")
+	        .describe("Bans an IP address, or a connected player's IP, from the server")
+	        .op()
+	        .then(strategos::Node::string("target").suggests(strategos::SuggestionSource::Players).executes(BanIp))); /*
 	_dispatcher.add_command(strategos::Node::literal("pardon-ip")
 	                            .describe("Removes an IP address from the ban list")
 	                            .op()

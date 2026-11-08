@@ -26,36 +26,34 @@ using __uint128_t = std::_Unsigned128;
 
 template <typename T>
 inline T ByteswapAny(T _value) {
-    static_assert(std::is_trivially_copyable_v<T>,
-                  "byteswap_any: only trivially copyable types allowed");
+	static_assert(std::is_trivially_copyable_v<T>, "byteswap_any: only trivially copyable types allowed");
 
-    if constexpr (sizeof(T) == 1) {
-        return _value;
-    } else if constexpr (sizeof(T) == 2) {
-        auto tmp = std::bit_cast<uint16_t>(_value);
-        return std::bit_cast<T>(__builtin_bswap16(tmp));
-    } else if constexpr (sizeof(T) == 4) {
-        auto tmp = std::bit_cast<uint32_t>(_value);
-        return std::bit_cast<T>(__builtin_bswap32(tmp));
-    } else if constexpr (sizeof(T) == 8) {
-        auto tmp = std::bit_cast<uint64_t>(_value);
-        return std::bit_cast<T>(__builtin_bswap64(tmp));
-    } else {
-        static_assert(sizeof(T) == 1 || sizeof(T) == 2 ||
-                      sizeof(T) == 4 || sizeof(T) == 8,
-                      "byteswap_any: unsupported type size");
-    }
+	if constexpr (sizeof(T) == 1) {
+		return _value;
+	} else if constexpr (sizeof(T) == 2) {
+		auto tmp = std::bit_cast<uint16_t>(_value);
+		return std::bit_cast<T>(__builtin_bswap16(tmp));
+	} else if constexpr (sizeof(T) == 4) {
+		auto tmp = std::bit_cast<uint32_t>(_value);
+		return std::bit_cast<T>(__builtin_bswap32(tmp));
+	} else if constexpr (sizeof(T) == 8) {
+		auto tmp = std::bit_cast<uint64_t>(_value);
+		return std::bit_cast<T>(__builtin_bswap64(tmp));
+	} else {
+		static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8,
+		              "byteswap_any: unsupported type size");
+	}
 }
 
 template <typename T>
 constexpr T ToBigEndian(T _value) {
-    if constexpr (std::endian::native == std::endian::big)
-        return _value;
-    else
-        return ByteswapAny(_value);
+	if constexpr (std::endian::native == std::endian::big)
+		return _value;
+	else
+		return ByteswapAny(_value);
 }
 
 template <typename T>
 constexpr T FromBigEndian(T _value) {
-    return ToBigEndian(_value);
+	return ToBigEndian(_value);
 }

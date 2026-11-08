@@ -107,7 +107,7 @@ bool FeatureGenerator::GeneratePumpkins(WorldWrapper& _world, Java::Random& _ran
 		const int32_t x = _pos.x + _rand.NextInt(8) - _rand.NextInt(8);
 		const int32_t y = _pos.y + _rand.NextInt(4) - _rand.NextInt(4);
 		const int32_t z = _pos.z + _rand.NextInt(8) - _rand.NextInt(8);
-		const Int3 randPos = {x,y,z};
+		const Int3 randPos = { x, y, z };
 		if (y < 0 || y >= CHUNK_HEIGHT)
 			continue;
 		if (_world.GetBlockId(randPos) != BLOCK_AIR)

@@ -5,8 +5,8 @@
  *
 */
 #include "weather_system.h"
-#include <algorithm> 
 #include "gamerules.h"
+#include <algorithm>
 
 void WeatherSystem::Init(int32_t _rainTimer, int32_t _thunderTimer, bool _isRaining, bool _isThundering) {
 	rainTimer = _rainTimer;

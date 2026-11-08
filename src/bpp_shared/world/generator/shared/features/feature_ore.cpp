@@ -6,7 +6,8 @@
 
 #include "../feature_gen.h"
 
-bool FeatureGenerator::GenerateOre(BlockType _type, WorldWrapper& _world, Java::Random& _rand, Int3 _pos, int32_t _blobSize) {
+bool FeatureGenerator::GenerateOre(BlockType _type, WorldWrapper& _world, Java::Random& _rand, Int3 _pos,
+                                   int32_t _blobSize) {
 	float angle = _rand.NextFloat() * JavaMath::PI_FLOAT;
 	double xStart = double(float(_pos.x + 8) + MathHelper::Sin(angle) * float(_blobSize) / 8.0F);
 	double xEnd = double(float(_pos.x + 8) - MathHelper::Sin(angle) * float(_blobSize) / 8.0F);

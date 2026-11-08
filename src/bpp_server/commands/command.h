@@ -13,12 +13,11 @@
 #include "networking/packets.h"
 #include "strategos.h"
 #include "ucs2.h"
-#include <optional>
-#include <string_view>
-#include <string>
 #include <expected>
+#include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
-
 
 #define ERROR_OPERATOR "Only operators can use this command!"
 #define ERROR_PLAYER_REQUIRED "This command requires a player context. Use execute <target> <command>."
@@ -52,13 +51,13 @@ bool IsOperator(const CommandContext& _ctx);
 void SendCommandFeedback(PlayerSession* _recipient, const std::string& _message);
 void SendFeedback(const CommandContext& _ctx, const std::string& _message);
 ItemStack ParseItemStack(const std::string& _itemArg, std::optional<int> _count = std::nullopt);
-void SendChunkedList(const CommandContext& _ctx, const std::string& _header,
-                     const std::vector<std::string>& _entries);
+void SendChunkedList(const CommandContext& _ctx, const std::string& _header, const std::vector<std::string>& _entries);
 std::optional<std::string> ResolveCmdTargetName(const strategos::CmdNode& _cmd, const CommandContext& _ctx);
-std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(
-    std::string_view _target, const CommandContext& _ctx);
-std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(
-    std::string_view _target, const CommandContext& _ctx, std::string_view _command);
+std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::string_view _target,
+                                                                         const CommandContext& _ctx);
+std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(std::string_view _target,
+                                                                               const CommandContext& _ctx,
+                                                                               std::string_view _command);
 EntityType GetEntityTypeFromString(std::string_view _name);
 std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx, const strategos::Vec3& _position);
 

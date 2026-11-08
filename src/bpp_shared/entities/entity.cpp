@@ -6,9 +6,9 @@
  */
 #include "entity.h"
 #include "entity_item.h"
+#include "entity_lightning_bolt.h"
 #include "entity_manager.h"
 #include "entity_player.h"
-#include "entity_lightning_bolt.h"
 #include "packet_data.h"
 #include "world/world.h"
 #include <algorithm>
@@ -329,7 +329,9 @@ void Entity::Move(Vec3& _velocity) {
 	// (NaN != 0 and neither branch changes it), and a huge velocity makes the collision
 	// query sweep a gigantic area. No legitimate entity moves anywhere near 128 blocks/tick.
 	static constexpr double K_MAX_STEP = 128.0;
-	auto sanitize = [](double _v) { return std::isfinite(_v) ? std::clamp(_v, -K_MAX_STEP, K_MAX_STEP) : 0.0; };
+	auto sanitize = [](double _v) {
+		return std::isfinite(_v) ? std::clamp(_v, -K_MAX_STEP, K_MAX_STEP) : 0.0;
+	};
 	_velocity.x = sanitize(_velocity.x);
 	_velocity.y = sanitize(_velocity.y);
 	_velocity.z = sanitize(_velocity.z);

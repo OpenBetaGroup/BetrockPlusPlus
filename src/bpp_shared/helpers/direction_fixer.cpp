@@ -56,8 +56,8 @@ constexpr Cardinal::Value META_TO_DIRECTION_LUT[MAX_DIRECTION_BLOCK_TYPE][0b111]
 	{ Cardinal::Value::None, Cardinal::Value::None, Cardinal::Value::North, Cardinal::Value::South,
 	  Cardinal::Value::West, Cardinal::Value::East, Cardinal::Value::None },
 	// Pistons
-	{ Cardinal::Value::Down, Cardinal::Value::Up, Cardinal::Value::North, Cardinal::Value::South,
-	  Cardinal::Value::West, Cardinal::Value::East, Cardinal::Value::None },
+	{ Cardinal::Value::Down, Cardinal::Value::Up, Cardinal::Value::North, Cardinal::Value::South, Cardinal::Value::West,
+	  Cardinal::Value::East, Cardinal::Value::None },
 	// Beds
 	{ Cardinal::Value::South, Cardinal::Value::West, Cardinal::Value::North, Cardinal::Value::East,
 	  Cardinal::Value::None, Cardinal::Value::None, Cardinal::Value::None },

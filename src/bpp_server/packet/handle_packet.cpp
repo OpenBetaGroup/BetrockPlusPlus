@@ -17,6 +17,7 @@
 #include "blocks/block_properties.h"
 #include "direction_fixer.h"
 #include "entities/entity_item.h"
+#include "gamerules.h"
 #include "inventory/inventory_interaction.h"
 #include "inventory/item_stack.h"
 #include "items/item_properties.h"
@@ -30,10 +31,8 @@
 #include <cstring>
 #include <iomanip>
 #include <memory>
-#include "gamerules.h"
 
-bool IsValidActionInSpawnRadius(PlayerSession& _session, Server& _server, Int3 _pos, WorldManager& _world,
-                                int _margin) {
+bool IsValidActionInSpawnRadius(PlayerSession& _session, Server& _server, Int3 _pos, WorldManager& _world, int _margin) {
 	const int spawnProtection = Gamerule::Get<int32_t>(Gamerule::Id::SpawnProtectionRadius) + _margin;
 	if (spawnProtection <= 0)
 		return true;
@@ -82,8 +81,7 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 		return;
 	}
 	_session.recentChatMessageTimes[_session.nextChatMessageTime] = now;
-	_session.nextChatMessageTime =
-	    (_session.nextChatMessageTime + 1) % _session.recentChatMessageTimes.size();
+	_session.nextChatMessageTime = (_session.nextChatMessageTime + 1) % _session.recentChatMessageTimes.size();
 	if (_session.recentChatMessageCount < _session.recentChatMessageTimes.size())
 		++_session.recentChatMessageCount;
 
@@ -142,8 +140,7 @@ static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server)
 		return true;
 	}
 
-	if (std::abs(_to.x) > K_MAX_HORIZONTAL || std::abs(_to.z) > K_MAX_HORIZONTAL ||
-	    std::abs(_to.y) > K_MAX_VERTICAL) {
+	if (std::abs(_to.x) > K_MAX_HORIZONTAL || std::abs(_to.z) > K_MAX_HORIZONTAL || std::abs(_to.y) > K_MAX_VERTICAL) {
 		_server.DisconnectPlayer("Illegal position", _session);
 		return false;
 	}
@@ -556,7 +553,7 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 	_session.pendingWindowId = _pkt.windowId;
 	_session.pendingTransactionId = _pkt.transactionId;
 
-	auto SendSuccess = [&]() {
+	auto sendSuccess = [&]() {
 		Packet::ContainerTransaction ct;
 		ct.accepted = true;
 		ct.transactionId = _session.pendingTransactionId;
@@ -564,7 +561,7 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 		ct.Serialize(_session.stream);
 	};
 
-	auto SendFailAndLock = [&]() {
+	auto sendFailAndLock = [&]() {
 		Packet::ContainerTransaction ct;
 		ct.accepted = false;
 		ct.transactionId = _session.pendingTransactionId;
@@ -598,18 +595,18 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 				interaction->carried = ItemStack{ Items::Id::INVALID };
 			}
 		}
-		SendSuccess();
+		sendSuccess();
 		return;
 	}
 
-	auto HandleInventory = [&](InventoryInteraction* _interaction) {
+	auto handleInventory = [&](InventoryInteraction* _interaction) {
 		ItemStack empty{ Items::Id::INVALID };
 		if (!_interaction || !_interaction->inventory)
 			return;
 		auto expected = _interaction->inventory->GetStackInSlot(_pkt.slotId);
 		ItemStack& slotItem = expected ? *expected : empty;
 		if (slotItem.id != _pkt.item.id || slotItem.data != _pkt.item.data || slotItem.count != _pkt.item.count) {
-			SendFailAndLock();
+			sendFailAndLock();
 
 			// Reset the held cursor
 			PacketUtilities::SendSlot(_session, -1, -1, &_interaction->carried);
@@ -621,26 +618,26 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 		if (_pkt.shift) {
 			_interaction->OnShiftClick(_pkt.slotId);
 			_interaction->InitSnapshot();
-			SendSuccess();
+			sendSuccess();
 			return;
 		}
 		if (_pkt.rightClick) {
 			_interaction->OnRightClick(_pkt.slotId);
 			_interaction->InitSnapshot();
-			SendSuccess();
+			sendSuccess();
 			return;
 		}
 		_interaction->OnLeftClick(_pkt.slotId);
 		_interaction->InitSnapshot();
-		SendSuccess();
+		sendSuccess();
 		return;
 	};
 
 	if (_pkt.windowId == 0) {
-		HandleInventory(&_session.inventoryInteraction);
+		handleInventory(&_session.inventoryInteraction);
 		return;
 	}
-	HandleInventory(_session.activeInteraction.get());
+	handleInventory(_session.activeInteraction.get());
 }
 
 void CloseContainer(Packet::CloseContainer& _pkt, PlayerSession& _session) {
@@ -750,8 +747,8 @@ void PlayerAction(Packet::PlayerAction& _pkt, PlayerSession& _session, EntityTra
 		entity->UpdateMetadata(entity->flags.isSneaking, false);
 		break;
 	case PacketData::PlayerAction::STOP_SLEEPING: {
-		Logger::Debug << "STOP_SLEEPING: waking up " << _session.username << " from position "
-		                     << entity->position << " (isSleeping=" << entity->isSleeping << ")\n";
+		Logger::Debug << "STOP_SLEEPING: waking up " << _session.username << " from position " << entity->position
+		              << " (isSleeping=" << entity->isSleeping << ")\n";
 		entity->WakeUp();
 		break;
 	}
@@ -764,11 +761,11 @@ void PlayerAction(Packet::PlayerAction& _pkt, PlayerSession& _session, EntityTra
 void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server) {
 	Logger::Info << "Respawned Player " << _session.username << "!\n";
 
-	constexpr Dimension targetDim = Dimension::Overworld;
-	const bool changingDim = _session.dimension != targetDim;
+	constexpr Dimension TARGET_DIM = Dimension::Overworld;
+	const bool changingDim = _session.dimension != TARGET_DIM;
 
 	Packet::Respawn pkt;
-	pkt.dimension = targetDim;
+	pkt.dimension = TARGET_DIM;
 	pkt.Serialize(_session.stream);
 
 	// Unregister the dead entity from the world it died in
@@ -782,9 +779,9 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	_session.entity = newEntity;
 
 	if (changingDim)
-		_server.ResetDimensionState(_session, targetDim);
+		_server.ResetDimensionState(_session, TARGET_DIM);
 
-	auto world = _server.GetWorldForDimension(targetDim);
+	auto world = _server.GetWorldForDimension(TARGET_DIM);
 	Int3 spawn = {};
 	bool bedPositionFindFailed = true;
 	if (_session.hasBedSpawn) {

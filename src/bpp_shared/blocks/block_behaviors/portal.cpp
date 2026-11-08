@@ -21,11 +21,11 @@
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -129,9 +129,9 @@ static void GetConnectedPortals(WorldManager& _world, Int3 _pos, std::unordered_
 		return; // already visited
 
 	auto neighbors = xAligned ? std::array<Cardinal::Value, 4>{ Cardinal::Value::East, Cardinal::Value::West,
-		                                                         Cardinal::Value::Up, Cardinal::Value::Down }
+		                                                        Cardinal::Value::Up, Cardinal::Value::Down }
 	                          : std::array<Cardinal::Value, 4>{ Cardinal::Value::Up, Cardinal::Value::Down,
-		                                                         Cardinal::Value::North, Cardinal::Value::South };
+		                                                        Cardinal::Value::North, Cardinal::Value::South };
 
 	for (auto offset : neighbors)
 		GetConnectedPortals(_world, _pos.WithOffset(offset), _portals);
@@ -160,7 +160,7 @@ void RegisterPortalBehaviors() {
 	// Remove the existing portals that depend on this obsidian
 	blockBehaviors[BLOCK_OBSIDIAN].onBlockRemoval = [](WorldManager& _world, Int3 _pos) -> void {
 		Cardinal::Value neighbors[6] = { Cardinal::Value::East,  Cardinal::Value::West, Cardinal::Value::North,
-			                              Cardinal::Value::South, Cardinal::Value::Up,   Cardinal::Value::Down };
+			                             Cardinal::Value::South, Cardinal::Value::Up,   Cardinal::Value::Down };
 		for (auto offset : neighbors) {
 			auto checkPos = _pos.WithOffset(offset);
 			auto checkBlock = _world.GetBlockId(checkPos);
@@ -180,7 +180,7 @@ void RegisterPortalBehaviors() {
 
 	blockBehaviors[BLOCK_NETHER_PORTAL].onBlockRemoval = [](WorldManager& _world, Int3 _pos) -> void {
 		Cardinal::Value neighbors[6] = { Cardinal::Value::East,  Cardinal::Value::West, Cardinal::Value::North,
-			                              Cardinal::Value::South, Cardinal::Value::Up,   Cardinal::Value::Down };
+			                             Cardinal::Value::South, Cardinal::Value::Up,   Cardinal::Value::Down };
 		for (auto offset : neighbors) {
 			auto checkPos = _pos.WithOffset(offset);
 			auto checkBlock = _world.GetBlockId(checkPos);

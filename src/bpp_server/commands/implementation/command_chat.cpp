@@ -50,7 +50,7 @@ void RegisterChat(strategos::BrigadierContext& _dispatcher) {
 	                            .then(strategos::Node::greedy_string("message").executes(SayMessage)));
 	_dispatcher.add_command(strategos::Node::literal("tell")
 	                            .describe("Sends a private message to one player")
-								// TODO: Should accept a list of players, maybe?
+	                            // TODO: Should accept a list of players, maybe?
 	                            .then(strategos::Node::string("username")
-	                            .then(strategos::Node::greedy_string("message").executes(TellMessage))));
+	                                      .then(strategos::Node::greedy_string("message").executes(TellMessage))));
 }

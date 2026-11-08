@@ -221,8 +221,8 @@ void NetworkStream::ReadEntityMetadata(std::vector<PacketData::EntityMetadata::D
 		default:
 			// We don't know how many bytes this entry occupies, so the stream is
 			// desynchronised. Drop the client instead of parsing garbage.
-			Logger::Warning << "NetworkStream::ReadEntityMetadata: Unknown metadata type "
-			                << static_cast<int>(type) << "\n";
+			Logger::Warning << "NetworkStream::ReadEntityMetadata: Unknown metadata type " << static_cast<int>(type)
+			                << "\n";
 			connected = false;
 			return;
 		}
@@ -267,7 +267,7 @@ void NetworkStream::WriteEntityMetadata(const std::vector<PacketData::EntityMeta
 			break;
 		default:
 			Logger::Warning << "NetworkStream::WriteEntityMetadata: Unknown metadata type "
-			                    << static_cast<int>(entry.type);
+			                << static_cast<int>(entry.type);
 			break;
 		}
 	}

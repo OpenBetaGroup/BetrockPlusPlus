@@ -18,7 +18,7 @@ void TileEntityManager::TickTileEntities(WorldManager& _world) {
 	std::erase_if(tickableTileEntities, [](const std::weak_ptr<TileEntity>& _wp) { return _wp.expired(); });
 }
 
-// Provided a tile entity nbt compound, will return a shared ptr of 
+// Provided a tile entity nbt compound, will return a shared ptr of
 // The provided tile entity's id with the data deserialized
 std::shared_ptr<TileEntity> TileEntityHelper::CreateTileEntityShared(const Tag& _nbt) {
 	std::shared_ptr<TileEntity> returnedTE;

@@ -6,7 +6,9 @@
 */
 
 #pragma once
+#include "helpers/endian_convert.h"
 #include "logger.h"
+#include "nbt_tag.h"
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -15,8 +17,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "helpers/endian_convert.h"
-#include "nbt_tag.h"
 
 struct NBTwriter {
 	size_t pos;
@@ -269,12 +269,24 @@ struct NBTParser {
 		return FromBigEndian(v);
 	}
 
-	inline int8_t ReadI8() { return ReadBE<int8_t>(); }
-	inline int16_t ReadI16() { return ReadBE<int16_t>(); }
-	inline int32_t ReadI32() { return ReadBE<int32_t>(); }
-	inline int64_t ReadI64() { return ReadBE<int64_t>(); }
-	inline float ReadF32() { return ReadBE<float>(); }
-	inline double ReadF64() { return ReadBE<double>(); }
+	inline int8_t ReadI8() {
+		return ReadBE<int8_t>();
+	}
+	inline int16_t ReadI16() {
+		return ReadBE<int16_t>();
+	}
+	inline int32_t ReadI32() {
+		return ReadBE<int32_t>();
+	}
+	inline int64_t ReadI64() {
+		return ReadBE<int64_t>();
+	}
+	inline float ReadF32() {
+		return ReadBE<float>();
+	}
+	inline double ReadF64() {
+		return ReadBE<double>();
+	}
 
 	inline std::string ReadString() {
 		uint16_t len = uint16_t(ReadI16());

@@ -26,7 +26,7 @@ struct ChunkSender {
 	struct PendingChunk {
 		Int32_2 pos;
 		std::shared_future<Packet::ChunkData> data; // shared!! async compression result
-		std::weak_ptr<Chunk> chunkRef;          // world may unload; lock only when flushing
+		std::weak_ptr<Chunk> chunkRef;              // world may unload; lock only when flushing
 	};
 
 	// One result slot per in-flight sub-region block update (>= 10 changes).
@@ -121,12 +121,13 @@ struct ChunkSender {
 			auto [packet, inserted] = tickPackets.try_emplace(chunkRef.get());
 			if (inserted) {
 				packet->second = pool.submit_task([chunkRef]() {
-					Packet::ChunkData data;
-					data.pos.x = chunkRef->cpos.x * CHUNK_WIDTH;
-					data.pos.z = chunkRef->cpos.z * CHUNK_WIDTH;
-					data.compressedData = ChunkSerializer::Serialize(*chunkRef);
-					return data;
-				}).share();
+					                     Packet::ChunkData data;
+					                     data.pos.x = chunkRef->cpos.x * CHUNK_WIDTH;
+					                     data.pos.z = chunkRef->cpos.z * CHUNK_WIDTH;
+					                     data.compressedData = ChunkSerializer::Serialize(*chunkRef);
+					                     return data;
+				                     })
+				                     .share();
 			}
 			pc.data = packet->second;
 			queue.push_back(std::move(pc));

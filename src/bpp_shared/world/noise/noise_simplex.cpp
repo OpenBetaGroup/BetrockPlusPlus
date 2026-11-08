@@ -25,7 +25,8 @@ void NoiseSimplex::InitPermTable(Java::Random& _rand) {
 		permMod12[i] = permutations[i] % 12;
 }
 
-void NoiseSimplex::GenerateNoise(std::span<double> _noiseField, Vec2 _offset, Int32_2 _size, Vec2 _scale, double _amplitude) {
+void NoiseSimplex::GenerateNoise(std::span<double> _noiseField, Vec2 _offset, Int32_2 _size, Vec2 _scale,
+                                 double _amplitude) {
 	const int32_t sizeX = _size.x;
 	const int32_t sizeY = _size.y;
 
@@ -34,10 +35,10 @@ void NoiseSimplex::GenerateNoise(std::span<double> _noiseField, Vec2 _offset, In
 	if (sizeY > CHUNK_WIDTH) [[unlikely]]
 		return;
 
-	const gen_float scaleX    = _scale.x;
-	const gen_float scaleY    = _scale.y;
-	const gen_float offsetX   = _offset.x;
-	const gen_float offsetY   = _offset.y;
+	const gen_float scaleX = _scale.x;
+	const gen_float scaleY = _scale.y;
+	const gen_float offsetX = _offset.x;
+	const gen_float offsetY = _offset.y;
 	const gen_float amplitude = gen_float(_amplitude * 70.0); // 70 normalizes simplex output
 
 	double* const output = _noiseField.data();
@@ -48,7 +49,7 @@ void NoiseSimplex::GenerateNoise(std::span<double> _noiseField, Vec2 _offset, In
 	for (int32_t y = 0; y < sizeY; ++y)
 		yPositions[y] = (offsetY + gen_float(y)) * scaleY + coordinate.y;
 
-	const uint8_t* const perm  = permutations;
+	const uint8_t* const perm = permutations;
 	const uint8_t* const mod12 = permMod12;
 
 	for (int32_t x = 0; x < sizeX; ++x) {
@@ -67,7 +68,7 @@ void NoiseSimplex::GenerateNoise(std::span<double> _noiseField, Vec2 _offset, In
 
 			// 2. Unskew the cell origin back to input space, and get the
 			//    sample's offset from it (offset to the first corner).
-			const gen_float unskew  = gen_float(cellX + cellY) * UNSKEWING;
+			const gen_float unskew = gen_float(cellX + cellY) * UNSKEWING;
 			const gen_float originX = gen_float(cellX) - unskew;
 			const gen_float originY = gen_float(cellY) - unskew;
 			const gen_float dx0 = xPos - originX;
@@ -88,14 +89,13 @@ void NoiseSimplex::GenerateNoise(std::span<double> _noiseField, Vec2 _offset, In
 			// 5. Hash each corner to a gradient index.
 			const int32_t hashX = cellX & 255;
 			const int32_t hashY = cellY & 255;
-			const int32_t grad0 = mod12[hashX                + perm[hashY]];
-			const int32_t grad1 = mod12[hashX + stepX        + perm[hashY + stepY]];
-			const int32_t grad2 = mod12[hashX + 1            + perm[hashY + 1]];
+			const int32_t grad0 = mod12[hashX + perm[hashY]];
+			const int32_t grad1 = mod12[hashX + stepX + perm[hashY + stepY]];
+			const int32_t grad2 = mod12[hashX + 1 + perm[hashY + 1]];
 
 			// 6. Sum the three corner contributions.
-			const gen_float noise = Contribution(grad0, dx0, dy0)
-								  + Contribution(grad1, dx1, dy1)
-								  + Contribution(grad2, dx2, dy2);
+			const gen_float noise = Contribution(grad0, dx0, dy0) + Contribution(grad1, dx1, dy1) +
+			                        Contribution(grad2, dx2, dy2);
 
 			column[y] += double(noise * amplitude);
 		}

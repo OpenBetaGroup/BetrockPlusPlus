@@ -7,9 +7,9 @@
 #include "region_manager.h"
 #include "helpers/deflate_pool.h"
 #include "world/world.h" // Full WorldManager definition needed here for world->elapsed_ticks etc.
+#include <csignal>
 #include <filesystem>
 #include <fstream>
-#include <csignal>
 #if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__)
 #include <signal.h>
 #include <unistd.h>
@@ -258,14 +258,14 @@ void RegionManager::PumpPipeline() {
 				FatalIo("Region failed to load!", chunk->cpos);
 			}
 			continue;
-		} 
+		}
 		auto currentTime = 0;
 		if (world)
 			currentTime = world->tickScheduler.currentTick;
 		iopool.detach_task([chunk, region, currentTime, entitySnapshot, this]() {
 			try {
 				if (ioFatal.load())
-					return;                                                // Don't write anything after a failure
+					return; // Don't write anything after a failure
 				if (!region->AddChunk(chunk, currentTime, entitySnapshot))
 					FatalIo("AddChunk failed", chunk->cpos);
 			} catch (const std::exception& e) {

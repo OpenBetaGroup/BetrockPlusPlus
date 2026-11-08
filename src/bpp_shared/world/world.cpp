@@ -10,10 +10,10 @@
 #include "world.h"
 #include "blocks.h"
 #include "blocks/block_behaviors.h"
-#include "entities/entity_lightning_bolt.h"
 #include "chunk.h"
 #include "direction.h"
 #include "entities/entity_item.h"
+#include "entities/entity_lightning_bolt.h"
 #include "generator/nether/chunk_gen.h"
 #include "generator/overworld/chunk_gen.h"
 #include "generator/shared/cave_gen.h"
@@ -57,7 +57,7 @@ void WorldManager::EnsureClimate(Chunk& _chunk) {
 	double* weird = humi + CHUNK_AREA;
 	tlBiomeGen->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
 	                             std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
-	                            Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
+	                             Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
 	for (int i = 0; i < CHUNK_AREA; ++i) {
 		_chunk.temperature[i] = float(temp[i]);
 		_chunk.humidity[i] = float(humi[i]);
@@ -392,7 +392,7 @@ void WorldManager::Tick(const std::vector<ClientPosition>& _players, bool _advan
 	auto loadingStart = _profiler ? Clock::now() : Clock::time_point{};
 	DrainGenQueue();  // process generation results first
 	DrainLoadQueue(); // integrate finished loads
-	
+
 	if (_profiler)
 		_profiler->Record(TickTask::ChunkLoading, Clock::now() - loadingStart);
 	if (_advanceSimulation) {
@@ -1214,11 +1214,9 @@ void WorldManager::NotifyRegionChanged(Chunk& _chunk, Int3 _localMin, Int3 _loca
 }
 
 void WorldManager::FillVolume(Int3 _posA, Int3 _posB, BlockType _type, uint8_t _meta) {
-	const Int3 mn{ std::min<int>(_posA.x, _posB.x),
-		           std::max<int>(std::min<int>(_posA.y, _posB.y), 0),
+	const Int3 mn{ std::min<int>(_posA.x, _posB.x), std::max<int>(std::min<int>(_posA.y, _posB.y), 0),
 		           std::min<int>(_posA.z, _posB.z) };
-	const Int3 mx{ std::max<int>(_posA.x, _posB.x),
-		           std::min<int>(std::max<int>(_posA.y, _posB.y), CHUNK_HEIGHT - 1),
+	const Int3 mx{ std::max<int>(_posA.x, _posB.x), std::min<int>(std::max<int>(_posA.y, _posB.y), CHUNK_HEIGHT - 1),
 		           std::max<int>(_posA.z, _posB.z) };
 	if (mn.y > mx.y)
 		return;
@@ -1370,7 +1368,7 @@ void WorldManager::InitSpawn() {
 void WorldManager::PropagateChunkLightBorders(Int32_2 _cpos) {
 	// Iterate through our chunk borders
 	const Cardinal::Value dirs[4] = { Cardinal::Value::West, Cardinal::Value::East, Cardinal::Value::North,
-		                               Cardinal::Value::South };
+		                              Cardinal::Value::South };
 	const Int32_2 bpos = _cpos * CHUNK_WIDTH;
 	for (auto dir : dirs) {
 		Chunk* neighborChunk = GetChunkRaw(_cpos.WithOffset(dir));
@@ -1450,7 +1448,7 @@ void WorldManager::NotifyNeighborsOfUpdate(Int3 _globalPos, BlockType _blockId) 
 	}
 	// Update our six neighbors.
 	const Cardinal::Value dirs[6] = { Cardinal::Value::West, Cardinal::Value::East,  Cardinal::Value::Down,
-		                               Cardinal::Value::Up,   Cardinal::Value::North, Cardinal::Value::South };
+		                              Cardinal::Value::Up,   Cardinal::Value::North, Cardinal::Value::South };
 
 	// Notify neighbors
 	for (auto dir : dirs) {

@@ -5,8 +5,8 @@
  *
 */
 #pragma once
-#include "helpers/file_handle.h"
 #include "helpers/deflate_pool.h"
+#include "helpers/file_handle.h"
 #include "java_math.h"
 #include "nbt/nbt.h"
 #include "platform/fs_compat.h"
@@ -153,7 +153,7 @@ struct SaveManager {
 		necessaryFolders += std::filesystem::create_directories(saveDirectory + "/data");
 		if (necessaryFolders)
 			Logger::Warning << "Failed to load " << necessaryFolders
-			                    << " necessary folder(s) for level " + _pSaveName + ".\n";
+			                << " necessary folder(s) for level " + _pSaveName + ".\n";
 
 		return LevelInitFailureReason::SUCCESS;
 	}

@@ -43,7 +43,7 @@ public:
 		// Cache our header
 		ReadHeaderFromFile();
 	}
-	
+
 	enum class ReadStatus {
 		Ok,
 		Missing,
@@ -76,6 +76,7 @@ public:
 			regionHeader[i].offset = entry >> 8;            // top 3 bytes
 		}
 	}
+
 private:
 	//std::array<std::shared_ptr<Chunk>, REGION_AREA> chunks;
 	std::string GetPath();

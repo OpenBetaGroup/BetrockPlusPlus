@@ -13,8 +13,8 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <fstream>
 #include <sstream>
@@ -58,7 +58,6 @@
 #ifdef BUILD_CLIENT
 #include "bpp_client/client.h"
 #endif
-
 
 // Globals
 std::atomic<bool> shutdownRequested{ false };
@@ -148,7 +147,7 @@ static void InitShutdownHandling() {
 
 // Crash logging
 #ifdef CRASH_LOGGING
-static void InitCrashHandler(const std::string& platformString) {
+static void InitCrashHandler(const std::string& _platformString) {
 	CrashCatch::Config config{ .dumpFolder = "./",
 		                       .enableTextLog = true,
 		                       .autoTimestamp = true,
@@ -158,20 +157,20 @@ static void InitCrashHandler(const std::string& platformString) {
 		                       .showCrashDialog = true,
 #endif
 		                       .appVersion = std::string(PROJECT_VERSION_FULL_STRING),
-		                       .buildConfig = platformString };
+		                       .buildConfig = _platformString };
 
-	config.onCrash = [](const CrashCatch::CrashContext& ctx) {
+	config.onCrash = [](const CrashCatch::CrashContext& _ctx) {
 		Logger::Error << "========== CRASH ==========\n";
-		Logger::Error << "Signal/Code: " << ctx.signalOrCode << "\n";
+		Logger::Error << "Signal/Code: " << _ctx.signalOrCode << "\n";
 
 		// Pull the report into memory so it can be both printed and handed to addons.
 		std::string report;
 		std::string reportPath;
-		if (!ctx.logFilePath.empty()) {
-			reportPath = ctx.logFilePath.string();
+		if (!_ctx.logFilePath.empty()) {
+			reportPath = _ctx.logFilePath.string();
 			Logger::Error << "Crash report: " << reportPath << "\n";
 
-			std::ifstream file(ctx.logFilePath);
+			std::ifstream file(_ctx.logFilePath);
 			if (file) {
 				std::ostringstream buffer;
 				buffer << file.rdbuf();
@@ -248,7 +247,7 @@ int main(int /*argc*/, char** /*argv*/) {
 	// Args args{ { argc, argv } };
 	MathHelper::InitSinTable();
 
-	// Everything is ready to go!	
+	// Everything is ready to go!
 	Logger::Info << "Running on " << platformString << "\n";
 #ifdef BUILD_SERVER
 	RunServer();

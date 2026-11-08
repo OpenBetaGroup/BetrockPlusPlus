@@ -8,6 +8,7 @@
 #pragma once
 #include "base_types.h"
 #include "blocks/block_properties.h"
+#include "damage_types.h"
 #include "dimensions.h"
 #include "entities.h"
 #include "helpers/aabb.h"
@@ -17,7 +18,6 @@
 #include "nbt/nbt.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
-#include "damage_types.h"
 #include <optional>
 #include <vector>
 

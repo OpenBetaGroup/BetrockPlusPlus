@@ -21,11 +21,11 @@ namespace Logger {
 	extern LogStream Error;
 	extern LogStream Debug;
 // clang-format on
-	void Init();
-	void Close();
-	void Flush();
+void Init();
+void Close();
+void Flush();
 
-	void Log(std::string _message, LogLevel _level = LOG_MESSAGE);
-	void LogStyled(const std::string& _message);
-	void SetTerminalSink(std::function<void(const char*, int)> _sink);
-};
+void Log(std::string _message, LogLevel _level = LOG_MESSAGE);
+void LogStyled(const std::string& _message);
+void SetTerminalSink(std::function<void(const char*, int)> _sink);
+}; // namespace Logger

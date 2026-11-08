@@ -8,8 +8,8 @@
 
 #pragma once
 #include "chunk.h"
-#include "subchunk.h"
 #include "helpers/deflate_pool.h"
+#include "subchunk.h"
 #include <vector>
 
 namespace ChunkSerializer {
@@ -66,10 +66,8 @@ inline std::vector<uint8_t> Serialize(const Chunk& _chunk, int _xmin = 0, int _x
 						packNibble(metaData[i >> 1], metaLayer->Get(idx), i & 1);
 					else if (metaFill != 0)
 						packNibble(metaData[i >> 1], metaFill, i & 1);
-					packNibble(blockLight[i >> 1],
-					           blockLightLayer ? blockLightLayer->Get(idx) : blockLightFill, i & 1);
-					packNibble(skyLight[i >> 1],
-					           skyLightLayer ? skyLightLayer->Get(idx) : skyLightFill, i & 1);
+					packNibble(blockLight[i >> 1], blockLightLayer ? blockLightLayer->Get(idx) : blockLightFill, i & 1);
+					packNibble(skyLight[i >> 1], skyLightLayer ? skyLightLayer->Get(idx) : skyLightFill, i & 1);
 				}
 			}
 		}

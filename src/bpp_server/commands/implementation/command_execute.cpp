@@ -11,19 +11,23 @@
 
 namespace {
 
-std::string ExecuteAsTarget(const strategos::CmdNode& command, void* userData) {
-	auto& ctx = CmdCtx(userData);
-	if (ctx.executionDepth >= 16) return "Maximum execute depth exceeded!";
+std::string ExecuteAsTarget(const strategos::CmdNode& _command, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
+	if (ctx.executionDepth >= 16)
+		return "Maximum execute depth exceeded!";
 
-	auto targetArg = command.get_arg<std::string>("target");
-	auto nestedCommand = command.get_arg<std::string>("command");
-	if (!targetArg || !nestedCommand) return ERROR_REASON_PARAMETERS;
+	auto targetArg = _command.get_arg<std::string>("target");
+	auto nestedCommand = _command.get_arg<std::string>("command");
+	if (!targetArg || !nestedCommand)
+		return ERROR_REASON_PARAMETERS;
 
 	auto targets = ResolveCmdTargets(*targetArg, ctx);
-	if (!targets) return targets.error();
+	if (!targets)
+		return targets.error();
 	for (const CommandTarget& target : *targets) {
 		Entity* entity = target.entity;
-		if (!entity || entity->isDead) continue;
+		if (!entity || entity->isDead)
+			continue;
 		CommandContext nested = ctx;
 		nested.executionEntity = entity;
 		nested.session = target.session;
@@ -37,13 +41,13 @@ std::string ExecuteAsTarget(const strategos::CmdNode& command, void* userData) {
 
 } // namespace
 
-void RegisterExecute(strategos::BrigadierContext& dispatcher) {
-	dispatcher.add_command(strategos::Node::literal("execute")
-	                           .describe("Runs a command as another target")
-	                           .op()
-	                           .then(strategos::Node::string("target")
-	                                     .suggests(strategos::SuggestionSource::Players)
-	                                     .then(strategos::Node::greedy_string("command")
-	                                               .suggests(strategos::SuggestionSource::NestedCommand)
-	                                               .executes(ExecuteAsTarget))));
+void RegisterExecute(strategos::BrigadierContext& _dispatcher) {
+	_dispatcher.add_command(strategos::Node::literal("execute")
+	                            .describe("Runs a command as another target")
+	                            .op()
+	                            .then(strategos::Node::string("target")
+	                                      .suggests(strategos::SuggestionSource::Players)
+	                                      .then(strategos::Node::greedy_string("command")
+	                                                .suggests(strategos::SuggestionSource::NestedCommand)
+	                                                .executes(ExecuteAsTarget))));
 }

@@ -7,8 +7,9 @@
 #include "../feature_gen.h"
 
 //  Attempts to generate a singular liquid source block
-bool FeatureGenerator::GenerateLiquid(BlockType _type, WorldWrapper& _world, Java::Random& /*_rand*/, Int3 _pos, bool _nether) {
-    const BlockType solidBlock = _nether ? BLOCK_NETHERRACK : BLOCK_STONE;
+bool FeatureGenerator::GenerateLiquid(BlockType _type, WorldWrapper& _world, Java::Random& /*_rand*/, Int3 _pos,
+                                      bool _nether) {
+	const BlockType solidBlock = _nether ? BLOCK_NETHERRACK : BLOCK_STONE;
 	if (_world.GetBlockId({ _pos.x, _pos.y + 1, _pos.z }) != solidBlock)
 		return false;
 	if (_world.GetBlockId({ _pos.x, _pos.y - 1, _pos.z }) != solidBlock)

@@ -93,7 +93,7 @@ public:
 	void AddVanillaRecipes();
 
 	[[nodiscard]] const std::pair<const std::array<ItemKey, 9>, ItemStack> MatchGrid(std::span<const ItemStack> _grid,
-	                                                                                  UInt8_2 _size) const;
+	                                                                                 UInt8_2 _size) const;
 
 private:
 	static ShapedRecipeKey MakeShapedKey(std::span<const ItemKey> _grid, UInt8_2 _size);

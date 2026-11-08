@@ -11,17 +11,17 @@
 #include "entities.h"
 #include "entities/entity_arrow.h"
 #include "entities/entity_egg.h"
+#include "entities/entity_fireball.h"
 #include "entities/entity_fishing_bobber.h"
 #include "entities/entity_item.h"
 #include "entities/entity_minecart.h"
 #include "entities/entity_mobile.h"
 #include "entities/entity_painting.h"
 #include "entities/entity_snowball.h"
-#include "entities/entity_fireball.h"
 #include "logger.h"
+#include "networking/packets.h"
 #include "packet_data.h"
 #include <algorithm>
-#include "networking/packets.h"
 #include <cstdint>
 
 double DistanceBetweenPlayerAndEntity(Entity* _entity, Entity* _player) {
@@ -30,7 +30,8 @@ double DistanceBetweenPlayerAndEntity(Entity* _entity, Entity* _player) {
 	return dx * dx + dz * dz;
 }
 
-void EntityTracker::SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType, std::shared_ptr<PlayerSession> _session) {
+void EntityTracker::SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType,
+                             std::shared_ptr<PlayerSession> _session) {
 	if (!_entityEntry.entity)
 		return;
 	Packet::SpawnMob pkt;
@@ -38,7 +39,7 @@ void EntityTracker::SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobTy
 	pkt.mobType = _networkEntityType;
 	pkt.qPosition = QuantizePosition(_entityEntry.entity->position);
 	pkt.qRotation = { int8_t(QuantizeRotation(_entityEntry.entity->rotationYaw)),
-						int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
+		              int8_t(QuantizeRotation(_entityEntry.entity->rotationPitch)) };
 	_entityEntry.entity->EncodeMetadata(pkt.metadata);
 	pkt.Serialize(_session->stream);
 }
@@ -496,10 +497,12 @@ void EntityTracker::DespawnEntityForViewers(EntityId _entityId, TrackedEntry& _e
 void EntityTracker::SendPacketToPlayersInTrackedEntry(Packet::BasePacket& _pkt, TrackedEntry& _trackedEntry) {
 	for (EntityId playerId : _trackedEntry.visibleTo) {
 		auto playerIt = trackedEntities.find(playerId);
-		if (playerIt == trackedEntities.end()) continue;
+		if (playerIt == trackedEntities.end())
+			continue;
 
 		auto* player = static_cast<EntityMPPlayer*>(playerIt->second.entity);
-		if (!player || !player->session) continue;
+		if (!player || !player->session)
+			continue;
 		_pkt.Serialize(player->session->stream);
 	}
 }

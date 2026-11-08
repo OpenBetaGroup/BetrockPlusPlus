@@ -8,10 +8,10 @@
 #pragma once
 
 #include "../numeric_structs.h"
+#include "blocks/materials.h"
 #include <cstdint>
 #include <map>
 #include <vector>
-#include "blocks/materials.h"
 
 namespace Map {
 enum class Icon : uint8_t {
@@ -40,7 +40,7 @@ struct Item {
 	// TODO: Could THEORETICALLY be backed into a 5-bit array (max of 27 materials)
 	std::array<MaterialType, MAP_ITEM_AREA> data;
 	// Map origin (where it was crafted)
-	Int32_2 origin = {0,0};
+	Int32_2 origin = { 0, 0 };
 	// Map scale (max 0,1,2,3,4, aka 1,2,4,8,16)
 	int8_t scale : 2;
 	// If anything on the map has changed and updates need to be sent out

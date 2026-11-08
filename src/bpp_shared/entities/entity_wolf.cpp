@@ -73,7 +73,8 @@ bool WolfEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type
 			}
 
 			if (isMobileEntity) {
-				auto searchCollider = AABB{position.x, position.y, position.z, position.x + 1.0, position.y + 1.0, position.z + 1.0};
+				auto searchCollider = AABB{ position.x,       position.y,       position.z,
+					                        position.x + 1.0, position.y + 1.0, position.z + 1.0 };
 				searchCollider = searchCollider.Expand(16.0, 4.0, 16.0);
 
 				auto candidates = entityManager->GetEntitiesWithinAabbOfType(searchCollider, this->type);
@@ -306,8 +307,7 @@ void WolfEntity::Tick() {
 	}
 }
 
-void WolfEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
-}
+void WolfEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {}
 
 void WolfEntity::EncodeMetadata(std::vector<PacketData::EntityMetadata::DataEntry>& _metadata) {
 	Entity::EncodeMetadata(_metadata);
@@ -324,14 +324,14 @@ bool WolfEntity::DecodeMetadata(const std::vector<PacketData::EntityMetadata::Da
 		return false;
 	}
 
-    auto* metaFlags = FindMetadata<int8_t>(_metadata, PacketData::EntityMetadata::BYTE, 16);
-    auto* metaOwnerUsername = FindMetadata<std::string>(_metadata, PacketData::EntityMetadata::STRING, 17);
-    auto* metaHealth = FindMetadata<int32_t>(_metadata, PacketData::EntityMetadata::INTEGER, 18);
+	auto* metaFlags = FindMetadata<int8_t>(_metadata, PacketData::EntityMetadata::BYTE, 16);
+	auto* metaOwnerUsername = FindMetadata<std::string>(_metadata, PacketData::EntityMetadata::STRING, 17);
+	auto* metaHealth = FindMetadata<int32_t>(_metadata, PacketData::EntityMetadata::INTEGER, 18);
 	if (metaFlags && metaOwnerUsername && metaHealth) {
 		isSitting = (*metaFlags & 0b001) != 0;
 		isAngry = (*metaFlags & 0b010) != 0;
-        ownerUsername = *metaOwnerUsername;
-        health = *metaHealth;
+		ownerUsername = *metaOwnerUsername;
+		health = *metaHealth;
 		return true;
 	}
 	return false;
@@ -350,7 +350,7 @@ void WolfEntity::LoadFromNbt(Tag& _nbt) {
 	SetWolfSitting(isSitting);
 	SetWolfTamed(ownerUsername);
 }
-	
+
 std::optional<Tag> WolfEntity::SerializeToNbt() {
 	auto tag = AnimalEntity::SerializeToNbt();
 	if (!tag)

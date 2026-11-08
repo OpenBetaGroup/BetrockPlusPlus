@@ -27,10 +27,11 @@ public:
 
 		return parsed;
 	}
+
 private:
 	// Parse a singular tag into text
-	void ParseTag(const Tag& _tag, std::string& _string, std::string _name, bool inList = false, bool inCompound = false,
-	              bool writeName = true, bool forceComma = false) {
+	void ParseTag(const Tag& _tag, std::string& _string, std::string _name, bool inList = false,
+	              bool inCompound = false, bool writeName = true, bool forceComma = false) {
 		// Write the name of our tag
 		if (_tag.type != TAG_COMPOUND) {
 			if (writeName) {

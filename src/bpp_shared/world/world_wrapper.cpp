@@ -163,9 +163,9 @@ void WorldWrapper::SetBlock(const Int3 _wpos, const BlockType _type, const uint8
 			--extendedBottom;
 
 		if (newHeight != oldHeight) {
-			manager.lightManager.ScheduleLightRegion(
-			    { _wpos.x - 1, extendedBottom, _wpos.z - 1 },
-			    { _wpos.x + 1, std::max<int>(newHeight, oldHeight), _wpos.z + 1 }, LightType::Sky);
+			manager.lightManager.ScheduleLightRegion({ _wpos.x - 1, extendedBottom, _wpos.z - 1 },
+			                                         { _wpos.x + 1, std::max<int>(newHeight, oldHeight), _wpos.z + 1 },
+			                                         LightType::Sky);
 		}
 	}
 

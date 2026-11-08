@@ -65,12 +65,14 @@ void GhastEntity::UpdateAIState() {
 	if (lockedTarget && position.DistanceSquared(lockedTarget->position) < AGGRO_RANGE * AGGRO_RANGE) {
 		// Aim at the middle of the lockedTarget from the middle of us
 		double toX = lockedTarget->position.x - position.x;
-		double toY = (lockedTarget->collider.minY + double(lockedTarget->height) / 2.0) - (position.y + double(height) / 2.0);
+		double toY = (lockedTarget->collider.minY + double(lockedTarget->height) / 2.0) -
+		             (position.y + double(height) / 2.0);
 		double toZ = lockedTarget->position.z - position.z;
 		rotationYaw = float(-std::atan2(toX, toZ) * 180.0 / JavaMath::PI);
 
 		Vec3 eyeFrom = { position.x, position.y + GetEyeHeight(), position.z };
-		Vec3 eyeTo = { lockedTarget->position.x, lockedTarget->position.y + lockedTarget->height * 0.85f, lockedTarget->position.z };
+		Vec3 eyeTo = { lockedTarget->position.x, lockedTarget->position.y + lockedTarget->height * 0.85f,
+			           lockedTarget->position.z };
 		if (HasLineOfSight(eyeFrom, eyeTo)) {
 			attackCounter++;
 			if (attackCounter == 20) {
@@ -132,7 +134,8 @@ void GhastEntity::TickPhysics() {
 		float friction = 0.91f;
 		if (onGround) {
 			friction = 0.546f;
-			auto below = world->GetBlockId({ MathHelper::FloorDouble(position.x), MathHelper::FloorDouble(position.y) - 1,
+			auto below = world->GetBlockId({ MathHelper::FloorDouble(position.x),
+			                                 MathHelper::FloorDouble(position.y) - 1,
 			                                 MathHelper::FloorDouble(position.z) });
 			if (below > BLOCK_AIR)
 				friction = Blocks::blockProperties[below < BLOCK_MAX ? below : BLOCK_MAX].slipperiness * 0.91f;

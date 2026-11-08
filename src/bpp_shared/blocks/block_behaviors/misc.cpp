@@ -18,17 +18,17 @@
 #include "entities/entity_zombie.h"
 #include "enums/items.h"
 #include "generator/overworld/tree_gen.h"
-#include "helpers/direction_fixer.h"
 #include "helpers/block_volume.h"
+#include "helpers/direction_fixer.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
 #include "items/item_properties.h"
 #include "logger.h"
-#include "numeric_structs.h"
-#include "packet_data.h"
 #include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
 #include "managers/tick_scheduler.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
 
@@ -328,9 +328,8 @@ void RegisterMiscBehaviors() {
 		if (_world.GetBlockId(sourceBlock) == BLOCK_SNOW_LAYER)
 			targetPos = sourceBlock;
 
-		static constexpr std::array<Cardinal::Value, 4> CHECK_ORDER = {
-			Cardinal::Value::North, Cardinal::Value::South, Cardinal::Value::West, Cardinal::Value::East
-		};
+		static constexpr std::array<Cardinal::Value, 4> CHECK_ORDER = { Cardinal::Value::North, Cardinal::Value::South,
+			                                                            Cardinal::Value::West, Cardinal::Value::East };
 
 		if (Cardinal::IsHorizontal(_face) && IsSupported(_world, _pos, _face)) {
 			return GenericPlace(_world, _pos, _placer, _face, _blockId, GetMetaFromDirection(BLOCK_LADDER, _face));
@@ -350,14 +349,15 @@ void RegisterMiscBehaviors() {
 		.getCollider = EmptyCollider,
 	};
 	blockBehaviors[BLOCK_SIGN_WALL].onTick = [](WorldManager& _world, Int3 _pos, uint8_t _meta,
-	                                         Java::Random& /*_random*/) -> void {
+	                                            Java::Random& /*_random*/) -> void {
 		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
 		if (!_world.GetMaterial(support).isSolid) {
 			BreakAndDropBlock(_world, _pos);
 		}
 	};
 	blockBehaviors[BLOCK_SIGN_WALL].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
-	                                                   Cardinal::Value _face, BlockType _blockId, uint8_t _meta) -> bool {
+	                                                   Cardinal::Value _face, BlockType _blockId,
+	                                                   uint8_t _meta) -> bool {
 		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
 		if (!_world.GetMaterial(support).isSolid)
 			return false;
@@ -365,7 +365,7 @@ void RegisterMiscBehaviors() {
 	};
 
 	blockBehaviors[BLOCK_SIGN_WALL].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
-	                                                        BlockType /*_blockId*/) -> void {
+	                                                           BlockType /*_blockId*/) -> void {
 		blockBehaviors[BLOCK_SIGN_WALL].onTick(_world, _pos, _world.GetMetadata(_pos), _world.rand);
 	};
 
@@ -375,20 +375,20 @@ void RegisterMiscBehaviors() {
 		.getCollider = EmptyCollider,
 	};
 	blockBehaviors[BLOCK_SIGN_STANDING].onTick = [](WorldManager& _world, Int3 _pos, uint8_t /*_meta*/,
-	                                         Java::Random& /*_random*/) -> void {
+	                                                Java::Random& /*_random*/) -> void {
 		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
 			BreakAndDropBlock(_world, _pos);
 	};
 	blockBehaviors[BLOCK_SIGN_STANDING].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
-	                                                   Cardinal::Value _face, BlockType _blockId,
-	                                                   uint8_t _meta) -> bool {
+	                                                       Cardinal::Value _face, BlockType _blockId,
+	                                                       uint8_t _meta) -> bool {
 		Int3 clicked = _pos.WithOffset(Cardinal::Opposite(_face));
 		if (!_world.GetMaterial(clicked).isSolid || _face == Cardinal::Value::Down)
 			return false;
 		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
 	blockBehaviors[BLOCK_SIGN_STANDING].onNeighborBlockChange = [](WorldManager& _world, Int3 _pos,
-	                                                        BlockType /*_blockId*/) -> void {
+	                                                               BlockType /*_blockId*/) -> void {
 		blockBehaviors[BLOCK_SIGN_STANDING].onTick(_world, _pos, 0, _world.rand);
 	};
 }
