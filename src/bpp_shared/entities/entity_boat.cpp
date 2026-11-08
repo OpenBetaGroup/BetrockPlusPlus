@@ -14,10 +14,14 @@
 void BoatEntity::DropAsItems() {
 	if (auto rider = passenger.lock())
 		rider->UnmountEntity();
-	for (int i = 0; i < 3; i++)
-		DropItemAtEntity(ItemId(BlockType::BLOCK_PLANKS), 1);
-	for (int i = 0; i < 2; i++)
-		DropItemAtEntity(Items::Id::STICK, 1);
+	if (Gamerule::Get<bool>("boat_drop_fix")) {
+		DropItemAtEntity(Items::BOAT, 1);
+	} else {
+		for (int i = 0; i < 3; i++)
+			DropItemAtEntity(ItemId(BlockType::BLOCK_PLANKS), 1);
+		for (int i = 0; i < 2; i++)
+			DropItemAtEntity(Items::Id::STICK, 1);
+	}
 	isDead = true;
 }
 

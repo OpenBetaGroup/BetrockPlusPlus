@@ -35,6 +35,7 @@ enum class Id {
 	RespectUsernameCapitalization,
 	AutosaveInterval,
 	ZeroDamageKnockback,
+	BoatDropFix,
 	// Mobs
 	ForgiveDeadPlayers,
 	MobGriefing,

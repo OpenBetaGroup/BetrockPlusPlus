@@ -34,6 +34,9 @@ struct Registry {
 		//Register(Id::MobDrops, "mob_drops", true);
 		// Misc
 		//Register(Id::MaxMinecartSpeed, "max_minecart_speed", "The limit of how fast a minecart can move per tick", 8);
+		Register(Id::BoatDropFix, "boat_drop_fix",
+		         "Whether boats drop themself as an item (true), or break into sticks and planks (false)",
+		         false);                                                                              // Vanilla: false
 		Register(Id::TntExplodes, "tnt_explodes", "If TNT can explode", true);                        // Vanilla: true
 		Register(Id::Nightmares, "nightmares", "If monsters can spawn near a sleeping player", true); // Vanilla: true
 		Register(Id::NetherBedsExplode, "nether_beds_explode", "If beds should explode in the nether",
