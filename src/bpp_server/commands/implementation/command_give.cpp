@@ -12,6 +12,7 @@
 #include "items.h"
 #include "strings/labels.h"
 #include <string>
+#include "server.h"
 
 namespace {
 

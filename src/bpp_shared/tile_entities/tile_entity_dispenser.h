@@ -8,6 +8,7 @@
 
 #pragma once
 #include "tile_entity_base.h"
+#include "java_random.h"
 
 // Dispenser (Trap)
 struct TileEntityDispenser : TileEntity {

@@ -7,6 +7,7 @@
 
 #include "entity_arrow.h"
 #include "raycast.h"
+#include "entity_player.h"
 
 static Tag SetShort(std::string _name, int16_t _value) {
 	Tag shortTag;

@@ -5,6 +5,7 @@
  *
  */
 #include "entity_slime.h"
+#include "entity_player.h"
 
 void SlimeEntity::SplitSlime() {
 	for (int i = 0; i < 4; i++) {

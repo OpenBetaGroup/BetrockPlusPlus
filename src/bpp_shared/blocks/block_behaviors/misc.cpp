@@ -31,6 +31,7 @@
 #include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
+#include "player_conn/player_session.h"
 
 namespace Blocks {
 static void IgniteTnt(WorldManager& _world, Int3 _pos, int _fuse = 80) {

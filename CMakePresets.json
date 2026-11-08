@@ -43,6 +43,7 @@
     },
     {
       "name": "server-debug",
+      "description": "Debug build (slow)",
       "inherits": "base",
       "cacheVariables": {
         "BUILD_SERVER": "ON",
@@ -51,6 +52,7 @@
     },
     {
       "name": "server-release",
+      "description": "Release build (fastest)",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
@@ -60,6 +62,7 @@
     },
     {
       "name": "server-release-with-debug-info",
+      "description": "Release build with debug symbols (fast)",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
@@ -69,6 +72,7 @@
     },
     {
       "name": "server-release-with-debug-info-optionals",
+      "description": "Release build with optional compile options (e.g. BETACRAFT_HEARTBEAT)",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
@@ -79,7 +83,18 @@
       }
     },
     {
+      "name": "server-dev",
+      "description": "Fast iteration: RelWithDebInfo without LTO (moderately fast)",
+      "inherits": "base",
+      "cacheVariables": {
+        "BUILD_SERVER": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BPP_CHECK_LICENSE_HEADERS": "OFF"
+      }
+    },
+    {
       "name": "server-minsize",
+      "description": "Release build with small binary size",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",

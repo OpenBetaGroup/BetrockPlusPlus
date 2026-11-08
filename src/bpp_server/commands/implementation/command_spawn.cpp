@@ -8,6 +8,7 @@
 #include "../command_manager.h"
 #include "../command_registry.h"
 #include "networking/packets.h"
+#include "server.h"
 
 namespace {
 

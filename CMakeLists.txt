@@ -478,18 +478,21 @@ else()
 endif()
 
 # Precompiled headers
-if(BUILD_SERVER)
-    target_precompile_headers(BetrockPlusPlus PRIVATE
-        <format>
-        "${PROJECT_SOURCE_DIR}/src/bpp_shared/nbt/nbt.h"
-        "${PROJECT_SOURCE_DIR}/src/bpp_server/server.h"
-    )
-else()
-    target_precompile_headers(BetrockPlusPlus PRIVATE
-        <format>
-        "${PROJECT_SOURCE_DIR}/src/bpp_shared/nbt/nbt.h"
-    )
-endif()
+# Only stable std/third-party headers belong here. A PCH is force-included into
+# every translation unit, so any project header listed here (or reachable from
+# one) makes an edit to that header rebuild the PCH and then the whole project.
+target_precompile_headers(BetrockPlusPlus PRIVATE
+    <algorithm>
+    <array>
+    <cstdint>
+    <format>
+    <memory>
+    <string>
+    <string_view>
+    <unordered_map>
+    <vector>
+    "${PROJECT_SOURCE_DIR}/include/BS_thread_pool.hpp"
+)
 
 # Shared libraries
 target_link_libraries(BetrockPlusPlus

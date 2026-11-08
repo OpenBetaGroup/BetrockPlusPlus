@@ -14,7 +14,6 @@
 #include "helpers/aabb.h"
 #include "helpers/java/java_math.h"
 #include "helpers/java/java_random.h"
-#include "lighter.h"
 #include "nbt/nbt.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
@@ -284,7 +283,7 @@ struct Entity {
 		RebuildCollider();
 	}
 
-	virtual bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
+	virtual bool AttackEntityFrom(Entity* /*_entity*/, int /*_damage*/, DamageType /*_type*/) {
 		beenAttacked = true;
 		forceVelocityUpdate = true;
 		return false;

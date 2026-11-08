@@ -7,6 +7,7 @@
 */
 
 #include "tile_entity_chest.h"
+#include "world/chunk.h"
 
 void TileEntityChest::Deserialize(const Tag& _tag) {
 	LoadSlots(_tag, this->inventory.slots);

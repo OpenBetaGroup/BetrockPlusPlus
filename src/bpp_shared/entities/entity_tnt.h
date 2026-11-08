@@ -9,6 +9,8 @@
 #include "entity.h"
 #include "explosion.h"
 #include "logger.h"
+#include "gamerules.h"
+#include "world/world.h"
 
 struct TntEntity : public Entity {
 	int fuse = 0;

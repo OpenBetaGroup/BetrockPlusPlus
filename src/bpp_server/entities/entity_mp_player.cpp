@@ -12,6 +12,7 @@
 #include "inventory/item_stack.h"
 #include "networking/network_stream.h"
 #include "networking/packets.h"
+#include "server.h"
 
 void EntityMPPlayer::UsePortal() {
 	if (!this->session || !this->session->server)

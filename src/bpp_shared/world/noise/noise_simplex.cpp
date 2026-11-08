@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include "constants.h"
 
 NoiseSimplex::NoiseSimplex() {
 	Java::Random rand;

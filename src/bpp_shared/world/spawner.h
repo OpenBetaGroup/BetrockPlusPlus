@@ -11,11 +11,14 @@
 #include <memory>
 #include <unordered_set>
 #include <vector>
+#include "enums/biomes.h"
+#include "blocks/materials.h"
 
 class WorldManager;
 struct Chunk;
 struct ClientPosition;
 struct MobEntity;
+struct Entity;
 
 struct SpawnEntry {
 	std::shared_ptr<MobEntity> entityPtrShared;

@@ -7,6 +7,7 @@
 */
 
 #include "tile_entity_furnace.h"
+#include "world/world.h"
 
 void TileEntityFurnace::Deserialize(const Tag& _tag) {
 	burnTime = _tag.Has("BurnTime") ? _tag.Get("BurnTime").GetShort() : 0;

@@ -439,7 +439,7 @@ inline AABB WallSignAabb(uint8_t _meta) {
 }
 
 // standing sign
-inline AABB StandingSignAabb(uint8_t _meta) {
+inline AABB StandingSignAabb(uint8_t /*_meta*/) {
 	return { 0.25F, 0.0F, 0.25F, 0.75F, 1.0F, 0.75F };
 }
 }; // namespace Blocks

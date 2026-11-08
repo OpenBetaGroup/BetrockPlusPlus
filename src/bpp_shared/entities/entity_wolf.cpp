@@ -8,6 +8,7 @@
 #include "entity_wolf.h"
 #include "entity_mob.h"
 #include "entity_player.h"
+#include "username.h"
 
 bool WolfEntity::TryDespawn() {
 	if (IsTamed())

@@ -7,6 +7,7 @@
 */
 
 #include "tile_entity_dispenser.h"
+#include "world/chunk.h"
 
 void TileEntityDispenser::Deserialize(const Tag& _tag) {
 	LoadSlots(_tag, this->inventory.slots);
