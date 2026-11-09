@@ -59,6 +59,16 @@ static bool EatCake(WorldManager& _world, Int3 _pos, PlayerSession* _triggeringS
 	return false;
 }
 
+bool IsWallSignSupported(WorldManager& _world, Int3 _pos, uint8_t _meta) {
+	Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
+	return _world.GetMaterial(support).isSolid;
+};
+
+bool IsStandingSignSupported(WorldManager& _world, Int3 _pos) {
+	Int3 support = _pos.WithOffset(Cardinal::Value::Down);
+	return (_world.GetMaterial(support).isSolid);
+};
+
 void RegisterMiscBehaviors() {
 	// Vanilla sponge removal notifies every position in a 5x5x5 region. Like coral!
 	blockBehaviors[BLOCK_SPONGE].onBlockRemoval = [](WorldManager& _world, Int3 _pos) {
@@ -351,16 +361,13 @@ void RegisterMiscBehaviors() {
 	};
 	blockBehaviors[BLOCK_SIGN_WALL].onTick = [](WorldManager& _world, Int3 _pos, uint8_t _meta,
 	                                            Java::Random& /*_random*/) -> void {
-		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
-		if (!_world.GetMaterial(support).isSolid) {
+		if (!IsWallSignSupported(_world, _pos, _meta)) 
 			BreakAndDropBlock(_world, _pos);
-		}
 	};
 	blockBehaviors[BLOCK_SIGN_WALL].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                   Cardinal::Value _face, BlockType _blockId,
 	                                                   uint8_t _meta) -> bool {
-		Int3 support = _pos.WithOffset(Cardinal::Opposite(GetDirectionFromMeta(BLOCK_SIGN_WALL, _meta)));
-		if (!_world.GetMaterial(support).isSolid)
+		if (!IsWallSignSupported(_world, _pos, _meta))
 			return false;
 		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
@@ -377,14 +384,13 @@ void RegisterMiscBehaviors() {
 	};
 	blockBehaviors[BLOCK_SIGN_STANDING].onTick = [](WorldManager& _world, Int3 _pos, uint8_t /*_meta*/,
 	                                                Java::Random& /*_random*/) -> void {
-		if (!IsSupported(_world, _pos, Cardinal::Value::Up))
+		if (!IsStandingSignSupported(_world, _pos))
 			BreakAndDropBlock(_world, _pos);
 	};
 	blockBehaviors[BLOCK_SIGN_STANDING].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
 	                                                       Cardinal::Value _face, BlockType _blockId,
 	                                                       uint8_t _meta) -> bool {
-		Int3 clicked = _pos.WithOffset(Cardinal::Opposite(_face));
-		if (!_world.GetMaterial(clicked).isSolid || _face == Cardinal::Value::Down)
+		if (!IsStandingSignSupported(_world, _pos))
 			return false;
 		return GenericPlace(_world, _pos, _placer, _face, _blockId, _meta);
 	};
