@@ -206,6 +206,7 @@ struct Entity {
 	virtual void OnMountEntity();
 	virtual void OnDismountEntity();
 	virtual void OnEnterPortal();
+	virtual void ApplyFall(float _fallDistance);
 	float GetEntityBrightnessValue();
 	void MountEntity(std::shared_ptr<Entity> _entity);
 	void UnmountEntity();

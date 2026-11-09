@@ -52,13 +52,6 @@ struct MinecartEntity : public MobileEntity {
 		return -0.3f;
 	}
 
-	void UpdateFallState(float _movedY) override {
-		if (onGround)
-			fallDistance = 0.0f;
-		else if (_movedY < 0)
-			fallDistance -= _movedY;
-	}
-
 	bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) override;
 	void Tick() override;
 	void OnPlayerInteract(PlayerEntity* _entity) override;

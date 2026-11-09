@@ -43,13 +43,6 @@ struct BoatEntity : public Entity {
 		return { std::cos(yawRad) * 0.4, 0.0, std::sin(yawRad) * 0.4 };
 	}
 
-	void UpdateFallState(float _movedY) override {
-		if (onGround)
-			fallDistance = 0.0f;
-		else if (_movedY < 0)
-			fallDistance -= _movedY;
-	}
-
 	bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) override;
 	void Tick() override;
 	void OnPlayerInteract(PlayerEntity* _entity) override;

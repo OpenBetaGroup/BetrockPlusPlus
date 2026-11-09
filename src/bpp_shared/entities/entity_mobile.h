@@ -63,6 +63,7 @@ public:
 	virtual bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type = DamageType::None) override;
 	std::optional<Tag> SerializeToNbt() override;
 	void LoadFromNbt(Tag& _nbt) override;
+	void ApplyFall(float _fallDistance) override;
 	virtual bool IsMovementBlocked() {
 		return health <= 0;
 	}

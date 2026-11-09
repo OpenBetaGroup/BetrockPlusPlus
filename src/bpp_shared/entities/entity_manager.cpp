@@ -164,12 +164,21 @@ void EntityManager::AddEntity(std::shared_ptr<Entity> _entity, EntityId _forceEn
 }
 
 void EntityManager::TickEntityAndPassenger(const std::shared_ptr<Entity>& _entity, TickProfiler* _profiler) {
+	// Skip ticking entities who's passenger is a player
+	// Players will tick their own vehicles
+	bool playerPassenger = false;
+	if (auto lockPassenger = _entity->passenger.lock()) {
+		playerPassenger = lockPassenger->type == EntityType::PLAYER;
+	}
+
 	if (_profiler) {
 		auto start = std::chrono::steady_clock::now();
-		_entity->Tick();
+		if (!playerPassenger)
+			_entity->Tick();
 		_profiler->RecordEntity(_entity->dim, _entity->id, _entity->type, std::chrono::steady_clock::now() - start);
 	} else {
-		_entity->Tick();
+		if (!playerPassenger)
+			_entity->Tick();
 	}
 
 	// Check to see if this entity went into another container or bucket
@@ -227,7 +236,8 @@ void EntityManager::Tick(TickProfiler* _profiler) {
 
 		// Skip entities that are riding something
 		if (auto lockVehicle = entity->vehicle.lock()) {
-			if (!lockVehicle->isDead && lockVehicle->passenger.lock().get() == entity.get())
+			auto passengerPtr = lockVehicle->passenger.lock().get();
+			if ((!lockVehicle->isDead && passengerPtr == entity.get()))
 				continue;
 			entity->vehicle.reset();
 		}

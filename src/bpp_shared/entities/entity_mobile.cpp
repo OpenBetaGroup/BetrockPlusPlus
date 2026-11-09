@@ -35,6 +35,13 @@ void MobileEntity::LoadFromNbt(Tag& _nbt) {
 	this->attackTime = _nbt.Has("AttackTime") ? _nbt.compound["AttackTime"].GetShort() : 0;
 }
 
+void MobileEntity::ApplyFall(float _fallDistance) {
+	Entity::ApplyFall(_fallDistance);
+	if (_fallDistance > FALL_DAMAGE_FLOOR) {
+		AttackEntityFrom(nullptr, int(std::ceil(_fallDistance - FALL_DAMAGE_FLOOR)), DamageType::Fall);
+	}
+}
+
 std::optional<Tag> MobileEntity::SerializeToNbt() {
 	auto tag = Entity::SerializeToNbt();
 	if (!tag)

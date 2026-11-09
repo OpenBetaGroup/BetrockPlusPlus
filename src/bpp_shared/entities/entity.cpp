@@ -239,6 +239,7 @@ void Entity::TickPassengerEntity() {
 		return;
 	}
 
+	this->velocity = {};
 	this->UpdateEntityPhysicsState();
 
 	Vec3 seatOffset = lockVehicle->GetRiderSeatOffset();
@@ -282,14 +283,14 @@ void Entity::Tick() {
 	if (this->passenger.expired())
 		this->passenger.reset();
 
+	UpdateEntityPhysicsState();
+
 	// Are we riding something?
 	auto lockVehicle = this->vehicle.lock();
 	if (lockVehicle) {
 		this->TickPassengerEntity();
 		return;
 	}
-
-	UpdateEntityPhysicsState();
 }
 
 void Entity::ApplyKnockback(Vec3 _direction) {
@@ -501,12 +502,18 @@ void Entity::Move(Vec3& _velocity) {
 
 void Entity::UpdateFallState(float _movedY) {
 	if (onGround) {
-		if (fallDistance > FALL_DAMAGE_FLOOR) {
-			AttackEntityFrom(nullptr, int(std::ceil(fallDistance - FALL_DAMAGE_FLOOR)), DamageType::Fall);
+		if (fallDistance > 0) {
+			ApplyFall(fallDistance);
 		}
 		fallDistance = 0;
 	} else if (_movedY < 0) {
 		fallDistance -= _movedY;
+	}
+}
+
+void Entity::ApplyFall(float _fallDistance) {
+	if (auto passengerLock = passenger.lock()) {
+		passengerLock->ApplyFall(_fallDistance);
 	}
 }
 

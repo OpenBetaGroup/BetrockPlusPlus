@@ -166,11 +166,7 @@ static constexpr double ROLLBACK_NUDGE = 0.06;
 void EntityMPPlayer::HandlePositionChecks() {
 	if (isDead || !world)
 		return;
-
-	// Only wipe our velocity if we dont have a pending velocity to send
-	if (!this->forceVelocityUpdate)
-		this->velocity = {};
-
+	
 	auto inVehicle = this->vehicle.lock().get();
 
 	if (inVehicle && !session->pendingTeleport) {
@@ -179,10 +175,13 @@ void EntityMPPlayer::HandlePositionChecks() {
 			return;
 		Vec3 pos = *session->pendingPosition;
 		session->pendingPosition.reset();
-		if (pos.x <= -1 || pos.x > 1 || pos.z <= -1 || pos.z > 1)
+		if (pos.x <= -1.0 || pos.x > 1.0 || pos.z <= -1.0 || pos.z > 1.0)
 			return;
 		this->velocity = pos;
 		this->velocity.y = 0;
+
+		// Tick our vehicle since it gets skipped in entity_manager's tick function
+		inVehicle->Tick();
 
 		// Update our position to the session
 		if (!this->session)
@@ -190,6 +189,10 @@ void EntityMPPlayer::HandlePositionChecks() {
 		this->session->position.pos = this->position;
 		return;
 	}
+
+	// Only wipe our velocity if we dont have a pending velocity to send
+	if (!this->forceVelocityUpdate && !inVehicle)
+		this->velocity = {};
 
 	// We have a pending teleport. Check to see if the player caught up
 	if (session->pendingTeleport && session->pendingPosition) {
