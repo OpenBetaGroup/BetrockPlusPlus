@@ -22,7 +22,9 @@
 #include <thread>
 
 #if defined(_WIN32) || defined(_WIN64)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <winsock2.h>
 #endif
@@ -33,7 +35,15 @@
 #endif
 
 #ifdef CRASH_LOGGING
+#ifdef _MSC_VER
+// Vendored third-party header: unreferenced parameter on non-POSIX paths
+#pragma warning(push)
+#pragma warning(disable : 4100)
+#endif
 #include "CrashCatch.hpp"
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #endif
 
 // Shared Libs

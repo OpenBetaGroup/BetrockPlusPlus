@@ -17,7 +17,9 @@
 #define WINVER 0x0600
 #endif
 #define PSAPI_VERSION 2
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 // NOTE: Due to psapi.h relying on macros defined in windows.h,
 // we're not able to reorder these includes. Why psapi.h doesn't just include
 // windows.h by itself is a question only the madmen at Microsoft can answer.

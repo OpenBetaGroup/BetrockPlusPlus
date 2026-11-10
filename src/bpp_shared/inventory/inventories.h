@@ -74,12 +74,12 @@ public:
 
 	NbtSlotId GetNbtSlotId(NetworkSlotId _slot) {
 		if (_slot >= 9 && _slot <= 35)
-			return _slot.value;
+			return static_cast<int8_t>(_slot.value);
 		if (_slot >= 5 && _slot <= 8)
-			return (5 + (8 - _slot)) + 95;
+			return static_cast<int8_t>((5 + (8 - _slot)) + 95);
 		if (_slot >= 36 && _slot <= 44)
-			return _slot - 36;
-		return -1;
+			return static_cast<int8_t>(_slot - 36);
+		return static_cast<int8_t>(-1);
 	}
 
 	NetworkSlotId GetNetworkSlotId(NbtSlotId _slot) const override {

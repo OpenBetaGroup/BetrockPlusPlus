@@ -9,7 +9,7 @@
 #include <numeric_structs.h>
 #include <unordered_set>
 
-struct WorldManager;
+class WorldManager;
 struct Entity;
 
 // for handling explosions

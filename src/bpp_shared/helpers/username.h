@@ -26,7 +26,7 @@ inline bool UsernameEquals(std::string_view _a, std::string_view _b) {
 
 inline std::string NormalizeUsername(std::string _name) {
 	if (!Gamerule::Get<bool>(Gamerule::Id::RespectUsernameCapitalization))
-		std::transform(_name.begin(), _name.end(), _name.begin(), [](unsigned char c) { return std::tolower(c); });
+		std::transform(_name.begin(), _name.end(), _name.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 	return _name;
 }
 

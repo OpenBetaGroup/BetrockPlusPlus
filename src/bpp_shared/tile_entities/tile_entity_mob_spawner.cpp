@@ -36,7 +36,7 @@ void TileEntityMobSpawner::Tick(WorldManager& _world) {
 	// Why not <= 0? Because notch wrote this as "delay == -1"..
 	// For some reason
 	if (this->delay < 0)
-		this->delay = updateDelay(_world.rand);
+		this->delay = static_cast<int16_t>(updateDelay(_world.rand));
 	else {
 		this->delay--;
 		return;
@@ -70,7 +70,7 @@ void TileEntityMobSpawner::Tick(WorldManager& _world) {
 		auto numEntities =
 		    _world.entityManager.GetEntitiesWithinAabbOfType(searchBox.Expand(8.0, 4.0, 8.0), checkType).size();
 		if (numEntities >= 6) {
-			this->delay = updateDelay(_world.rand);
+			this->delay = static_cast<int16_t>(updateDelay(_world.rand));
 			return;
 		}
 
@@ -90,7 +90,7 @@ void TileEntityMobSpawner::Tick(WorldManager& _world) {
 		mobEntity->rand.SetSeed(_world.rand.NextLong());
 		if (mobEntity->CanSpawnAt()) {
 			_world.entityManager.AddEntity(std::move(myEntity));
-			this->delay = updateDelay(_world.rand);
+			this->delay = static_cast<int16_t>(updateDelay(_world.rand));
 		}
 	}
 }

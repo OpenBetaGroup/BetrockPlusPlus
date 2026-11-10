@@ -110,8 +110,8 @@ struct Inventory {
 					int space = maxStack - slot->count;
 					int toMove = std::min<int>(space, int(_stack.count));
 
-					slot->count += toMove;
-					_stack.count -= toMove;
+					slot->count = static_cast<ItemAmount>(slot->count + toMove);
+					_stack.count = static_cast<ItemAmount>(_stack.count - toMove);
 
 					OnInventoryChanged();
 					if (_stack.count == 0)

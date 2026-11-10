@@ -23,6 +23,7 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
+#include <cstdint>
 #include <string>
 
 #ifndef INET_ADDRSTRLEN
@@ -43,10 +44,13 @@ inline int CreateServerSocket(int _port) {
 	int serverSocket = -1;
 #if defined(_WIN32) || defined(_WIN64)
 	WSADATA wsaData;
-	WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		Logger::Error << "**** FAILED TO INITIALIZE WINSOCK! ****" << "\n";
+		return -1;
+	}
 #endif
 
-	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	serverSocket = static_cast<int>(socket(AF_INET, SOCK_STREAM, 0));
 
 	// This allows the server to quickly restart,
 	// if not enabled the OS will hold the port until the last packet time expires.
@@ -60,7 +64,7 @@ inline int CreateServerSocket(int _port) {
 
 	sockaddr_in addr{};
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(_port);
+	addr.sin_port = htons(static_cast<uint16_t>(_port));
 	addr.sin_addr.s_addr = INADDR_ANY;
 	if (bind(serverSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
 		Logger::Error << "**** FAILED TO BIND SOCKET! ****" << "\n";

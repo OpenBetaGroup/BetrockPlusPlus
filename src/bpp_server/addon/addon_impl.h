@@ -13,8 +13,8 @@
 #include "inventory/item_stack.h"
 #include <unordered_map>
 
-class Entity;
-class PlayerSession;
+struct Entity;
+struct PlayerSession;
 class WorldManager;
 
 struct Addon;

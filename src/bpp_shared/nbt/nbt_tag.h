@@ -58,10 +58,10 @@ struct Tag {
 	void Set(T _value) {
 		switch (type) {
 		case TAG_BYTE:
-			byteValue = _value;
+			byteValue = static_cast<decltype(byteValue)>(_value);
 			break;
 		case TAG_SHORT:
-			shortValue = _value;
+			shortValue = static_cast<decltype(shortValue)>(_value);
 			break;
 		case TAG_INT:
 			intValue = _value;
@@ -70,7 +70,7 @@ struct Tag {
 			longValue = _value;
 			break;
 		case TAG_FLOAT:
-			floatValue = _value;
+			floatValue = static_cast<decltype(floatValue)>(_value);
 			break;
 		case TAG_DOUBLE:
 			doubleValue = _value;

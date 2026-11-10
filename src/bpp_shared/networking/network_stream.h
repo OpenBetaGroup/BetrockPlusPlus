@@ -40,7 +40,7 @@ public:
 	    : clientSocket(_other.clientSocket), connected(_other.connected.load()), shortRead(_other.shortRead),
 	      readBuffer(std::move(_other.readBuffer)), readPos(_other.readPos),
 	      writeBuffer(std::move(_other.writeBuffer)) {
-		_other.clientSocket = INVALID_SOCKET;
+		_other.clientSocket = InvalidClientSocket;
 		_other.readPos = 0;
 	}
 	bool NewClient();
@@ -159,7 +159,9 @@ public:
 	}
 
 private:
-	int clientSocket = INVALID_SOCKET;
+	// Sentinel for "no socket". Windows' INVALID_SOCKET is a 64-bit ~0 and would truncate into an int.
+	static constexpr int InvalidClientSocket = -1;
+	int clientSocket = InvalidClientSocket;
 	// Written by the write thread (flush), read by the tick thread
 	std::atomic<bool> connected{ true };
 	bool shortRead = false;

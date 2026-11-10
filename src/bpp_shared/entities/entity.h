@@ -226,7 +226,7 @@ struct Entity {
 	}
 
 	virtual float GetMountOffset() {
-		return this->height * 0.75;
+		return this->height * float(0.75);
 	}
 
 	virtual float GetRidingYOffset() {
@@ -250,8 +250,8 @@ struct Entity {
 	}
 
 	void SetSize(Vec2 _size) {
-		this->width = _size.x;
-		this->height = _size.y;
+		this->width = static_cast<float>(_size.x);
+		this->height = static_cast<float>(_size.y);
 		this->RebuildCollider();
 	}
 
@@ -274,8 +274,8 @@ struct Entity {
 		position.x = _newpos.x;
 		position.y = _newpos.y;
 		position.z = _newpos.z;
-		rotationYaw = _newrot.x;
-		rotationPitch = _newrot.y;
+		rotationYaw = static_cast<float>(_newrot.x);
+		rotationPitch = static_cast<float>(_newrot.y);
 		ySize = 0.0f;
 		velocity.x = 0.0;
 		velocity.y = 0.0;

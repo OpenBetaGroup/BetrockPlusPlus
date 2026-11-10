@@ -53,7 +53,7 @@ struct TileEntity {
 	};
 };
 
-static void SerializeInventory(Tag& _root, Inventory& _inventory) {
+inline void SerializeInventory(Tag& _root, Inventory& _inventory) {
 	auto items = Tag{ .type = TAG_LIST, .name = "Items", .longValue = 0, .listType = TAG_COMPOUND };
 	int8_t currentSlot = 0;
 	for (auto& stack : _inventory.slots) {

@@ -109,7 +109,7 @@ public:
 		if (_mn.y > _mx.y)
 			return;
 
-		size_t checkCount = std::min<int>(lightQueue.size(), size_t(5));
+		size_t checkCount = std::min<size_t>(lightQueue.size(), size_t(5));
 		for (size_t i = 0; i < checkCount; ++i) {
 			LightRegion& r = lightQueue[size_t(lightQueue.size() - 1 - i)];
 			if (r.type != _type)

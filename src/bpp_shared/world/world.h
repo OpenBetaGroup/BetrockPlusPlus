@@ -216,7 +216,7 @@ public:
 			onExplosion(_position, _size, result, _exploder);
 	}
 
-	bool CanBlockSeeSky(Int3 _pos) {
+	bool CanBlockSeeSky(const Int3 _pos) override {
 		auto chunk = GetChunkRaw({ _pos.x >> 4, _pos.z >> 4 });
 		if (!chunk)
 			return false;
@@ -239,7 +239,7 @@ public:
 			return skylight;
 	}
 
-	int GetBlockLightRaw(Int3 _wpos) {
+	int GetBlockLightRaw(const Int3 _wpos) override {
 		auto chunk = GetChunkRaw({ _wpos.x >> 4, _wpos.z >> 4 });
 		if (!chunk)
 			return 15;
@@ -339,7 +339,7 @@ public:
 		return { sx, sy, sz };
 	}
 
-	int GetHeightValue(int _wx, int _wz) {
+	int GetHeightValue(const int _wx, const int _wz) override {
 		auto* chunk = GetChunkRaw({ _wx >> 4, _wz >> 4 });
 		if (!chunk || chunk->state.load() < ChunkState::Generated)
 			return 0;
@@ -347,7 +347,7 @@ public:
 	}
 
 	// Returns the baked temperature/humidity for a world column.
-	double GetTemperatureAt(int _wx, int _wz) {
+	double GetTemperatureAt(const int _wx, const int _wz) override {
 		auto* chunk = GetChunkRaw({ _wx >> 4, _wz >> 4 });
 		if (!chunk || chunk->state.load() < ChunkState::Generated)
 			return 0.5;
@@ -355,7 +355,7 @@ public:
 		return double(chunk->GetTemperature({ _wx & 15, _wz & 15 }));
 	}
 
-	double GetHumidityAt(int _wx, int _wz) {
+	double GetHumidityAt(const int _wx, const int _wz) override {
 		auto* chunk = GetChunkRaw({ _wx >> 4, _wz >> 4 });
 		if (!chunk || chunk->state.load() < ChunkState::Generated)
 			return 0.5;

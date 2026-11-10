@@ -115,7 +115,7 @@ inline void DamageItem(ItemStack& _stack, int _damage) {
 	if (!max)
 		return;
 
-	_stack.data += _damage;
+	_stack.data = static_cast<ItemDamage>(_stack.data + _damage);
 	if (_stack.data >= max) {
 		_stack = {};
 	}
