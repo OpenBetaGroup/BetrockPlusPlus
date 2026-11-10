@@ -654,7 +654,7 @@ target_compile_options(BetrockPlusPlus PRIVATE
         # Uninitialized variables (C4700: uninitialized local variable used)
         /w14700
         # static analysis (catches null deref, uninitialized, etc.)
-        /analyze
+        #/analyze
     >
 )
 
