@@ -63,11 +63,6 @@ void EntityMPPlayer::WakeUp(bool _confirmSpawn) {
 
 	PlayerEntity::WakeUp(_confirmSpawn);
 
-	if (_confirmSpawn) {
-		session->hasBedSpawn = true;
-		session->spawnPosition = this->bedPosition.WithOffset(Cardinal::Value::Up);
-	}
-
 	Packet::Animation anim;
 	anim.entityId = this->id;
 	anim.animation = PacketData::Animation::LEAVE_BED;
@@ -173,15 +168,29 @@ void EntityMPPlayer::HandlePositionChecks() {
 		// Vehicles are weird!
 		if (!session->pendingPosition)
 			return;
-		Vec3 pos = *session->pendingPosition;
-		session->pendingPosition.reset();
-		if (pos.x <= -1.0 || pos.x > 1.0 || pos.z <= -1.0 || pos.z > 1.0)
-			return;
-		this->velocity = pos;
-		this->velocity.y = 0;
 
-		// Tick our vehicle since it gets skipped in entity_manager's tick function
-		inVehicle->Tick();
+		// Make sure we are at the right ridden position
+		UpdateRiderPosition();
+		Vec3 pos = *session->pendingPosition;
+		if (pos.y == -999) {
+			// Tick ourselves since a passenger who is a player gets their tick skipped in entity_manager
+			this->Tick();
+			this->entityManager->UpdateEntityBucket(this);
+
+			// Apply the velocity we got from the packet
+			pos.x = std::clamp(pos.x, -1.0, 1.0);
+			pos.z = std::clamp(pos.z, -1.0, 1.0);
+			this->velocity = pos;
+			this->velocity.y = 0;
+
+			// Tick our vehicle since it gets skipped in entity_manager's tick function
+			inVehicle->Tick();
+
+			// Snap us back after the update
+			UpdateRiderPosition();
+		}
+
+		session->pendingPosition.reset();
 
 		// Update our position to the session
 		if (!this->session)
@@ -508,56 +517,17 @@ ItemStack* EntityMPPlayer::GetHeldItem() {
 	return session->inventory.GetHeldItem();
 }
 
-// TODO: Should probably be in the base player entity
-void EntityMPPlayer::CheckRespawnState() {
-	// NOTE:
-	// This function relies on the code in handle_packet.cpp to teleport the player to the appropriate respawn point
-	// That way the respawn point is loaded
-	const int checkRange = 3;
-	if (!session || !session->pendingRespawn || !world->AABBinValidChunks(this->collider.Expand(checkRange, checkRange, checkRange)))
-		return;
-
-	// Get our respawn point
-	Int3 spawn = {};
-	bool bedPositionFindFailed = true;
-	if (session->hasBedSpawn) {
-		Int3 headPos = session->spawnPosition.WithOffset(Cardinal::Value::Down);
-		auto bedDir = GetDirectionFromMeta(BLOCK_BED, world->GetMetadata(headPos));
-		Int3 footPos = headPos.WithOffset(Cardinal::Opposite(bedDir));
-
-		if (world->GetBlockId(headPos) == BLOCK_BED) {
-			auto sleepPositions = Blocks::GetBedApproachSpots(*world, headPos, footPos);
-			if (!sleepPositions.empty()) {
-				bedPositionFindFailed = false;
-				spawn = sleepPositions[0];
-			}
-		}
-	}
-	if (bedPositionFindFailed) {
-		if (session->hasBedSpawn) {
-			Packet::ChatMessage pkt;
-			pkt.message = "Your home bed was missing or obstructed";
-			pkt.Serialize(session->stream);
-		}
-		session->hasBedSpawn = false;
-		spawn = world->GetSpawnPoint(true);
-	}
-	Vec3 spawnLocation = { double(spawn.x) + 0.5, double(spawn.y) + 0.01, double(spawn.z) + 0.5 };
-
-	this->Teleport(spawnLocation);
-	session->position.pos = spawnLocation;
-	session->pendingTeleport = spawnLocation;
-	session->pendingPosition.reset();
-	session->pendingRespawn = false;
+void EntityMPPlayer::NotifyBedMissing() {
+	Packet::ChatMessage pkt;
+	pkt.message = "Your home bed was missing or obstructed";
+	pkt.Serialize(session->stream);
 }
 
 void EntityMPPlayer::Tick() {
 	if (!session)
 		return;
 
-	// Check if we are respawning, if so don't run any logic until
-	// The chunks we are in are loaded and our respawn is confirmed
-	CheckRespawnState();
+	// If we are pending respawn halt the rest of the logic
 	if (session->pendingRespawn)
 		return;
 

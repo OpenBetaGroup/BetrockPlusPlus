@@ -53,6 +53,7 @@ struct EntityManager {
 	void AddEntity(std::shared_ptr<Entity> _entity, EntityId _forceEntityId = -1);
 	void RemoveEntity(EntityId _id);
 	void CreateEntityFromNbt(Tag& _nbt);
+	void UpdateEntityBucket(Entity* _entity);
 
 	EntityManager() {
 		entitiesToRemove.reserve(REMOVAL_DEFAULT_SIZE);

@@ -131,8 +131,8 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	                       });
 
 	if (it != players.end()) {
-		DisconnectPlayer(_session, "Player with same username is already on server!", _server, false);
-		return;
+		auto session = it->get();
+		DisconnectPlayer(*session, "Logged in from another location!", _server, false);
 	}
 
 	Logger::Info << "Player " << _session.username << " is logging in.\n";
@@ -336,25 +336,36 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 
 	int percent = static_cast<int>(std::ceil((float(loadedChunks) / float(totalSpawnChunks)) * 100.0f));
 
-	if (loadedChunks % (totalSpawnChunks / 4) == 0)
-		Logger::Info << "Spawn chunks: " << percent << "%\n";
-
 	if (loadedChunks < totalSpawnChunks)
 		return;
 
-	Logger::Info << "Spawn chunks sent.\n";
-
-	// NOTE:
-	// The function CheckRespawnState in mp_player_entity.cpp will always resolve a respawn point before this point
-	// Or at least it should... :p
+	// If we didn't find a respawn point, check our respawn state
+	Vec3 respawnPos = _session.position.pos;
+	if (_session.pendingRespawn) {
+		if (!_session.entity->world)
+			_session.entity->world = &sessionWorld;
+		respawnPos = _session.entity->CheckRespawnState();
+		if (respawnPos == Vec3{ -1.0, -1.0, -1.0 })
+			return;
+		_session.pendingRespawn = false;
+	}
 
 	// Small nudge so we dont fall through the floor
-	_session.position.pos.y += 0.001;
+	respawnPos.y += 0.001;
 
 	// Update our last trusted position
-	_session.entity->position = _session.position.pos;
-	_session.pendingTeleport = _session.position.pos;
+	_session.entity->position = respawnPos;
+	_session.pendingTeleport = respawnPos;
+	_session.position.pos = respawnPos;
 	_session.entity->RebuildCollider();
+
+	// Tell our client
+	Packet::PlayerPositionAndRotation pkt;
+	pkt.rotation = _session.rotation;
+	pkt.onGround = false;
+	pkt.position = { respawnPos.x, respawnPos.y + PLAYER_EYE_HEIGHT, respawnPos.z };
+	pkt.cameraY = respawnPos.y; // This is backwards, thanks notch
+	pkt.Serialize(_session.stream);
 
 	// Set view distance to server default
 	_session.position.viewDistanceOverride = 0;

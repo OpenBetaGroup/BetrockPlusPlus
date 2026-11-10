@@ -211,6 +211,7 @@ struct Entity {
 	void MountEntity(std::shared_ptr<Entity> _entity);
 	void UnmountEntity();
 	bool IsWet();
+	void UpdateRiderPosition();
 
 	virtual bool CanBePushed() {
 		return false;

@@ -163,6 +163,36 @@ void EntityManager::AddEntity(std::shared_ptr<Entity> _entity, EntityId _forceEn
 		onEntitySpawn(entities.back());
 }
 
+void EntityManager::UpdateEntityBucket(Entity* _entity) {
+	// Check to see if this entity went into another container or bucket
+	Int3 newBucketPos = ComputeBucketPos(_entity->position);
+
+	if (newBucketPos != _entity->bucketPos) {
+		Int2 oldCpos{ _entity->bucketPos.x, _entity->bucketPos.y };
+		// Remove from the old bucket and mark the old chunk as modified
+		if (auto chunk = world->GetChunkRaw(oldCpos))
+			chunk->isModified = true;
+		auto& oldContainer = entityContainers[oldCpos];
+		auto& b = oldContainer.buckets[_entity->bucketPos.z];
+		b.entities.erase(std::remove_if(b.entities.begin(), b.entities.end(),
+		                                [&_entity](Entity* _ptr) { return _ptr == _entity; }),
+		                 b.entities.end());
+		b.worldCollidableEntities.erase(std::remove_if(b.worldCollidableEntities.begin(),
+		                                               b.worldCollidableEntities.end(),
+		                                               [&_entity](Entity* _ptr) { return _ptr == _entity; }),
+		                                b.worldCollidableEntities.end());
+		PruneEmptyContainer(oldCpos);
+
+		// Put in the new bucket
+		auto& newContainer = entityContainers[{ newBucketPos.x, newBucketPos.y }];
+		auto& newB = newContainer.buckets[newBucketPos.z];
+		newB.entities.push_back(_entity);
+		if (_entity->actsAsWorldCollider)
+			newB.worldCollidableEntities.push_back(_entity);
+		_entity->bucketPos = newBucketPos;
+	}
+}
+
 void EntityManager::TickEntityAndPassenger(const std::shared_ptr<Entity>& _entity, TickProfiler* _profiler) {
 	// Skip ticking entities who's passenger is a player
 	// Players will tick their own vehicles
@@ -182,41 +212,18 @@ void EntityManager::TickEntityAndPassenger(const std::shared_ptr<Entity>& _entit
 	}
 
 	// Check to see if this entity went into another container or bucket
-	Int3 newBucketPos = ComputeBucketPos(_entity->position);
-	Entity* raw = _entity.get();
-
-	if (newBucketPos != _entity->bucketPos) {
-		Int2 oldCpos{ _entity->bucketPos.x, _entity->bucketPos.y };
-		// Remove from the old bucket and mark the old chunk as modified
-		if (auto chunk = world->GetChunkRaw(oldCpos))
-			chunk->isModified = true;
-		auto& oldContainer = entityContainers[oldCpos];
-		auto& b = oldContainer.buckets[_entity->bucketPos.z];
-		b.entities.erase(std::remove_if(b.entities.begin(), b.entities.end(),
-		                                [&_entity](Entity* _ptr) { return _ptr == _entity.get(); }),
-		                 b.entities.end());
-		b.worldCollidableEntities.erase(std::remove_if(b.worldCollidableEntities.begin(),
-		                                               b.worldCollidableEntities.end(),
-		                                               [&_entity](Entity* _ptr) { return _ptr == _entity.get(); }),
-		                                b.worldCollidableEntities.end());
-		PruneEmptyContainer(oldCpos);
-
-		// Put in the new bucket
-		auto& newContainer = entityContainers[{ newBucketPos.x, newBucketPos.y }];
-		auto& newB = newContainer.buckets[newBucketPos.z];
-		newB.entities.push_back(raw);
-		if (_entity->actsAsWorldCollider)
-			newB.worldCollidableEntities.push_back(raw);
-		_entity->bucketPos = newBucketPos;
-	}
+	auto rawPtr = _entity.get();
+	UpdateEntityBucket(rawPtr);
 
 	// If something is riding us, tick it
 	if (auto lockPassenger = _entity->passenger.lock()) {
-		auto passengersVehicle = lockPassenger->vehicle.lock();
-		if (!lockPassenger->isDead && passengersVehicle.get() == raw) {
-			TickEntityAndPassenger(lockPassenger, _profiler);
-		} else {
-			_entity->passenger.reset();
+		if (!playerPassenger) {
+			auto passengersVehicle = lockPassenger->vehicle.lock();
+			if (!lockPassenger->isDead && passengersVehicle.get() == rawPtr) {
+				TickEntityAndPassenger(lockPassenger, _profiler);
+			} else {
+				_entity->passenger.reset();
+			}
 		}
 	}
 }

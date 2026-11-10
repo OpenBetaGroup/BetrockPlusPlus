@@ -31,24 +31,33 @@ std::string KillOther(const strategos::CmdNode& _cmd, void* _userData) {
 		return ERROR_REASON_PARAMETERS;
 	if (!IsOperator(ctx))
 		return ERROR_OPERATOR;
-	if (!targets->empty() && targets->front() == '@') {
-		auto collected = ResolveCmdTargets(*targets, ctx);
-		if (!collected)
-			return collected.error();
+	if (!targets->empty()) {
+		if (targets->front() == '@') {
+			auto collected = ResolveCmdTargets(*targets, ctx);
+			if (!collected)
+				return collected.error();
 
-		size_t killed = 0;
-		for (const CommandTarget& resolved : *collected) {
-			killed++;
-			auto target = resolved.entity;
-			auto isMobile = dynamic_cast<MobileEntity*>(target);
-			if (isMobile)
-				isMobile->AttackEntityFrom(nullptr, isMobile->health, DamageType::Command);
-			else {
-				target->isDead = true;
+			size_t killed = 0;
+			for (const CommandTarget& resolved : *collected) {
+				killed++;
+				auto target = resolved.entity;
+				auto isMobile = dynamic_cast<MobileEntity*>(target);
+				if (isMobile)
+					isMobile->AttackEntityFrom(nullptr, isMobile->health, DamageType::Command);
+				else {
+					target->isDead = true;
+				}
 			}
+			SendFeedback(ctx, "§eKilled (" + std::to_string(killed) + ") entities!");
+			return "";
+		} else {
+			auto targetSession = ctx.server->GetSessionByUsername(*targets);
+			if (!targetSession)
+				return "Invalid player target!";
+			auto playerEntity = static_cast<PlayerEntity*>(targetSession->entity.get());
+			playerEntity->AttackEntityFrom(nullptr, playerEntity->health, DamageType::Command);
+			return "";
 		}
-		SendFeedback(ctx, "§eKilled (" + std::to_string(killed) + ") entities!");
-		return "";
 	}
 	KillSelf(_cmd, _userData);
 	return "";

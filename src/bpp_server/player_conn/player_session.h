@@ -72,10 +72,6 @@ struct PlayerSession {
 	// rotation.x = yaw, rotation.y = pitch
 	Float2 rotation = { 0.0f, 0.0f };
 
-	// Bed respawn point. Only meaningful when hasBedSpawn is true.
-	Int3 spawnPosition;
-	bool hasBedSpawn = false;
-
 	std::unordered_set<Int32_2> sentChunks;
 	std::unordered_set<Int32_2> flushedChunks; // Actually written to stream
 
@@ -151,9 +147,9 @@ struct PlayerSession {
 		dimension = _nbt.Has("Dimension") ? static_cast<Dimension>(_nbt.Get("Dimension").GetInt())
 		                                  : Dimension::Overworld;
 
-		hasBedSpawn = _nbt.Has("SpawnX") && _nbt.Has("SpawnY") && _nbt.Has("SpawnZ");
-		if (hasBedSpawn) {
-			spawnPosition = { _nbt.Get("SpawnX").GetInt(), _nbt.Get("SpawnY").GetInt(), _nbt.Get("SpawnZ").GetInt() };
+		entity->hasBedSpawn = _nbt.Has("SpawnX") && _nbt.Has("SpawnY") && _nbt.Has("SpawnZ");
+		if (entity->hasBedSpawn) {
+			entity->spawnPosition = { _nbt.Get("SpawnX").GetInt(), _nbt.Get("SpawnY").GetInt(), _nbt.Get("SpawnZ").GetInt() };
 		}
 
 		if (_nbt.Has("Inventory")) {
@@ -196,15 +192,15 @@ struct PlayerSession {
 		Tag spawnXTag;
 		spawnXTag.type = TAG_INT;
 		spawnXTag.name = "SpawnX";
-		spawnXTag.intValue = spawnPosition.x;
+		spawnXTag.intValue = entity->spawnPosition.x;
 		Tag spawnYTag;
 		spawnYTag.type = TAG_INT;
 		spawnYTag.name = "SpawnY";
-		spawnYTag.intValue = spawnPosition.y;
+		spawnYTag.intValue = entity->spawnPosition.y;
 		Tag spawnZTag;
 		spawnZTag.type = TAG_INT;
 		spawnZTag.name = "SpawnZ";
-		spawnZTag.intValue = spawnPosition.z;
+		spawnZTag.intValue = entity->spawnPosition.z;
 		Tag inventoryTag;
 		inventoryTag.type = TAG_LIST;
 		inventoryTag.name = "Inventory";
@@ -248,7 +244,7 @@ struct PlayerSession {
 		rootTag.compound["Dimension"] = dimensionTag;
 		rootTag.compound["Sleeping"] = sleepingTag;
 		rootTag.compound["Inventory"] = inventoryTag;
-		if (hasBedSpawn) {
+		if (entity->hasBedSpawn) {
 			rootTag.compound["SpawnX"] = spawnXTag;
 			rootTag.compound["SpawnY"] = spawnYTag;
 			rootTag.compound["SpawnZ"] = spawnZTag;

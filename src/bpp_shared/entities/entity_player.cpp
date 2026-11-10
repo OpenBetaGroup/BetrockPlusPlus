@@ -30,6 +30,40 @@ bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	return success;
 }
 
+// Returns the valid respawn point of this player entity
+// Or { -1.0, -1.0, -1.0 } if invalid
+Vec3 PlayerEntity::CheckRespawnState() {
+	const int checkRange = 3;
+	if (!world->AABBinValidChunks(this->collider.Expand(checkRange, checkRange, checkRange)))
+		return { -1.0, -1.0, -1.0 };
+
+	// Get our respawn point
+	Int3 spawn = {};
+	bool bedPositionFindFailed = true;
+	if (hasBedSpawn) {
+		Int3 headPos = spawnPosition.WithOffset(Cardinal::Value::Down);
+		auto bedDir = GetDirectionFromMeta(BLOCK_BED, world->GetMetadata(headPos));
+		Int3 footPos = headPos.WithOffset(Cardinal::Opposite(bedDir));
+
+		if (world->GetBlockId(headPos) == BLOCK_BED) {
+			auto sleepPositions = Blocks::GetBedApproachSpots(*world, headPos, footPos);
+			if (!sleepPositions.empty()) {
+				bedPositionFindFailed = false;
+				spawn = sleepPositions[0];
+			}
+		}
+	}
+	if (bedPositionFindFailed) {
+		if (hasBedSpawn) {
+			NotifyBedMissing();
+		}
+		hasBedSpawn = false;
+		spawn = world->GetSpawnPoint(true);
+	}
+	Vec3 spawnLocation = { double(spawn.x) + 0.5, double(spawn.y) + 0.01, double(spawn.z) + 0.5 };
+	return spawnLocation;
+}
+
 bool PlayerEntity::HeadInOpaqueBlock() {
 	if (isSleeping)
 		return false;
@@ -94,14 +128,14 @@ SleepFailureReason PlayerEntity::TrySleep(Int3 _pos) {
 
 	this->ticksInBed = 0;
 	this->isSleeping = true;
-	this->spawnPos = { double(_pos.x), double(_pos.y), double(_pos.z) };
+	this->spawnPosition = _pos;
 
 	this->velocity = {};
 
 	return SleepFailureReason::SUCCESS;
 }
 
-void PlayerEntity::WakeUp(bool /*_confirmSpawn*/) {
+void PlayerEntity::WakeUp(bool _confirmSpawn) {
 	this->SetSize({ 0.6f, 1.8f });
 	this->yOffset = 0.0f;
 	this->isSleeping = false;
@@ -120,6 +154,11 @@ void PlayerEntity::WakeUp(bool /*_confirmSpawn*/) {
 		Vec3 teleportPos = { double(footPos.x) + 0.5, double(footPos.y) + double(this->yOffset) + 0.1,
 			                 double(footPos.z) + 0.5 };
 		this->Teleport(teleportPos, { rotationYaw, rotationPitch });
+	}
+
+	if (_confirmSpawn) {
+		this->hasBedSpawn = true;
+		this->spawnPosition = this->bedPosition.WithOffset(Cardinal::Value::Up);
 	}
 }
 

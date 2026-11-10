@@ -232,6 +232,16 @@ void Entity::UnmountEntity() {
 	this->vehicle.reset();
 }
 
+void Entity::UpdateRiderPosition() {
+	auto v = vehicle.lock();
+	if (!v || v->isDead)
+		return;
+	Vec3 seat = v->GetRiderSeatOffset();
+	Teleport({ v->position.x + seat.x, v->position.y + v->GetMountOffset() + GetRidingYOffset(),
+	           v->position.z + seat.z },
+	         { rotationYaw, rotationPitch });
+}
+
 void Entity::TickPassengerEntity() {
 	auto lockVehicle = this->vehicle.lock();
 	if (!lockVehicle || lockVehicle->isDead) {
@@ -242,10 +252,7 @@ void Entity::TickPassengerEntity() {
 	this->velocity = {};
 	this->UpdateEntityPhysicsState();
 
-	Vec3 seatOffset = lockVehicle->GetRiderSeatOffset();
-	Vec3 newPos = { lockVehicle->position.x + seatOffset.x,
-		            lockVehicle->position.y + lockVehicle->GetMountOffset() + this->GetRidingYOffset(),
-		            lockVehicle->position.z + seatOffset.z };
+	UpdateRiderPosition();
 
 	// Look direction smoothing
 	passengerLookDelta.x += lockVehicle->rotationYaw - lastVehicleRotation.x;
@@ -270,8 +277,6 @@ void Entity::TickPassengerEntity() {
 	passengerLookDelta.y -= pitchStep;
 	rotationYaw += yawStep;
 	rotationPitch += pitchStep;
-
-	this->Teleport(newPos, { rotationYaw, rotationPitch });
 }
 
 void Entity::Tick() {

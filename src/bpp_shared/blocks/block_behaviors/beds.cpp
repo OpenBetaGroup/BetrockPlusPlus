@@ -148,6 +148,26 @@ bool TrySpawnNightmare(WorldManager& _world, PlayerEntity& _player) {
 	return TriggerNightmareSpawns(_world, _player, headPos, footPos);
 }
 
+void BreakBed(WorldManager& _world, Int3 _pos) {
+	auto meta = _world.GetMetadata(_pos);
+	auto dir = GetDirectionFromMeta(BLOCK_BED, meta);
+	if (meta & 0b1000) {
+		// We are the head of the bed
+		// Offset one down
+		_pos.Offset(Cardinal::Opposite(dir));
+		if (_world.GetBlockId(_pos) != BLOCK_BED)
+			// The foot is not a bed block!
+			return;
+	}
+	// Since we're now guaranteed to be pointing at the foot of the bed,
+	// we can continue like this
+	Int3 headPos = _pos.WithOffset(dir);
+	if (_world.GetBlockId(headPos) == BLOCK_BED && (_world.GetMetadata(headPos) & 0b1000)) {
+		_world.SetBlock(headPos, BLOCK_AIR);
+	}
+	BreakAndDropBlock(_world, _pos);
+}
+
 void RegisterBedBehaviors() {
 	blockBehaviors[BlockType::BLOCK_BED] = {
 		.getSelectionBox = BedAabb,
@@ -184,23 +204,10 @@ void RegisterBedBehaviors() {
 	};
 	//blockBehaviors[BLOCK_BED].onBlockClicked = ToggleDoor;
 	blockBehaviors[BLOCK_BED].onBlockDestroyedByPlayer = [](WorldManager& _world, Int3 _pos, Entity& /*_destroyer*/) {
-		auto meta = _world.GetMetadata(_pos);
-		auto dir = GetDirectionFromMeta(BLOCK_BED, meta);
-		if (meta & 0b1000) {
-			// We are the head of the bed
-			// Offset one down
-			_pos.Offset(Cardinal::Opposite(dir));
-			if (_world.GetBlockId(_pos) != BLOCK_BED)
-				// The foot is not a bed block!
-				return;
-		}
-		// Since we're now guaranteed to be pointing at the foot of the bed,
-		// we can continue like this
-		Int3 headPos = _pos.WithOffset(dir);
-		if (_world.GetBlockId(headPos) == BLOCK_BED && (_world.GetMetadata(headPos) & 0b1000)) {
-			_world.SetBlock(headPos, BLOCK_AIR);
-		}
-		BreakAndDropBlock(_world, _pos);
+		BreakBed(_world, _pos);
+	};
+	blockBehaviors[BLOCK_BED].onBlockDestroyedByExplosion = [](WorldManager& _world, Int3 _pos) {
+		BreakBed(_world, _pos);
 	};
 }
 

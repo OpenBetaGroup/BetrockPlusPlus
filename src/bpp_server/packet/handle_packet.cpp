@@ -476,13 +476,21 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 	if (Items::IsBlock(heldItem->id)) {
 		Int3 placePosition = position.WithOffset(FaceDirectionToDirection(_pkt.face));
 
+		auto resyncInvalidBlock = [&]() -> void {
+			resyncBlock(position);
+			resyncBlock(placePosition);
+
+			ItemStack* now = _session.inventory.GetHeldItem();
+			PacketUtilities::SendSlot(_session, 0, _session.inventory.activeHotbarSlot + 36, now);
+		};
+
 		if (heldItem->id.value < BLOCK_AIR || heldItem->id.value >= Items::Id::SHOVEL_IRON) {
+			resyncInvalidBlock();
 			return;
 		}
 
 		if (!IsValidActionInSpawnRadius(_session, _server, placePosition, _world)) {
-			resyncBlock(placePosition);
-			PacketUtilities::SendInventory(_session, 0, _session.inventory);
+			resyncInvalidBlock();
 			return;
 		}
 
@@ -512,9 +520,11 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 		}
 
 		// Result failed so resync
-		resyncBlock(position);
-		resyncBlock(placePosition);
-		PacketUtilities::SendSlot(_session, 0, _session.inventory.activeHotbarSlot + 36, heldItem);
+		ItemStack* now = _session.inventory.GetHeldItem();
+		ItemStack serverStack = now ? *now : ItemStack{};
+		if (serverStack != _pkt.item) {
+			resyncInvalidBlock();
+		}
 	} else if (Items::IsItem(heldItem->id)) {
 		bool isBucketItem = (heldItem->id == Items::Id::BUCKET || heldItem->id == Items::Id::BUCKET_WATER ||
 		                     heldItem->id == Items::Id::BUCKET_LAVA);
@@ -747,8 +757,6 @@ void PlayerAction(Packet::PlayerAction& _pkt, PlayerSession& _session, EntityTra
 		entity->UpdateMetadata(entity->flags.isSneaking, false);
 		break;
 	case PacketData::PlayerAction::STOP_SLEEPING: {
-		Logger::Debug << "STOP_SLEEPING: waking up " << _session.username << " from position " << entity->position
-		              << " (isSleeping=" << entity->isSleeping << ")\n";
 		entity->WakeUp();
 		break;
 	}
@@ -772,6 +780,8 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	auto newEntity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
 	newEntity->session = &_session;
 	newEntity->id = _session.entity->id;
+	newEntity->hasBedSpawn = _session.entity->hasBedSpawn;
+	newEntity->spawnPosition = _session.entity->spawnPosition;
 	_session.entity = newEntity;
 
 	_server.ResetDimensionState(_session, TARGET_DIM);
@@ -791,7 +801,7 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 
 	auto world = _server.GetWorldForDimension(TARGET_DIM);
 	Int3 spawn = {};
-	spawn = _session.hasBedSpawn ? _session.spawnPosition : world->GetSpawnPoint(/*Random Adjust=*/true);
+	spawn = _session.entity->hasBedSpawn ? _session.entity->spawnPosition : world->GetSpawnPoint(/*Random Adjust=*/true);
 	Vec3 spawnLocation = { double(spawn.x) + 0.5, double(CHUNK_HEIGHT) * 4.0, double(spawn.z) + 0.5 };
 	_session.pendingRespawn = true;
 

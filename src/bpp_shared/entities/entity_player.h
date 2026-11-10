@@ -21,7 +21,7 @@ struct PlayerEntity : public MobileEntity {
 	// Position of the bed (headboard) the player is currently sleeping in.
 	// Only meaningful while isSleeping is true.
 	Int3 bedPosition{ 0, 0, 0 };
-	Vec3 spawnPos = {};
+	Int3 spawnPosition = {};
 	std::weak_ptr<FishingBobberEntity> fishingBobber;
 
 	// Also called "SleepTimer" in the player save
@@ -30,6 +30,7 @@ struct PlayerEntity : public MobileEntity {
 	int portalCooldown = 0;
 	bool isSleeping : 1 = false;
 	bool isInPortal : 1 = false;
+	bool hasBedSpawn : 1 = false;
 
 	// Only used for wolves! Annoying!
 	std::string username;
@@ -49,6 +50,7 @@ struct PlayerEntity : public MobileEntity {
 	~PlayerEntity() = default;
 	bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) override;
 	bool HeadInOpaqueBlock() override;
+	Vec3 CheckRespawnState();
 	virtual void OnEnterPortal() override;
 	virtual void Tick() override;
 	virtual bool PickupItem(ItemStack& _stack, EntityId _entityId);
@@ -60,6 +62,7 @@ struct PlayerEntity : public MobileEntity {
 	virtual SleepFailureReason TrySleep(Int3 _pos);
 	virtual void WakeUp(bool _confirmSpawn = true);
 	virtual void UsePortal();
+	virtual void NotifyBedMissing() {};
 
 	float GetEyeHeight() override {
 		return 1.62f;
