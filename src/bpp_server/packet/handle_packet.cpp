@@ -822,6 +822,8 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 		PacketUtilities::SendInventory(_session, 0, _session.inventory);
 
 	// Reset our equipment profile for the entity tracker
+	_session.entity->wasMetadataUpdated = true;
+	_session.inventory.activeHotbarSlot = 0;
 	_session.entityTracker->GetTrackerForEntityId(_session.entity->id)->equipmentProfile = {};
 }
 
