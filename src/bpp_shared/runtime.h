@@ -13,6 +13,8 @@
 #include "platform/platform_caps.h"
 #include "world/storage/region_manager.h"
 #include "world/storage/save_manager.h"
+#include "world/dimension/nether/dimension_nether.h"
+#include "world/dimension/overworld/dimension_overworld.h"
 #include "world/world.h"
 
 // General game runtime that the client and server can use so that way we don't reuse a bunch of code and have to maintain it in two places.
@@ -31,12 +33,14 @@ struct Runtime {
 	// Each world shares an entity id counter
 	EntityId sharedEntityId = 2;
 
-	Runtime() : worldHell(true) {
+	Runtime() : world(), worldHell() {
 		Blocks::RegisterAll();
 		Items::RegisterAll();
 		recipeManager.AddVanillaRecipes();
 		world.entityManager.nextEntityId = &sharedEntityId;
 		worldHell.entityManager.nextEntityId = &sharedEntityId;
+		world.dimension = std::make_unique<DimensionOverworld>(0);
+		worldHell.dimension = std::make_unique<DimensionNether>(0);
 		Logger::Info << "New game runtime created!\n";
 	}
 

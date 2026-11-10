@@ -28,7 +28,7 @@ std::string TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 	if (hasSpawnChunksEnabled) {
 		Vec3 dest{ double(ipos.x) + 0.5, double(overworld->GetHeightValue(ipos.x, ipos.z)) + 0.01,
 			       double(ipos.z) + 0.5 };
-		if (ctx.world->thisDimension != Dimension::Overworld) {
+		if (ctx.world->dimension->id != Dimension::Overworld) {
 			ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, dest);
 			return "";
 		}
@@ -39,7 +39,7 @@ std::string TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 
 	// Fallback
 	Vec2 dest{ double(ipos.x) + 0.5, double(ipos.z) + 0.5 };
-	if (ctx.world->thisDimension != Dimension::Overworld) {
+	if (ctx.world->dimension->id != Dimension::Overworld) {
 		Vec3 tpPos = { dest.x, CHUNK_HEIGHT + 1.0, dest.z };
 		ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, tpPos);
 		SendTeleport2d(*ctx.session, dest);

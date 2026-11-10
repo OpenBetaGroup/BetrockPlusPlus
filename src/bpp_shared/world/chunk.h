@@ -241,9 +241,9 @@ struct Chunk {
 
 	int GetHighestPoint() const;
 	bool CanBlockSeeSky(Int3 _pos) const;
-	void GenerateHeightMap();
-	void GenerateHeightMapColumn(Int2 _pos);
-	void GenerateSkylightMap();
+	void GenerateHeightMap(bool _hasSky = true);
+	void GenerateHeightMapColumn(Int2 _pos, bool _hasSky = true);
+	void GenerateSkylightMap(bool _hasSky = true);
 	void RelightColumn(Int2 _pos);
 	void Clear();
 

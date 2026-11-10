@@ -198,7 +198,7 @@ void ServerBlock::Initialize() {
 		if (_session.entity->isSleeping)
 			return false;
 		// Intentional game design (trademark)
-		if (_world.thisDimension != Dimension::Overworld && Gamerule::Get<bool>(Gamerule::Id::NetherBedsExplode)) {
+		if (_world.dimension->id != Dimension::Overworld && Gamerule::Get<bool>(Gamerule::Id::NetherBedsExplode)) {
 			// TODO: Probably deduplicate this via blockBehaviors[BLOCK_BED].onBlockDestroyedByPlayer
 			Int3 headPos = _position;
 			auto meta = _world.GetMetadata(headPos);

@@ -23,14 +23,10 @@
 #include <memory>
 #include <unordered_set>
 
-BiomeGenerator WorldManager::biomeGenerator;
-
 Biome WorldManager::GetBiome(Int2 _wpos) {
-	if (isHell)
-		return Biome::BIOME_HELL;
 	auto chunk = GetChunkShared(Int32_2{ _wpos.x >> 4, _wpos.z >> 4 });
 	if (!chunk || chunk->state.load() < ChunkState::Generated)
-		return biomeGenerator.GetBiomeAtPoint(_wpos);
+		return dimension->biomeGetter->GetBiomeAtPoint(_wpos);
 	EnsureClimate(*chunk);
 
 	const int32_t localX = _wpos.x & 15;
@@ -39,25 +35,19 @@ Biome WorldManager::GetBiome(Int2 _wpos) {
 }
 
 void WorldManager::EnsureClimate(Chunk& _chunk) {
-	// The Nether has no climate
-	if (isHell || _chunk.climateBaked)
+	if (_chunk.climateBaked)
 		return;
 
-	thread_local std::unique_ptr<BiomeGenerator> tlBiomeGen;
-	thread_local int64_t tlBiomeSeed = std::numeric_limits<int64_t>::min();
-	if (!tlBiomeGen || tlBiomeSeed != this->seed) {
-		tlBiomeGen = std::make_unique<BiomeGenerator>(this->seed);
-		tlBiomeSeed = this->seed;
-	}
 	thread_local std::unique_ptr<double[]> climateBuffer;
 	if (!climateBuffer)
 		climateBuffer = std::make_unique<double[]>(size_t(CHUNK_AREA) * 3);
 	double* temp = climateBuffer.get();
 	double* humi = temp + CHUNK_AREA;
 	double* weird = humi + CHUNK_AREA;
-	tlBiomeGen->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
-	                             std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
-	                             Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
+
+	dimension->biomeGetter->GenerateBiomeMap(_chunk.biomes, std::span<double>(temp, CHUNK_AREA),
+	                                         std::span<double>(humi, CHUNK_AREA), std::span<double>(weird, CHUNK_AREA),
+	                                         Int2{ _chunk.cpos.x * CHUNK_WIDTH, _chunk.cpos.z * CHUNK_WIDTH });
 	for (int i = 0; i < CHUNK_AREA; ++i) {
 		_chunk.temperature[i] = float(temp[i]);
 		_chunk.humidity[i] = float(humi[i]);
@@ -427,7 +417,7 @@ void WorldManager::Tick(const std::vector<ClientPosition>& _players, bool _advan
 		if (_profiler)
 			_profiler->Record(TickTask::BlockEntityTicks, Clock::now() - start);
 		start = _profiler ? Clock::now() : Clock::time_point{};
-		if (!isHell)
+		if (dimension->hasWeather)
 			weatherSystem.Tick(rand);
 		if (_profiler)
 			_profiler->Record(TickTask::Environment, Clock::now() - start);
@@ -489,7 +479,7 @@ void WorldManager::PerformRandomTicks(const std::vector<ClientPosition>& _player
 		}
 
 		// Snowfall and freezing
-		if (!isHell && rand.NextInt(16) == 0) {
+		if (dimension->hasWeather && rand.NextInt(16) == 0) {
 			distHashCounter = distHashCounter * 3 + 1013904223;
 			uint32_t r = distHashCounter >> 2;
 			int lx = int(r & 15);
@@ -498,7 +488,7 @@ void WorldManager::PerformRandomTicks(const std::vector<ClientPosition>& _player
 
 			// y is the block above the top block
 			int y = FindTopSolidBlock(column.x, column.z);
-			if (y >= 0 && y < CHUNK_HEIGHT && BiomeGenerator::BiomeHasSnow(GetBiome(column)) &&
+			if (y >= 0 && y < CHUNK_HEIGHT && dimension->biomeGetter->BiomeHasSnow(GetBiome(column)) &&
 			    chunk->GetBlockLight({ lx, y, lz }) < 10) {
 				Int3 top = { column.x, y, column.z };
 				Int3 below = { column.x, y - 1, column.z };
@@ -585,11 +575,7 @@ void WorldManager::DropInventory(Inventory& _inventory, Int3 _wpos) {
 void WorldManager::Shutdown() {
 	if (!regionManager)
 		return;
-	if (isHell) {
-		Logger::Info << "Saving chunks for level -1\n";
-	} else {
-		Logger::Info << "Saving chunks for level 0\n";
-	}
+	Logger::Info << "Saving chunks for level " << int(dimension->id) << "...\n";
 
 	// Make sure lighting is up to date
 	lightManager.ProcessLightQueue(*this);
@@ -668,7 +654,10 @@ void WorldManager::DrainGenQueue() {
 				pendingBleedWrites.erase(pit);
 			}
 
-			it->second->GenerateSkylightMap();         // Regen our skylight map
+			if (dimension->hasSky)
+				it->second->GenerateSkylightMap();         // Regen our skylight map
+			else
+				it->second->GenerateHeightMap();
 			this->SeedChunkLighting(it->second->cpos); // Reseed our lighting
 		}
 	}
@@ -732,22 +721,24 @@ void WorldManager::SeedChunkLighting(Int32_2 _pos) {
 
 	// We check each column in the chunk's height against its neighbors, if they differ then we schedule light updates for the vertical column between them.
 	// This works like 99% of the time but can miss some edge cases; its fast though!
-	int bx = _pos.x * CHUNK_WIDTH;
-	int bz = _pos.z * CHUNK_WIDTH;
-	for (int x = 0; x < CHUNK_WIDTH; ++x) {
-		for (int z = 0; z < CHUNK_WIDTH; ++z) {
-			int wx = bx + x, wz = bz + z;
-			int thisH = chunk->GetHeightValue({ x, z });
-			const int ndx[] = { -1, 1, 0, 0 };
-			const int ndz[] = { 0, 0, -1, 1 };
-			for (int i = 0; i < 4; ++i) {
-				int nx = wx + ndx[i], nz = wz + ndz[i];
-				int neighborH = GetHeightValue(nx, nz);
-				if (neighborH == thisH)
-					continue;
-				int minY = std::min<int>(thisH, neighborH);
-				int maxY = std::max<int>(thisH, neighborH);
-				lightManager.ScheduleLightRegion({ nx, minY, nz }, { nx, maxY, nz }, LightType::Sky);
+	if (dimension->hasSky) {
+		int bx = _pos.x * CHUNK_WIDTH;
+		int bz = _pos.z * CHUNK_WIDTH;
+		for (int x = 0; x < CHUNK_WIDTH; ++x) {
+			for (int z = 0; z < CHUNK_WIDTH; ++z) {
+				int wx = bx + x, wz = bz + z;
+				int thisH = chunk->GetHeightValue({ x, z });
+				const int ndx[] = { -1, 1, 0, 0 };
+				const int ndz[] = { 0, 0, -1, 1 };
+				for (int i = 0; i < 4; ++i) {
+					int nx = wx + ndx[i], nz = wz + ndz[i];
+					int neighborH = GetHeightValue(nx, nz);
+					if (neighborH == thisH)
+						continue;
+					int minY = std::min<int>(thisH, neighborH);
+					int maxY = std::max<int>(thisH, neighborH);
+					lightManager.ScheduleLightRegion({ nx, minY, nz }, { nx, maxY, nz }, LightType::Sky);
+				}
 			}
 		}
 	}
@@ -870,25 +861,15 @@ void WorldManager::PumpPipeline(const std::vector<ClientPosition>& _players) {
 			// The generators are cached per thread, so rebuild them if the world seed has changed since this
 			// thread last generated a chunk (e.g. switching worlds, or the chunk-gen benchmark cycling seeds).
 			const int64_t genSeed = this->seed;
-			if (isHell) {
-				thread_local std::unique_ptr<NetherGenerator> tlGen;
-				thread_local int64_t tlGenSeed = 0;
-				if (!tlGen || tlGenSeed != genSeed) {
-					tlGen = std::make_unique<NetherGenerator>(genSeed);
-					tlGenSeed = genSeed;
-				}
-				tlGen->GenerateChunk(*chunk);
-			} else {
-				thread_local std::unique_ptr<OverworldGenerator> tlGen;
-				thread_local int64_t tlGenSeed = 0;
-				if (!tlGen || tlGenSeed != genSeed) {
-					tlGen = std::make_unique<OverworldGenerator>(genSeed);
-					tlGenSeed = genSeed;
-				}
-				tlGen->GenerateChunk(*chunk);
+			thread_local std::unique_ptr<Generator> tlGen;
+			thread_local int64_t tlGenSeed = 0;
+			if (!tlGen || tlGenSeed != genSeed) {
+				tlGen = dimension->GetNewGenerator();
+				tlGenSeed = genSeed;
 			}
+			tlGen->GenerateChunk(*chunk);
 			chunk->isModified = true;
-			chunk->GenerateSkylightMap();
+			chunk->GenerateSkylightMap(dimension->hasSky);
 			chunk->state.store(ChunkState::Generated, std::memory_order_release);
 
 			// This just posts the result so we can start lighting and check for population
@@ -912,9 +893,7 @@ void WorldManager::PumpPipeline(const std::vector<ClientPosition>& _players) {
 				++started;
 		}
 	} else {
-		// Make sure everyone gets their share of the budget.
-		// Every player's cursor walks the same shared,
-		// pre-sorted candidate list.
+		// Make sure everyone gets their share of the budget
 		std::vector<size_t> cursors(size_t(playerCount), 0);
 		int totalStarted = 0;
 		const int totalBudget = slicePerPlayer * playerCount;
@@ -970,16 +949,15 @@ void WorldManager::PopulateReady(int _maxPopulates) {
 
 	// Reuse generators across chunks: PopulateChunk resets its RNG from the world seed,
 	// so perm tables only need rebuilding when the world seed changes.
-	thread_local std::unique_ptr<OverworldGenerator> tlOverworld;
-	thread_local std::unique_ptr<NetherGenerator> tlNether;
-	thread_local int64_t tlOverworldSeed = std::numeric_limits<int64_t>::min();
-	thread_local int64_t tlNetherSeed = std::numeric_limits<int64_t>::min();
-	if (!isHell && (!tlOverworld || tlOverworldSeed != this->seed)) {
-		tlOverworld = std::make_unique<OverworldGenerator>(this->seed);
-		tlOverworldSeed = this->seed;
-	} else if (isHell && (!tlNether || tlNetherSeed != this->seed)) {
-		tlNether = std::make_unique<NetherGenerator>(this->seed);
-		tlNetherSeed = this->seed;
+	struct CachedPopulator {
+		int64_t seed = std::numeric_limits<int64_t>::min();
+		std::unique_ptr<Generator> gen;
+	};
+	thread_local std::unordered_map<int, CachedPopulator> tlPopulators;
+	auto& populator = tlPopulators[int(dimension->id)];
+	if (!populator.gen || populator.seed != this->seed) {
+		populator.gen = dimension->GetNewGenerator();
+		populator.seed = this->seed;
 	}
 
 	// Make sure we don't try to populate the same chunk multiple times in one Tick (can happen with the weird population order and multiple players)
@@ -1001,10 +979,7 @@ void WorldManager::PopulateReady(int _maxPopulates) {
 		WorldWrapper wrapper(*this, pos);
 		wrapper.centerChunkPos = pos;
 		wrapper.GetChunkRegion();
-		if (isHell)
-			tlNether->PopulateChunk(*cit->second, wrapper);
-		else
-			tlOverworld->PopulateChunk(*cit->second, wrapper);
+		populator.gen->PopulateChunk(*cit->second, wrapper);
 		auto& chunk = cit->second;
 		chunk->isTerrainPopulated = true;
 		chunk->isModified = true;
@@ -1110,36 +1085,46 @@ void WorldManager::SetBlock(const Int3 _wpos, const BlockType _blockType, const 
 
 	// Placing opaque block; heightmap may rise
 	if (changesLighting) {
-		chunk->RelightColumn(localXz);
-		int newHeight = chunk->GetHeightValue(localXz);
-		if (newHeight > oldHeight) {
-			// Notify the BFS that all blocks from y down to oldHeight need updating
-			for (int sy = oldHeight; sy <= newHeight; ++sy) {
-				lightManager.UnlightAt(pos.x, sy, pos.z, LightType::Sky, *this);
+		// Skip skylight if we have no sky
+		int newHeight = 0;
+		if (dimension->hasSky) {
+			chunk->RelightColumn(localXz);
+			newHeight = chunk->GetHeightValue(localXz);
+			if (newHeight > oldHeight) {
+				// Notify the BFS that all blocks from y down to oldHeight need updating
+				for (int sy = oldHeight; sy <= newHeight; ++sy) {
+					lightManager.UnlightAt(pos.x, sy, pos.z, LightType::Sky, *this);
+				}
+			} else if (newHeight < oldHeight) {
+				// Height fell
+				for (int sy = newHeight; sy < oldHeight; ++sy) {
+					lightManager.ScheduleLightUpdate({ pos.x, sy, pos.z }, LightType::Sky);
+				}
 			}
-		} else if (newHeight < oldHeight) {
-			// Height fell
-			for (int sy = newHeight; sy < oldHeight; ++sy) {
-				lightManager.ScheduleLightUpdate({ pos.x, sy, pos.z }, LightType::Sky);
-			}
+		} else {
+			chunk->GenerateHeightMapColumn(localXz, dimension->hasSky);
 		}
 
 		// Always re-evaluate the edited block and its 4 horizontal neighbours
-		lightManager.ScheduleLightUpdate(pos, LightType::Sky);
 		lightManager.ScheduleLightUpdate(pos, LightType::Block);
-		int extendedBottom = std::min<int>(newHeight, oldHeight);
-		while (extendedBottom > 0 &&
-		       Blocks::blockProperties[chunk->GetBlock({ localXz.x, extendedBottom - 1, localXz.z })].lightOpacity == 0)
-			--extendedBottom;
 
-		if (newHeight != oldHeight) {
-			lightManager.ScheduleLightRegion({ pos.x - 1, extendedBottom, pos.z - 1 },
-			                                 { pos.x + 1, std::max<int>(newHeight, oldHeight), pos.z + 1 },
-			                                 LightType::Sky);
+		if (dimension->hasSky) {
+			lightManager.ScheduleLightUpdate(pos, LightType::Sky);
+			int extendedBottom = std::min<int>(newHeight, oldHeight);
+			while (extendedBottom > 0 &&
+			       Blocks::blockProperties[chunk->GetBlock({ localXz.x, extendedBottom - 1, localXz.z })].lightOpacity ==
+			           0)
+				--extendedBottom;
+
+			if (newHeight != oldHeight) {
+				lightManager.ScheduleLightRegion({ pos.x - 1, extendedBottom, pos.z - 1 },
+				                                 { pos.x + 1, std::max<int>(newHeight, oldHeight), pos.z + 1 },
+				                                 LightType::Sky);
+			}
 		}
 	} else {
 		// So our heightmap doesn't go out of sync
-		chunk->GenerateHeightMapColumn(localXz);
+		chunk->GenerateHeightMapColumn(localXz, dimension->hasSky);
 	}
 
 	// Remove any tile entities that exist at this spot
@@ -1414,7 +1399,7 @@ void WorldManager::PropagateChunkLightBorders(Int32_2 _cpos) {
 				if (neighborChunk->GetBlockLight(lightUpdatePos)) {
 					lightManager.ScheduleLightUpdate({ bpos.x + lx, y, bpos.z + lz }, LightType::Block);
 				}
-				if (neighborChunk->GetSkyLight(lightUpdatePos) > 0) {
+				if (neighborChunk->GetSkyLight(lightUpdatePos) > 0 && dimension->hasSky) {
 					lightManager.ScheduleLightUpdate({ bpos.x + lx, y, bpos.z + lz }, LightType::Sky);
 				}
 			}

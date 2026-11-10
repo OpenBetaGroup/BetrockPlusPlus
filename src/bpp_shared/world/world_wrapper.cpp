@@ -7,6 +7,7 @@
 */
 
 #include "world_wrapper.h"
+#include "world.h"
 
 // Grab the 3x3 region. Any chunk that is already inUse is left as nullptr
 // (writes to it will fall through to the deferred path via the manager).
@@ -35,6 +36,10 @@ void WorldWrapper::FreeChunkRegion() {
 		for (auto& c : row)
 			if (c)
 				c->inUse.store(false);
+}
+
+int64_t WorldWrapper::GetSeed() const {
+	return manager.seed;
 }
 
 // Convert a world-space position to a region-local chunk offset (-1..1, -1..1)

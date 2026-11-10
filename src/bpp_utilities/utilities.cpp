@@ -232,7 +232,7 @@ bool convertAlphaLevel(std::string& _dir) {
 
 	// Setup our world(s)
 	WorldManager world;
-	WorldManager hellWorld(true);
+	WorldManager hellWorld;
 
 	world.regionManager = &overworldRegionManager;
 	hellWorld.regionManager = &hellRegionManager;

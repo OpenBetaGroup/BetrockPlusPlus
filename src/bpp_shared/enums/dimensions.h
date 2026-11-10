@@ -9,7 +9,7 @@
 #include <cstdint>
 
 // Used as the identifier for the current dimension
-// The End would become Dimenion id 1
+// The End would become Dimension id 1
 
 enum class Dimension : int8_t {
 	// The nether, also known as hell or the slip

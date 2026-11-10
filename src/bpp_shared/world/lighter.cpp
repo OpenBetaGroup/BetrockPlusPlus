@@ -43,6 +43,9 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 	if (_y < 0 || _y >= CHUNK_HEIGHT)
 		return;
 
+	if (!_world.dimension->hasSky && _type == LightType::Sky)
+		return;
+
 	int cx = _x >> 4, cz = _z >> 4;
 
 	// Refresh the 3x3 cache only when we cross a chunk boundary.

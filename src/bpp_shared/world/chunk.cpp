@@ -22,13 +22,17 @@ bool Chunk::CanBlockSeeSky(Int3 _pos) const {
 	return _pos.y >= GetHeightValue({ _pos.x, _pos.z });
 }
 
-void Chunk::GenerateHeightMap() {
+void Chunk::GenerateHeightMap(bool _hasSky) {
 	for (int x = 0; x < CHUNK_WIDTH; x++)
 		for (int z = 0; z < CHUNK_WIDTH; z++)
-			GenerateHeightMapColumn({ x, z });
+			GenerateHeightMapColumn({ x, z }, _hasSky);
 }
 
-void Chunk::GenerateHeightMapColumn(Int2 _pos) {
+void Chunk::GenerateHeightMapColumn(Int2 _pos, bool _hasSky) {
+	if (!_hasSky) {
+		SetHeightValue(_pos, MAX_HEIGHT_VALUE);
+		return;
+	}
 	for (int y = MAX_HEIGHT_VALUE - 1; y >= 0; y--) {
 		if (Blocks::blockProperties[GetBlock({ _pos.x, y, _pos.z })].lightOpacity > 0) {
 			SetHeightValue(_pos, uint8_t(y + 1));
@@ -38,8 +42,8 @@ void Chunk::GenerateHeightMapColumn(Int2 _pos) {
 	SetHeightValue(_pos, 0);
 }
 
-void Chunk::GenerateSkylightMap() {
-	GenerateHeightMap();
+void Chunk::GenerateSkylightMap(bool _hasSky) {
+	GenerateHeightMap(_hasSky);
 
 	// Every slot that starts at or above the tallest column is open sky in every column, so light it in one go
 	const int bulkStart = std::min<int>(CHUNK_HEIGHT, (GetHighestPoint() + SUB_CHUNK_SIZE - 1) & ~(SUB_CHUNK_SIZE - 1));

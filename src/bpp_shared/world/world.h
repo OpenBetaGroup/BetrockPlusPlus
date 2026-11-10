@@ -32,6 +32,7 @@
 #include "world/spawner.h"
 #include "world/storage/region_manager.h"
 #include "world_access.h"
+#include "world/dimension/dimension.h"
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -106,20 +107,16 @@ public:
 	Java::Random rand;
 	int64_t seed = 0;
 	Int3 spawnPoint{ 0, 0, 0 };
-	Dimension thisDimension = Dimension::Overworld;
+	std::unique_ptr<DimensionBase> dimension;
 	WeatherSystem weatherSystem;
 
-	WorldManager(bool _pIsHell = false)
+	WorldManager()
 #ifdef BUILD_SERVER
-	    : apiWorld(this), isHell(_pIsHell)
-#else
-	    : isHell(_pIsHell)
+	    : apiWorld(this)
 #endif
 	{
 		entityManager.world = this;
 		tickScheduler.world = this;
-		if (isHell)
-			thisDimension = Dimension::Nether;
 		distHashCounter = uint32_t(rand.NextInt());
 	}
 
@@ -197,7 +194,7 @@ public:
 			return false;
 		if (FindTopSolidBlock(_pos.x, _pos.z) > _pos.y)
 			return false;
-		return BiomeGenerator::BiomeHasLightning(GetBiome({ _pos.x, _pos.z }));
+		return dimension->biomeGetter->BiomeHasLightning(GetBiome({ _pos.x, _pos.z }));
 	}
 
 	bool IsNight() const {
@@ -264,16 +261,15 @@ public:
 		return simulationRadius;
 	}
 	Dimension GetDimension() const {
-		return thisDimension;
+		return static_cast<Dimension>(dimension->id);
 	}
 	void InitWorldSeed(std::string _pSeed) {
 		InitWorldSeed(HashCode(_pSeed));
 	}
 	void InitWorldSeed(int64_t _pSeed) {
 		seed = _pSeed;
-		// Update the biome generator with this seed
-		if (!isHell)
-			biomeGenerator = BiomeGenerator(seed);
+		// Update the dimension with this seed
+		dimension->UpdateSeed(_pSeed);
 	}
 
 	// Returns nullptr if not found or wrong type.
@@ -427,7 +423,6 @@ private:
 	int viewRadius = 9;
 	int simulationRadius = 9;
 	uint32_t distHashCounter = 0;
-	bool isHell = false; // for the nether
 
 	std::shared_ptr<Chunk>* FindChunkSlot(Int32_2 _pos) {
 		if (lastChunkSlot && _pos == lastChunkPos)

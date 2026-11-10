@@ -439,7 +439,7 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdTargets(std::st
 	if (selector == "@r") {
 		if (eligible.empty())
 			return eligible;
-		auto* tracker = _ctx.server->GetEntityTrackerForDimension(_ctx.world->thisDimension);
+		auto* tracker = _ctx.server->GetEntityTrackerForDimension(_ctx.world->dimension->id);
 		return std::vector<CommandTarget>{
 			eligible[static_cast<size_t>(tracker->rand.NextInt(static_cast<int32_t>(eligible.size())))]
 		};

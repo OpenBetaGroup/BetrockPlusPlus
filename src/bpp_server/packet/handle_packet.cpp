@@ -844,7 +844,7 @@ void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldMana
 	_world.CreateTileEntity(tile);
 
 	for (auto& viewer : _players) {
-		if (viewer->connState != ConnectionState::Playing || viewer->dimension != _world.thisDimension)
+		if (viewer->connState != ConnectionState::Playing || viewer->dimension != _world.dimension->id)
 			continue;
 
 		Int2 chunkCoord = Int2{ position.x >> 4, position.z >> 4 };

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../world_wrapper.h"
+#include "world/world_wrapper.h"
 #include "blocks/block_properties.h"
 #include "constants.h"
 #include "java_random.h"

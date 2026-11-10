@@ -211,6 +211,11 @@ set(SHARED_SOURCES
     src/bpp_shared/world/managers/redstone_manager.cpp
     src/bpp_shared/world/managers/rail_manager.cpp
 
+    # Dimensions
+    src/bpp_shared/world/dimension/nether/dimension_nether.cpp
+    src/bpp_shared/world/dimension/overworld/dimension_overworld.cpp
+    src/bpp_shared/world/dimension/dimension.cpp
+
     # Blocks
     src/bpp_shared/blocks/block_properties_behaviors.cpp
     src/bpp_shared/blocks/block_behaviors.cpp

@@ -5,6 +5,7 @@
 */
 
 #include "../feature_gen.h"
+#include "world.h"
 #include "tile_entities/tile_entity.h"
 
 bool FeatureGenerator::GenerateDungeon(WorldWrapper& _world, Java::Random& _rand, Int3 _pos) {

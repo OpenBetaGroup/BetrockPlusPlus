@@ -7,7 +7,7 @@
 */
 
 #pragma once
-#include "world.h"
+#include "chunk.h"
 #include "world_access.h"
 
 // 3x3 region of chunk pointers, centered on the chunk being populated
@@ -50,9 +50,7 @@ public:
 	uint8_t GetSkyLight(const Int3 _wpos) override;
 	int GetBlockLightRaw(const Int3 _wpos) override;
 
-	int64_t GetSeed() const {
-		return manager.seed;
-	}
+	int64_t GetSeed() const;
 
 	bool CanBlockSeeSky(const Int3 _pos) override {
 		auto chunk = chunkRegion.GetChunk(GetRegionChunkPos(_pos));

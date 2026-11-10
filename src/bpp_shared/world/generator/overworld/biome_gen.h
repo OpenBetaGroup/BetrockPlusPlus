@@ -37,7 +37,7 @@ public:
 	                      std::span<double> _humidity, std::span<double> _weirdness, Int2 _blockPos);
 	void GenerateTemperature(std::span<double> _temperature, std::span<double> _weirdness, Int2 _chunkPos, Int2 _max);
 
-	static bool BiomeHasRain(Biome _biome) {
+	bool BiomeHasRain(Biome _biome) {
 		switch (_biome) {
 		case BIOME_DESERT:
 		case BIOME_ICEDESERT:
@@ -49,7 +49,7 @@ public:
 		}
 	}
 
-	static bool BiomeHasSnow(Biome _biome) {
+	bool BiomeHasSnow(Biome _biome) {
 		switch (_biome) {
 		case BIOME_TAIGA:
 		case BIOME_TUNDRA:
@@ -60,7 +60,7 @@ public:
 		}
 	}
 
-	static bool BiomeHasLightning(Biome _biome) {
+	bool BiomeHasLightning(Biome _biome) {
 		return BiomeHasRain(_biome) && !BiomeHasSnow(_biome);
 	}
 };
