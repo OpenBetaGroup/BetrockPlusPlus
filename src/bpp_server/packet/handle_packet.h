@@ -9,7 +9,7 @@
 #include "platform/platform_caps.h"
 #include <functional>
 #if defined(BPP_HAS_POSIX_SOCKETS)
-#define INVALID_SOCKET -1
+#define BPP_INVALID_SOCKET -1
 #include <netinet/in.h>
 #ifndef BPP_PLATFORM_CONSOLE
 #include <sys/ioctl.h>

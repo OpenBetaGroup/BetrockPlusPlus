@@ -5,7 +5,7 @@
  *
 */
 #pragma once
-#define INVALID_SOCKET -1
+#define BPP_INVALID_SOCKET -1
 #include "platform/platform_caps.h"
 #if defined(BPP_HAS_POSIX_SOCKETS)
 #include <fcntl.h>
@@ -40,7 +40,7 @@ public:
 	    : clientSocket(_other.clientSocket), connected(_other.connected.load()), shortRead(_other.shortRead),
 	      readBuffer(std::move(_other.readBuffer)), readPos(_other.readPos),
 	      writeBuffer(std::move(_other.writeBuffer)) {
-		_other.clientSocket = InvalidClientSocket;
+		_other.clientSocket = BPP_INVALID_SOCKET;
 		_other.readPos = 0;
 	}
 	bool NewClient();
@@ -159,9 +159,7 @@ public:
 	}
 
 private:
-	// Sentinel for "no socket". Windows' INVALID_SOCKET is a 64-bit ~0 and would truncate into an int.
-	static constexpr int InvalidClientSocket = -1;
-	int clientSocket = InvalidClientSocket;
+	int clientSocket = BPP_INVALID_SOCKET;
 	// Written by the write thread (flush), read by the tick thread
 	std::atomic<bool> connected{ true };
 	bool shortRead = false;

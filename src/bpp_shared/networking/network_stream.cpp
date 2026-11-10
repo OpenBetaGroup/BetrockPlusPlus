@@ -20,7 +20,7 @@ NetworkStream::NetworkStream(int _pClientSocket) {
 }
 
 NetworkStream::~NetworkStream() {
-	if (clientSocket != InvalidClientSocket) {
+	if (clientSocket != BPP_INVALID_SOCKET) {
 #if defined(_WIN32) || defined(_WIN64)
 		shutdown(clientSocket, SD_BOTH);
 		closesocket(clientSocket);
@@ -30,12 +30,12 @@ NetworkStream::~NetworkStream() {
 		shutdown(clientSocket, SHUT_RDWR);
 		close(clientSocket);
 #endif
-		clientSocket = InvalidClientSocket;
+		clientSocket = BPP_INVALID_SOCKET;
 	}
 }
 
 void NetworkStream::FlushWriteBufferBlocking() {
-	if (writeBuffer.empty() || clientSocket == InvalidClientSocket)
+	if (writeBuffer.empty() || clientSocket == BPP_INVALID_SOCKET)
 		return;
 
 	// Switch to blocking mode
@@ -78,7 +78,7 @@ void NetworkStream::FlushWriteBufferBlocking() {
 	shutdown(clientSocket, SHUT_WR);
 	close(clientSocket);
 #endif
-	clientSocket = InvalidClientSocket;
+	clientSocket = BPP_INVALID_SOCKET;
 }
 
 // String-8 Handling
@@ -307,7 +307,7 @@ bool NetworkStream::FlushWriteBuffer() {
 }
 
 void NetworkStream::DrainToBuffer() {
-	if (clientSocket == InvalidClientSocket || !connected)
+	if (clientSocket == BPP_INVALID_SOCKET || !connected)
 		return;
 
 	// Compact away bytes that were consumed (and NOT rolled back) last

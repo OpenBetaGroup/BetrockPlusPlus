@@ -88,7 +88,7 @@ inline int CreateClientSocket(int _socket = -1, std::string* _outIp = nullptr) {
 #if defined(_WIN32) || defined(_WIN64)
 	int addrLen = sizeof(clientAddr);
 	SOCKET rawSocket = accept(_socket, reinterpret_cast<sockaddr*>(&clientAddr), &addrLen);
-	if (rawSocket == INVALID_SOCKET)
+	if (rawSocket == BPP_INVALID_SOCKET)
 		return -1;
 	u_long clientMode = 1;
 	ioctlsocket(rawSocket, FIONBIO, &clientMode);
