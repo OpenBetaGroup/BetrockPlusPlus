@@ -506,6 +506,7 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 			// We can place the block here
 			auto function = Blocks::blockBehaviors[blockId].onBlockPlaced;
 			if (!function) {
+				resyncInvalidBlock();
 				return;
 			}
 			auto entityPos = _session.entity->position;
@@ -519,14 +520,11 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 			}
 		}
 
-		// Check is result failed
+		// Check if the result failed
 		ItemStack* now = _session.inventory.GetHeldItem();
 		ItemStack serverStack = now ? *now : ItemStack{};
 		if (serverStack != _pkt.item) {
 			resyncInvalidBlock();
-		} else {
-			// So we dont inventory changes
-			_session.inventoryInteraction.InitSnapshot();
 		}
 	} else if (Items::IsItem(heldItem->id)) {
 		bool isBucketItem = (heldItem->id == Items::Id::BUCKET || heldItem->id == Items::Id::BUCKET_WATER ||
