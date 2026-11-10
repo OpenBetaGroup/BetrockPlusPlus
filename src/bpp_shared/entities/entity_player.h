@@ -50,7 +50,7 @@ struct PlayerEntity : public MobileEntity {
 	~PlayerEntity() = default;
 	bool AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) override;
 	bool HeadInOpaqueBlock() override;
-	Vec3 CheckRespawnState();
+	std::optional<Vec3> CheckRespawnState();
 	virtual void OnEnterPortal() override;
 	virtual void Tick() override;
 	virtual bool PickupItem(ItemStack& _stack, EntityId _entityId);

@@ -340,15 +340,17 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 		return;
 
 	// If we didn't find a respawn point, check our respawn state
-	Vec3 respawnPos = _session.position.pos;
+	std::optional<Vec3> respawnOptional = _session.position.pos;
 	if (_session.pendingRespawn) {
 		if (!_session.entity->world)
 			_session.entity->world = &sessionWorld;
-		respawnPos = _session.entity->CheckRespawnState();
-		if (respawnPos == Vec3{ -1.0, -1.0, -1.0 })
+		respawnOptional = _session.entity->CheckRespawnState();
+		if (!respawnOptional)
 			return;
+		_session.rotation = { 0.0, 0.0 };
 		_session.pendingRespawn = false;
 	}
+	Vec3 respawnPos = *respawnOptional;
 
 	// Small nudge so we dont fall through the floor
 	respawnPos.y += 0.001;

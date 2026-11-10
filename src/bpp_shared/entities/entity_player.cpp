@@ -32,10 +32,10 @@ bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 
 // Returns the valid respawn point of this player entity
 // Or { -1.0, -1.0, -1.0 } if invalid
-Vec3 PlayerEntity::CheckRespawnState() {
+std::optional<Vec3> PlayerEntity::CheckRespawnState() {
 	const int checkRange = 3;
 	if (!world->AABBinValidChunks(this->collider.Expand(checkRange, checkRange, checkRange)))
-		return { -1.0, -1.0, -1.0 };
+		return std::nullopt;
 
 	// Get our respawn point
 	Int3 spawn = {};
