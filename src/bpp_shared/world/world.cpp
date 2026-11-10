@@ -750,8 +750,10 @@ void WorldManager::SeedChunkLighting(Int32_2 _pos) {
 		if (!chunk->HasBlock(BlockType(i)))
 			continue;
 		// Schedule light updates for all of those
+		const int bx = _pos.x * CHUNK_WIDTH;
+		const int bz = _pos.z * CHUNK_WIDTH;
 		for (const auto& pos : chunk->FindBlocks(BlockType(i)))
-			lightManager.ScheduleLightUpdate(pos, LightType::Block);
+			lightManager.ScheduleLightUpdate({ bx + pos.x, pos.y, bz + pos.z }, LightType::Block);
 	}
 	PropagateChunkLightBorders(_pos);
 }
