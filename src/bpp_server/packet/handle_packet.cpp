@@ -519,11 +519,14 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 			}
 		}
 
-		// Result failed so resync
+		// Check is result failed
 		ItemStack* now = _session.inventory.GetHeldItem();
 		ItemStack serverStack = now ? *now : ItemStack{};
 		if (serverStack != _pkt.item) {
 			resyncInvalidBlock();
+		} else {
+			// So we dont inventory changes
+			_session.inventoryInteraction.InitSnapshot();
 		}
 	} else if (Items::IsItem(heldItem->id)) {
 		bool isBucketItem = (heldItem->id == Items::Id::BUCKET || heldItem->id == Items::Id::BUCKET_WATER ||
