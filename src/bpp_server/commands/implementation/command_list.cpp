@@ -19,6 +19,8 @@ std::string ListPlayers(const strategos::CmdNode&, void* _userData) {
 	std::string line = "§7";
 	for (size_t i = 0; i < players.size(); i++) {
 		auto& p = players[i];
+		if (p->connState != ConnectionState::Playing)
+			continue;
 		if (line.size() + p->username.size() > 64) {
 			SendFeedback(ctx, line);
 			line = "§7";
