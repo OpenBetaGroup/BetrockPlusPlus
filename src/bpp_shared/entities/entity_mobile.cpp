@@ -506,3 +506,12 @@ ItemStack* MobileEntity::GetHeldItem() {
 void MobileEntity::SetHeldItem(ItemStack _stack) {
 	heldItem = _stack;
 }
+
+bool MobileEntity::CanSpawnAt() {
+	if (!world)
+		return false;
+	bool clearOfEntities = entityManager->GetEntitiesWithinAabb(this->collider).size() == 0;
+	bool clearOfBlocks = world->GetCollidingBoundingBoxes(this->collider).size() == 0;
+	bool clearOfLiquid = !world->IsLiquidInAabb(this->collider);
+	return clearOfBlocks && clearOfEntities && clearOfLiquid;
+}

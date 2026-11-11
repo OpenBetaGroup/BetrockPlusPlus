@@ -10,6 +10,7 @@
 #include <optional>
 #include <queue>
 #include <vector>
+#include "world/world.h"
 
 #include "blocks/block_properties.h"
 #include "numeric_structs.h"

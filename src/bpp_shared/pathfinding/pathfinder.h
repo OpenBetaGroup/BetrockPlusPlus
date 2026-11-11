@@ -8,13 +8,14 @@
 #pragma once
 
 #include "numeric_structs.h"
-#include "world.h"
 #include <cstdint>
 #include <limits>
 #include <optional>
 #include <queue>
 #include <unordered_map>
 #include <vector>
+
+class WorldManager;
 
 struct Node {
 	Int3 pos;

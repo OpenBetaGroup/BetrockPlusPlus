@@ -86,12 +86,5 @@ public:
 	bool EntityAlive() {
 		return !isDead && health > 0;
 	}
-	virtual bool CanSpawnAt() {
-		if (!world)
-			return false;
-		bool clearOfEntities = entityManager->GetEntitiesWithinAabb(this->collider).size() == 0;
-		bool clearOfBlocks = world->GetCollidingBoundingBoxes(this->collider).size() == 0;
-		bool clearOfLiquid = !world->IsLiquidInAabb(this->collider);
-		return clearOfBlocks && clearOfEntities && clearOfLiquid;
-	}
+	virtual bool CanSpawnAt();
 };
