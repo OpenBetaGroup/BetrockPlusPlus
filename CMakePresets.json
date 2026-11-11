@@ -10,81 +10,27 @@
       }
     },
     {
-      "name": "client-debug",
-      "inherits": "base",
-      "cacheVariables": {
-        "BUILD_SERVER": "OFF",
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "client-release",
-      "inherits": "base",
-      "cacheVariables": {
-        "BUILD_SERVER": "OFF",
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "name": "client-release-with-debug-info",
-      "inherits": "base",
-      "cacheVariables": {
-        "BUILD_SERVER": "OFF",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "client-minsize",
-      "inherits": "base",
-      "cacheVariables": {
-        "BUILD_SERVER": "OFF",
-        "CMAKE_BUILD_TYPE": "MinSizeRel"
-      }
-    },
-    {
       "name": "server-debug",
       "description": "Debug build (slow)",
       "inherits": "base",
       "cacheVariables": {
         "BUILD_SERVER": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BPP_CHECK_LICENSE_HEADERS": "OFF"
+      }
+    },
+    {
+      "name": "server-ci",
+      "description": "CI profile (does lots of extra checks, slow)",
+      "inherits": "base",
+      "cacheVariables": {
+        "BUILD_SERVER": "ON",
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
-      "name": "server-release",
-      "description": "Release build (fastest)",
-      "inherits": "base",
-      "cacheVariables": {
-        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
-        "BUILD_SERVER": "ON",
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "name": "server-release-with-debug-info",
-      "description": "Release build with debug symbols (fast)",
-      "inherits": "base",
-      "cacheVariables": {
-        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
-        "BUILD_SERVER": "ON",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "server-release-with-debug-info-optionals",
-      "description": "Release build with optional compile options (e.g. BETACRAFT_HEARTBEAT)",
-      "inherits": "base",
-      "cacheVariables": {
-        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
-        "BUILD_SERVER": "ON",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "BETACRAFT_HEARTBEAT": "ON",
-        "VCPKG_MANIFEST_FEATURES": "betacraft-heartbeat"
-      }
-    },
-    {
       "name": "server-dev",
-      "description": "Fast iteration: RelWithDebInfo without LTO (moderately fast)",
+      "description": "Release build without LTO (moderately fast)",
       "inherits": "base",
       "cacheVariables": {
         "BUILD_SERVER": "ON",
@@ -94,12 +40,24 @@
     },
     {
       "name": "server-minsize",
-      "description": "Release build with small binary size",
+      "description": "Release build with small binary size (fast + small)",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
         "BUILD_SERVER": "ON",
-        "CMAKE_BUILD_TYPE": "MinSizeRel"
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "BPP_CHECK_LICENSE_HEADERS": "OFF"
+      }
+    },
+    {
+      "name": "server-release",
+      "description": "Release build (fastest)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
+        "BUILD_SERVER": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BPP_CHECK_LICENSE_HEADERS": "OFF"
       }
     }
   ]

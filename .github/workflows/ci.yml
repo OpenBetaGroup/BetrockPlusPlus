@@ -1,6 +1,7 @@
 name: CI
 
 # Compile-check only: does the server build on every supported platform?
+# Uses the "server-ci" preset from CMakePresets.json (Debug + license-header check).
 # (Releases are handled separately by build-release-server.yml.)
 on:
   push:
@@ -55,17 +56,17 @@ jobs:
           restore-keys: vcpkg-bincache-x64-windows-static-
 
       - name: Configure
+        # server-ci is a Debug build, so the static runtime must follow the
+        # config (MultiThreadedDebug) to match vcpkg's debug libraries.
         run: >
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DBUILD_SERVER=ON
+          cmake --preset server-ci
           -DBETACRAFT_HEARTBEAT=ON
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
           -DVCPKG_TARGET_TRIPLET=x64-windows-static
-          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>'
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build/server-ci --parallel
 
   # ---------------------------------------------------------------------
   # Linux x86_64 (glibc)
@@ -100,16 +101,14 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-ci \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local \
             -DCMAKE_C_COMPILER=gcc-${LINUX_GCC_VERSION} \
             -DCMAKE_CXX_COMPILER=g++-${LINUX_GCC_VERSION}
 
       - name: Build
-        run: cmake --build build -j"$(nproc)"
+        run: cmake --build build/server-ci -j"$(nproc)"
 
   # ---------------------------------------------------------------------
   # Linux x86_64 (musl / Alpine)
@@ -139,14 +138,12 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-ci \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build/server-ci --parallel
 
   # ---------------------------------------------------------------------
   # macOS arm64 (Apple Silicon)
@@ -180,16 +177,14 @@ jobs:
         run: |
           LLVM_PREFIX="$(brew --prefix llvm)"
           CURL_PREFIX="$(brew --prefix curl)"
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-ci \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH="/usr/local;${CURL_PREFIX}" \
             -DCMAKE_C_COMPILER="$LLVM_PREFIX/bin/clang" \
             -DCMAKE_CXX_COMPILER="$LLVM_PREFIX/bin/clang++"
 
       - name: Build
-        run: cmake --build build -j"$(sysctl -n hw.ncpu)"
+        run: cmake --build build/server-ci -j"$(sysctl -n hw.ncpu)"
 
   # ---------------------------------------------------------------------
   # Single required status check for branch protection

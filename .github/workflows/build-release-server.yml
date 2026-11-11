@@ -1,7 +1,8 @@
 name: Build & Release Server
 
 # Manual-only. Lets you type the release notes at trigger-time and builds
-# the SERVER (BUILD_SERVER=ON) for all 8 targets, then publishes one
+# the SERVER (CMakePresets.json "server-release" preset) for all 7 targets,
+# then publishes one
 # GitHub Release with all the binaries attached.
 on:
   workflow_dispatch:
@@ -100,22 +101,21 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_SERVER=ON `
+          cmake --preset server-release `
+            -DBETACRAFT_HEARTBEAT=ON `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build/server-release --parallel
 
       - name: Package
         shell: pwsh
         run: |
           $out = "package"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
-          Copy-Item build\$env:BINARY_NAME.exe $out\
+          Copy-Item build\server-release\$env:BINARY_NAME.exe $out\
           Copy-Item README.md,LICENSE $out\
           Compress-Archive -Path $out\* -DestinationPath "$env:BINARY_NAME-Server-windows-x86_64.zip"
 
@@ -153,23 +153,21 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_SERVER=ON `
+          cmake --preset server-release `
             -DBETACRAFT_HEARTBEAT=ON `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=arm64-windows-static `
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build/server-release --parallel
 
       - name: Package
         shell: pwsh
         run: |
           $out = "package"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
-          Copy-Item build\$env:BINARY_NAME.exe $out\
+          Copy-Item build\server-release\$env:BINARY_NAME.exe $out\
           Copy-Item README.md,LICENSE $out\
           Compress-Archive -Path $out\* -DestinationPath "$env:BINARY_NAME-Server-windows-arm64.zip"
 
@@ -211,22 +209,20 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-release \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local \
             -DCMAKE_C_COMPILER=gcc-${LINUX_GCC_VERSION} \
             -DCMAKE_CXX_COMPILER=g++-${LINUX_GCC_VERSION}
 
       - name: Build
-        run: cmake --build build -j"$(nproc)"
+        run: cmake --build build/server-release -j"$(nproc)"
 
       - name: Package
         run: |
           out=package
           mkdir -p "$out"
-          cp build/$BINARY_NAME "$out"/
+          cp build/server-release/$BINARY_NAME "$out"/
           cp README.md LICENSE "$out"/
           (cd "$out" && zip -r "../${BINARY_NAME}-Server-linux-glibc-x86_64.zip" .)
 
@@ -269,22 +265,20 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-release \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local \
             -DCMAKE_C_COMPILER=gcc-${LINUX_GCC_VERSION} \
             -DCMAKE_CXX_COMPILER=g++-${LINUX_GCC_VERSION}
 
       - name: Build
-        run: cmake --build build -j"$(nproc)"
+        run: cmake --build build/server-release -j"$(nproc)"
 
       - name: Package
         run: |
           out=package
           mkdir -p "$out"
-          cp build/$BINARY_NAME "$out"/
+          cp build/server-release/$BINARY_NAME "$out"/
           cp README.md LICENSE "$out"/
           (cd "$out" && zip -r "../${BINARY_NAME}-Server-linux-glibc-aarch64.zip" .)
 
@@ -322,20 +316,18 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-release \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH=/usr/local
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build/server-release --parallel
 
       - name: Package
         run: |
           out=package
           mkdir -p "$out"
-          cp build/$BINARY_NAME "$out"/
+          cp build/server-release/$BINARY_NAME "$out"/
           cp README.md LICENSE "$out"/
           (cd "$out" && zip -r "../${BINARY_NAME}-Server-linux-musl-x86_64.zip" .)
 
@@ -375,16 +367,14 @@ jobs:
               cmake --build /tmp/libdeflate/build --parallel
               cmake --install /tmp/libdeflate/build
 
-              cmake -S . -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SERVER=ON \
+              cmake --preset server-release \
                 -DBETACRAFT_HEARTBEAT=ON \
                 -DCMAKE_PREFIX_PATH=/usr/local
-              cmake --build build --parallel
+              cmake --build build/server-release --parallel
 
               out=package
               mkdir -p "$out"
-              cp "build/$BINARY_NAME" "$out"/
+              cp "build/server-release/$BINARY_NAME" "$out"/
               cp README.md LICENSE "$out"/
               (cd "$out" && zip -r "../${BINARY_NAME}-Server-linux-musl-aarch64.zip" .)
             '
@@ -426,22 +416,20 @@ jobs:
         run: |
           LLVM_PREFIX="$(brew --prefix llvm)"
           CURL_PREFIX="$(brew --prefix curl)"
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SERVER=ON \
+          cmake --preset server-release \
             -DBETACRAFT_HEARTBEAT=ON \
             -DCMAKE_PREFIX_PATH="/usr/local;${CURL_PREFIX}" \
             -DCMAKE_C_COMPILER="$LLVM_PREFIX/bin/clang" \
             -DCMAKE_CXX_COMPILER="$LLVM_PREFIX/bin/clang++"
 
       - name: Build
-        run: cmake --build build -j"$(sysctl -n hw.ncpu)"
+        run: cmake --build build/server-release -j"$(sysctl -n hw.ncpu)"
 
       - name: Package
         run: |
           out=package
           mkdir -p "$out"
-          cp build/$BINARY_NAME "$out"/
+          cp build/server-release/$BINARY_NAME "$out"/
           cp README.md LICENSE "$out"/
           (cd "$out" && zip -r "../${BINARY_NAME}-Server-macos-arm64.zip" .)
 

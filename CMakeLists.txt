@@ -12,6 +12,11 @@ option(ONLINE_MODE_AUTHENTICATION "Allows authentication with Mojang servers (re
 option(BETACRAFT_HEARTBEAT "Ping the Betacraft server list (requires libcurl and nlohmann_json)" OFF)
 option(CRASH_LOGGING "Lets the server catch crashes and create crash reports" ON)
 option(EXPERIMENTAL "Experimental or work-in-progress features/changes" OFF)
+
+# Developer-experience options (see CMakePresets.json; none of these change the binary's behaviour)
+option(BPP_CHECK_LICENSE_HEADERS "Check copyright/SPDX headers of src/ files at configure time (presets turn this off except server-ci)" ON)
+option(BPP_USE_CCACHE "Use ccache as compiler launcher when it is installed" ON)
+option(BPP_USE_MOLD "Link with mold when it is installed and the compiler supports it (Linux only)" ON)
 set(GENERATION_PRECISION "DOUBLE" CACHE STRING "Reduces perlin and simplex noise precision (all values other than DOUBLE are experimental and not really supported)")
 set_property(CACHE GENERATION_PRECISION PROPERTY STRINGS "DOUBLE" "FLOAT" "LONG" "INT")
 
@@ -72,6 +77,43 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
         "Release"
         "RelWithDebInfo"
         "MinSizeRel")
+endif()
+
+# Build acceleration (ccache + mold)
+# Both are optional and auto-detected; pass -DBPP_USE_CCACHE=OFF / -DBPP_USE_MOLD=OFF to opt out.
+# This must run before any target is created: the launcher variable is copied into targets
+# as they are defined.
+if(BPP_USE_CCACHE AND NOT MSVC)
+    find_program(CCACHE_PROGRAM ccache)
+    if(CCACHE_PROGRAM)
+        if(UNIX AND NOT DEFINED ENV{CCACHE_SLOPPINESS})
+            # Precompiled headers are only cached with these set. Skipped if the user
+            # configured sloppiness themselves.
+            set(CMAKE_CXX_COMPILER_LAUNCHER
+                env CCACHE_SLOPPINESS=pch_defines,time_macros "${CCACHE_PROGRAM}")
+        else()
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        endif()
+        message(STATUS "ccache found, using it as compiler launcher: ${CCACHE_PROGRAM}")
+    else()
+        message(STATUS "ccache not found; install it for much faster rebuilds")
+    endif()
+endif()
+
+if(BPP_USE_MOLD AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT BPP_TARGET_CONSOLE)
+    find_program(MOLD_PROGRAM mold)
+    if(MOLD_PROGRAM)
+        include(CheckLinkerFlag)
+        check_linker_flag(CXX -fuse-ld=mold BPP_COMPILER_SUPPORTS_MOLD)
+        if(BPP_COMPILER_SUPPORTS_MOLD)
+            add_link_options(-fuse-ld=mold)
+            message(STATUS "mold found, linking with it: ${MOLD_PROGRAM}")
+        else()
+            message(STATUS "mold found but this compiler cannot use -fuse-ld=mold (GCC 12.1+ / Clang needed)")
+        endif()
+    else()
+        message(STATUS "mold not found; install it for faster linking")
+    endif()
 endif()
 
 find_package(libdeflate CONFIG REQUIRED)
@@ -363,7 +405,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "PS2")
     file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/src/bpp_shared/platform/ps2/*.cpp"
     )
-else(UNIX)
+else()
     file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/src/bpp_shared/platform/unix/*.cpp"
     )
@@ -496,6 +538,9 @@ target_precompile_headers(BetrockPlusPlus PRIVATE
     <string_view>
     <unordered_map>
     <vector>
+    <cmath>
+    <chrono>
+    <optional>
     "${PROJECT_SOURCE_DIR}/include/BS_thread_pool.hpp"
 )
 
@@ -594,6 +639,7 @@ target_compile_options(BetrockPlusPlus PRIVATE
         # Comparing floating-point values for equality can be iffy
         #-Wfloat-equal
         # Warn about code that will never be executed (Clang only)
+        # TODO: Enable this for the CI builds at some point
         #-fanalyzer
         $<$<CXX_COMPILER_ID:Clang>:-Wunreachable-code>
     >
@@ -659,6 +705,7 @@ target_compile_options(BetrockPlusPlus PRIVATE
         # Uninitialized variables (C4700: uninitialized local variable used)
         /w14700
         # static analysis (catches null deref, uninitialized, etc.)
+        # TODO: Enable this for the CI builds at some point
         #/analyze
     >
 )
@@ -691,34 +738,39 @@ elseif(BPP_TARGET_SWITCH)
     endif()
 endif()
 
-# Ensure all files have copyright notice
-file(GLOB_RECURSE SOURCE_FILES
-    "${CMAKE_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_SOURCE_DIR}/src/*.h"
-)
+# Ensure all files have a copyright notice
+# Reads every file under src/, so it is opt-out per preset (BPP_CHECK_LICENSE_HEADERS=OFF).
+if(BPP_CHECK_LICENSE_HEADERS)
+    file(GLOB_RECURSE SOURCE_FILES
+        "${CMAKE_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/src/*.h"
+    )
 
-set(REQUIRED_STRINGS
-    "Copyright \\(c\\)"
-    "SPDX-License-Identifier: AGPL-3.0-only"
-)
+    set(REQUIRED_STRINGS
+        "Copyright \\(c\\)"
+        "SPDX-License-Identifier: AGPL-3.0-only"
+    )
 
-foreach(FILE ${SOURCE_FILES})
-    file(READ "${FILE}" CONTENTS)
-
-    foreach(PATTERN ${REQUIRED_STRINGS})
+    foreach(FILE ${SOURCE_FILES})
         if(FILE MATCHES [[_shader\.h$]])
             continue()
         endif()
 
-        string(REGEX MATCH "${PATTERN}" MATCH_RESULT "${CONTENTS}")
+        file(READ "${FILE}" CONTENTS)
 
-        if(NOT MATCH_RESULT)
-            message(FATAL_ERROR
-                "Missing required copyright/SPDX notice in: ${FILE}"
-            )
-        endif()
+        foreach(PATTERN ${REQUIRED_STRINGS})
+            string(REGEX MATCH "${PATTERN}" MATCH_RESULT "${CONTENTS}")
+
+            if(NOT MATCH_RESULT)
+                message(FATAL_ERROR
+                    "Missing required copyright/SPDX notice in: ${FILE}"
+                )
+            endif()
+        endforeach()
     endforeach()
-endforeach()
+else()
+    message(STATUS "Skipping copyright/SPDX header check (BPP_CHECK_LICENSE_HEADERS=OFF)")
+endif()
 
 # Detect CPU architecture
 if(CMAKE_SYSTEM_PROCESSOR)
