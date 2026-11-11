@@ -15,15 +15,15 @@ struct BiomeGetter {
 	virtual void GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std::span<double> _temperature,
 	                      std::span<double> _humidity, std::span<double> _weirdness, Int2 _blockPos);
 
-	virtual bool BiomeHasRain(Biome _biome) {
+	virtual bool BiomeHasRain(Biome /*_biome*/) {
 		return false;
 	}
 
-	virtual bool BiomeHasSnow(Biome _biome) {
+	virtual bool BiomeHasSnow(Biome /*_biome*/) {
 		return false;
 	}
 
-	virtual bool BiomeHasLightning(Biome _biome) {
+	virtual bool BiomeHasLightning(Biome /*_biome*/) {
 		return false;
 	}
 

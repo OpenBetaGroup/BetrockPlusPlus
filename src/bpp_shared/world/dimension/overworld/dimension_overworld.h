@@ -11,8 +11,8 @@
 
 // Get the information needed by the world for biomes
 struct BiomeGetterOverworld : BiomeGetter {
-	BiomeGenerator overworldBiomeGen;
 	int64_t seed = 0;
+	BiomeGenerator overworldBiomeGen;
 
 	BiomeGetterOverworld(int64_t _seed) : seed(_seed), overworldBiomeGen(_seed) {};
 

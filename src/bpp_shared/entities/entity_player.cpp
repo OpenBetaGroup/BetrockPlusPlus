@@ -9,6 +9,7 @@
 #include "entity_item.h"
 #include "gamerules.h"
 #include "logger/logger.h"
+#include "world/world.h"
 
 bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
 	if (health <= 0)

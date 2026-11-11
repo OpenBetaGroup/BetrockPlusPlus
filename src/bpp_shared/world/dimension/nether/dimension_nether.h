@@ -10,20 +10,20 @@
 
 // Get the information needed by the world for biomes
 struct BiomeGetterNether : BiomeGetter {
-	Biome GetBiomeAtPoint(Int2 _worldPos) {
+	Biome GetBiomeAtPoint(Int2 /*_worldPos*/) {
 		return Biome::BIOME_HELL;
 	}
 	void GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std::span<double> _temperature,
 	                      std::span<double> _humidity, std::span<double> _weirdness, Int2 _blockPos) override;
-	bool BiomeHasRain(Biome _biome) override {
+	bool BiomeHasRain(Biome /*_biome*/) override {
 		return false;
 	}
 
-	bool BiomeHasSnow(Biome _biome) override {
+	bool BiomeHasSnow(Biome /*_biome*/) override {
 		return false;
 	}
 
-	bool BiomeHasLightning(Biome _biome) override {
+	bool BiomeHasLightning(Biome /*_biome*/) override {
 		return false;
 	}
 };
