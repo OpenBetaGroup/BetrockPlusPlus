@@ -216,8 +216,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 			session->pendingTeleport = savedTp;
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
 			session->position.pos = *session->pendingTeleport;
-			Packet::PlayerPositionAndRotation pkt;
-			pkt.rotation = session->rotation;
+			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
 			pkt.cameraY = position.y; // This is backwards, thanks notch
@@ -237,8 +236,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 			// Still not there, so send another tp packet and reset our position
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
 			session->position.pos = *session->pendingTeleport;
-			Packet::PlayerPositionAndRotation pkt;
-			pkt.rotation = session->rotation;
+			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
 			pkt.cameraY = position.y; // This is backwards, thanks notch
@@ -260,8 +258,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
 			session->position.pos = *session->pendingTeleport;
-			Packet::PlayerPositionAndRotation pkt;
-			pkt.rotation = session->rotation;
+			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
 			pkt.cameraY = position.y; // This is backwards, thanks notch
@@ -414,8 +411,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 			session->position.pos = safeRollback;
 			// Wait until our client catches up
 			session->pendingTeleport = safeRollback;
-			Packet::PlayerPositionAndRotation pkt;
-			pkt.rotation = session->rotation;
+			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { safeRollback.x, safeRollback.y + PLAYER_EYE_HEIGHT, safeRollback.z };
 			pkt.cameraY = safeRollback.y; // This is backwards, thanks notch
