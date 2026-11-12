@@ -96,7 +96,7 @@ jobs:
           cmake -S /tmp/libdeflate -B /tmp/libdeflate/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
-            -DCMAKE_C_COMPILER=clang-${LINUX_CLANG_VERSION}
+            -DCMAKE_C_COMPILER=clang-${LINUX_CLANG_VERSION} \
             -DLIBDEFLATE_BUILD_STATIC_LIB=ON \
             -DLIBDEFLATE_BUILD_SHARED_LIB=OFF \
             -DLIBDEFLATE_BUILD_GZIP=OFF

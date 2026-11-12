@@ -1034,6 +1034,20 @@ void WorldManager::SetBlockRaw(const Int3 _wpos, const BlockType _blockType, con
 	chunk->isModified = true;
 }
 
+// The idea I have here is to basically allow us to queue up all the block placements we want to make,
+// then execute them all in one go at the end of a tick.
+// This is why it's SetBlockQueue, not SetBlockList or SetMultipleBlocks. Maybe QueueSetBlocks would be better?
+// TODO: Finish this up
+void WorldManager::SetBlockQueue(const std::unordered_map<Int3, BlockType> _blocks) {
+	// TODO: Cache the required chunks for this beforehand
+    for (const auto& [pos, type] : _blocks) {
+        SetBlockRaw(
+            { (pos.x >> 4) & 15, pos.y, (pos.z >> 4) & 15 },
+            type
+        );
+    }
+}
+
 void WorldManager::SetBlock(const Int3 _wpos, const BlockType _blockType, const uint8_t _metadata,
                             const bool _keepTileEntity, const bool _updateNeighbors) {
 	if (_wpos.y < 0 || _wpos.y > 128)

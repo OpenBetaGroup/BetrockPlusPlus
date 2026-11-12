@@ -308,6 +308,8 @@ public:
 		SetBlock(_wpos, _block.type, _block.data);
 	}
 
+	void SetBlockQueue(const std::unordered_map<Int3, BlockType> _blocks);
+
 	bool IsAirBlock(Int3 _wpos) {
 		return GetBlockId(_wpos) == BlockType::BLOCK_AIR;
 	}
