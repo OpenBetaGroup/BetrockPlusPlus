@@ -584,17 +584,6 @@ target_compile_definitions(BetrockPlusPlus PRIVATE
     GENERATION_PRECISION_${GENERATION_PRECISION}
 )
 
-# TODO: We're waiting for CrashCatch to update here.
-# Hopefully they make execinfo.h optional for systems that don't offer it.
-if(CRASH_LOGGING AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    include(CheckIncludeFileCXX)
-    check_include_file_cxx(execinfo.h BPP_HAVE_EXECINFO)
-    if(NOT BPP_HAVE_EXECINFO)
-        message(WARNING "CRASH_LOGGING disabled: execinfo.h not found (musl libc?)")
-        set(CRASH_LOGGING OFF)
-    endif()
-endif()
-
 if(CRASH_LOGGING)
     target_compile_definitions(BetrockPlusPlus PRIVATE CRASH_LOGGING)
     if(WIN32)
