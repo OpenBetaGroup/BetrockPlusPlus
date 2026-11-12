@@ -1038,7 +1038,7 @@ void WorldManager::SetBlockRaw(const Int3 _wpos, const BlockType _blockType, con
 // then execute them all in one go at the end of a tick.
 // This is why it's SetBlockQueue, not SetBlockList or SetMultipleBlocks. Maybe QueueSetBlocks would be better?
 // TODO: Finish this up
-void WorldManager::SetBlockQueue(const std::unordered_map<Int3, BlockType> _blocks) {
+void WorldManager::SetBlockQueue(const std::unordered_map<Int3, BlockType>& _blocks) {
 	// TODO: Cache the required chunks for this beforehand
     for (const auto& [pos, type] : _blocks) {
         SetBlockRaw(
