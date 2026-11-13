@@ -395,7 +395,6 @@ jobs:
 
       - name: Install toolchain + dependencies
         run: |
-          brew update
           brew install ninja llvm libdeflate curl
 
       - name: Build & install libdeflate (static)

@@ -11,8 +11,8 @@ on:
 
 env:
   # Same toolchain assumptions as build-release-server.yml / BUILDING.md+
-  LINUX_CLANG_VERSION: "18"
-  LIBSTDCXX_VERSION: "13"
+  LINUX_CLANG_VERSION: "20"
+  LIBSTDCXX_VERSION: "14"
   LIBDEFLATE_VERSION: "1.23"
   BINARY_NAME: BetrockPlusPlus
 
@@ -163,7 +163,6 @@ jobs:
 
       - name: Install toolchain + dependencies
         run: |
-          brew update
           brew install ninja llvm curl
 
       - name: Build & install libdeflate (static)
