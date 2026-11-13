@@ -503,28 +503,35 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 			                        .cancel = false };
 		_server.GetAddonManager().Broadcast(&bp_addon_events::blockPlace, event);
 		if (!event.cancel) {
+			// Do our range check
+			Vec3& entityPos = _session.entity->position;
+			Vec3 entityEyePos = entityPos.WithOffset(Cardinal::Value::Up, float(_session.entity->GetEyeHeight()));
+			Vec3 blockCenter = { position.x + 0.5, position.y + 0.5, position.z + 0.5 };
+			Vec3 delta = entityPos - blockCenter;
+			bool inRange = delta.Length() < MAXIMUM_PLACEMENT_REACH * MAXIMUM_PLACEMENT_REACH;
+
 			// We can place the block here
 			auto function = Blocks::blockBehaviors[blockId].onBlockPlaced;
-			if (!function) {
+			if (!function || !inRange) {
 				resyncInvalidBlock();
 				return;
 			}
-			auto entityPos = _session.entity->position;
-			if (position.Distance({ int(entityPos.x), int(entityPos.y), int(entityPos.z) }) > MAXIMUM_PLACEMENT_REACH)
-				return;
 			bool result = function(_world, placePosition, *_session.entity, FaceDirectionToDirection(_pkt.face),
 			                       blockId, heldItem->data);
 			if (result) {
 				heldItem->DecrementCount(1);
-				return;
 			}
 		}
+
+		// This helps with responsiveness
+		resyncBlock(position);
+		resyncBlock(placePosition);
 
 		// Check if the result failed
 		ItemStack* now = _session.inventory.GetHeldItem();
 		ItemStack serverStack = now ? *now : ItemStack{};
 		if (serverStack != _pkt.item) {
-			resyncInvalidBlock();
+			PacketUtilities::SendSlot(_session, 0, _session.inventory.activeHotbarSlot + 36, now);
 		}
 	} else if (Items::IsItem(heldItem->id)) {
 		bool isBucketItem = (heldItem->id == Items::Id::BUCKET || heldItem->id == Items::Id::BUCKET_WATER ||

@@ -109,15 +109,18 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 		if (oldVal == newVal)
 			return;
 		chunk->SetSkyLight({ lx, _y, lz }, uint8_t(newVal));
+		// vvv BELOW IS DISABLED vvv
 		// Call a block update on the block that had its lighting updated
 		// Beta doesn't have a direct on lighting change packet for server -> client
 		// So this is what we have to resort to
 		// Technically, this doesn't work for any light update that doesn't change more than 9 blocks but its good enough
+		/*
 		if (_world.onBlockUpdate)
 			_world.onBlockUpdate(PendingBlock{ .block{ BlockType(blockId), chunk->GetMeta({ lx, _y, lz }) },
 			                                   .blockPos{ _x, _y, _z },
 			                                   .light{ chunk->GetBlockLight({ lx, _y, lz }), uint8_t(newVal) } },
 			                     chunk->cpos);
+								 */
 	} else {
 		int emitted = Blocks::blockProperties[blockId].lightEmission;
 		if (opacity < 15) {
@@ -186,6 +189,9 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 		chunk->SetSkyLight({ lx, _y, lz }, 0);
 	else
 		chunk->SetBlockLight({ lx, _y, lz }, 0);
+
+	// vvv BELOW IS DISABLED vvv
+	/*
 	if (_world.onBlockUpdate)
 		_world.onBlockUpdate(
 		    PendingBlock{
@@ -196,6 +202,7 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 		                (_type == LightType::Sky) ? uint8_t(0) : otherLight },
 		    },
 		    chunk->cpos);
+			*/
 
 	unlightQueue.push_back({ { _x, _y, _z }, _type, oldVal });
 
@@ -242,6 +249,9 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 					nc->SetSkyLight({ nlx, ny, nlz }, 0);
 				else
 					nc->SetBlockLight({ nlx, ny, nlz }, 0);
+
+				// vvv BELOW IS DISABLED vvv
+				/*
 				if (_world.onBlockUpdate)
 					_world.onBlockUpdate(
 					    PendingBlock{
@@ -251,6 +261,7 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 					                (t == LightType::Sky) ? uint8_t(0) : nOtherLight },
 					    },
 					    nc->cpos);
+				*/
 				unlightQueue.push_back({ { nx, ny, nz }, t, nVal });
 				// Always re-queue for re-light
 				ScheduleLightUpdate({ nx, ny, nz }, t);

@@ -53,6 +53,8 @@ struct ChunkSender {
 	}
 
 	size_t Enqueue(PlayerSession& _session, WorldManager& _world, int _batchSize = -1) {
+		// Make sure we can't send invalid lighting
+		_world.lightManager.ProcessLightQueue(_world);
 		if (_batchSize < 0)
 			_batchSize = static_cast<int>(pool.get_thread_count()) * 2;
 		int cx = int(std::floor(_session.position.pos.x)) >> 4;
@@ -168,6 +170,9 @@ struct ChunkSender {
 		ymin = std::max<int>(ymin, 0);
 		ymax = std::min<int>(ymax, CHUNK_HEIGHT - 1);
 
+		if (!_chunkRef)
+			return;
+
 		PendingSubRegion psr;
 		psr.chunkPos = _chunk;
 		psr.header.pos.x = _chunk.x * CHUNK_WIDTH + xmin;
@@ -176,12 +181,11 @@ struct ChunkSender {
 		psr.header.size.x = static_cast<uint8_t>(xmax - xmin);
 		psr.header.size.y = static_cast<uint8_t>(ymax - ymin);
 		psr.header.size.z = static_cast<uint8_t>(zmax - zmin);
-		if (_chunkRef) {
-			std::shared_ptr<const Chunk> ref = _chunkRef;
-			psr.data = pool.submit_task([ref, xmin, xmax, ymin, ymax, zmin, zmax]() {
-				return ChunkSerializer::Serialize(*ref, xmin, xmax + 1, ymin, ymax + 1, zmin, zmax + 1);
-			});
-		}
+
+		std::shared_ptr<const Chunk> ref = _chunkRef;
+		psr.data = pool.submit_task([ref, xmin, xmax, ymin, ymax, zmin, zmax]() {
+			return ChunkSerializer::Serialize(*ref, xmin, xmax + 1, ymin, ymax + 1, zmin, zmax + 1);
+		});
 		subRegionFlight[&_session].push_back(std::move(psr));
 	}
 
@@ -229,7 +233,7 @@ struct ChunkSender {
 
 			// Signs need to inform the client when they are loaded
 			if (chunkLocked) {
-				for (auto te : chunkLocked->tileEntities) {
+				for (auto& te : chunkLocked->tileEntities) {
 					if (te->type != TileType::SIGN)
 						continue;
 					auto sign = std::static_pointer_cast<TileEntitySign>(te);

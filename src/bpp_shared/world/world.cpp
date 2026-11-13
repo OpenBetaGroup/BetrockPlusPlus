@@ -429,14 +429,14 @@ void WorldManager::Tick(const std::vector<ClientPosition>& _players, bool _advan
 				_profiler->Record(TickTask::Autosave, Clock::now() - saveStart);
 		}
 	}
-	lightManager.ProcessLightQueue(*this, INT_MAX);
 	auto unloadingStart = _profiler ? Clock::now() : Clock::time_point{};
 	UpdateLoadRadius(_players);
 	if (_profiler)
 		_profiler->Record(TickTask::ChunkUnloading, Clock::now() - unloadingStart);
 	auto pipelineStart = _profiler ? Clock::now() : Clock::time_point{};
-	regionManager->PumpPipeline();
 	PopulateReady();
+	lightManager.ProcessLightQueue(*this, INT_MAX);
+	regionManager->PumpPipeline();
 	if (_profiler)
 		_profiler->Record(TickTask::ChunkLoading, Clock::now() - pipelineStart);
 }
