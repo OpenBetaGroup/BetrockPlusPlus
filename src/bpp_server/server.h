@@ -151,7 +151,11 @@ public:
 	}
 
 	WorldManager* GetWorldForDimension(Dimension _dim) {
-		return _dim == Dimension::Nether ? &this->gameRuntime.worldHell : &this->gameRuntime.world;
+		return gameRuntime.GetWorldForDimension(_dim);
+	}
+
+	std::unordered_map<Int32_2, std::vector<PendingBlock>>* GetBlockChangeMapForDimension(Dimension _dim) {
+		return &blockChangeMap[_dim];
 	}
 
 	uint16_t GetMaxPlayers() const noexcept {
@@ -222,11 +226,11 @@ private:
 	friend void WorldEventBroadcaster::BroadcastWorldEvent(Server& _server, PacketData::WorldEvent _eventType,
 	                                                       Int3 _position, int32_t _data, Dimension _dimension,
 	                                                       PlayerSession* _triggeringSession, double _rangeSq);
+	std::vector<std::shared_ptr<PlayerSession>> DisconnectClients();
 
 	void Tick();
 	void Startup();
 	void AcceptNewPlayers();
-	std::vector<std::shared_ptr<PlayerSession>> DisconnectClients();
 	// If every connected player in a dimension is currently sleeping, skip to
 	// morning and wake everyone up. Called once per Tick, per dimension.
 	void ProcessSleeping(Dimension _dimension);
@@ -259,8 +263,7 @@ private:
 	std::vector<std::shared_ptr<PlayerSession>> players;
 
 	// Block change tracking
-	std::unordered_map<Int32_2, std::vector<PendingBlock>> chunkBlockChanges;
-	std::unordered_map<Int32_2, std::vector<PendingBlock>> chunkBlockChangesHell;
+	std::unordered_map<Dimension, std::unordered_map<Int32_2, std::vector<PendingBlock>>> blockChangeMap;
 
 	// Which sessions currently have a given chunk loaded?
 	std::unordered_map<Int32_3, std::vector<PlayerSession*>> chunkSessions;

@@ -87,7 +87,7 @@ public:
 	bp_world apiWorld;
 #endif
 	BS::thread_pool<> pool{ 2 };
-	RegionManager* regionManager = nullptr;
+	std::unique_ptr<RegionManager> regionManager = nullptr;
 	TickTime elapsedTicks = 0;
 	int skylightOffset = 0;
 	EntityManager entityManager;

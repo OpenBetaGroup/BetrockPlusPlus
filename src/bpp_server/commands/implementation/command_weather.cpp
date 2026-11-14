@@ -16,7 +16,7 @@ namespace {
 
 // Weather only exists in the overworld
 WorldManager& Overworld(CommandContext& _ctx) {
-	return _ctx.server->gameRuntime.world;
+	return *_ctx.server->gameRuntime.GetWorldForDimension(Dimension::Overworld);
 }
 
 std::string FormatTicks(int32_t _ticks) {

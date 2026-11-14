@@ -91,7 +91,7 @@ void InventoryTracker::Tick(Server& _server) {
 			}
 		}
 
-		if (_server.gameRuntime.world.elapsedTicks % 40 == 0) {
+		if (_server.gameRuntime.GetWorldForDimension(Dimension::Overworld)->elapsedTicks % 40 == 0) {
 			// Save periodically
 			auto savedNbt = session->SerializeToNbt();
 			_server.gameRuntime.saveManager.SavePlayerNbt(

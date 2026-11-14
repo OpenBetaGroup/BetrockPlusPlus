@@ -12,6 +12,8 @@
 #include "world/storage/region_manager.h"
 #include "world/storage/save_manager.h"
 #include "world/world.h"
+#include "world/dimension/nether/dimension_nether.h"
+#include "world/dimension/overworld/dimension_overworld.h"
 
 namespace fs = std::filesystem;
 
@@ -225,19 +227,22 @@ bool convertAlphaLevel(std::string& _dir) {
 	}
 
 	// Setup our region managers
-	RegionManager overworldRegionManager;
-	RegionManager hellRegionManager;
-	overworldRegionManager.Initialize(tempDir + "/region");
-	hellRegionManager.Initialize(tempDir + "/DIM-1/region");
+	std::unique_ptr<RegionManager> overworldRegionManager = std::make_unique<RegionManager>();
+	std::unique_ptr<RegionManager> hellRegionManager      = std::make_unique<RegionManager>();
+	overworldRegionManager->Initialize(tempDir + "/region");
+	hellRegionManager->Initialize(tempDir + "/DIM-1/region");
 
 	// Setup our world(s)
 	WorldManager world;
 	WorldManager hellWorld;
 
-	world.regionManager = &overworldRegionManager;
-	hellWorld.regionManager = &hellRegionManager;
-	overworldRegionManager.world = &world;
-	hellRegionManager.world = &hellWorld;
+	world.regionManager = std::move(overworldRegionManager);
+	hellWorld.regionManager = std::move(hellRegionManager);
+	overworldRegionManager->world = &world;
+	hellRegionManager->world = &hellWorld;
+
+	world.dimension = std::make_unique<DimensionOverworld>(0);
+	hellWorld.dimension = std::make_unique<DimensionNether>(0);
 	constexpr size_t FLUSH_BATCH_SIZE = 200;
 
 	// Convert overworld
@@ -255,7 +260,7 @@ bool convertAlphaLevel(std::string& _dir) {
 
 			if (++sinceFlush >= FLUSH_BATCH_SIZE) {
 				world.SaveChunks(/*saveIfEntities=*/true);
-				overworldRegionManager.FlushAll();
+				overworldRegionManager->FlushAll();
 				sinceFlush = 0;
 				world.chunks.clear();
 				world.InvalidateChunkCache();
@@ -285,7 +290,7 @@ bool convertAlphaLevel(std::string& _dir) {
 
 			if (++sinceFlush >= FLUSH_BATCH_SIZE) {
 				hellWorld.SaveChunks(/*saveIfEntities=*/true);
-				hellRegionManager.FlushAll();
+				hellRegionManager->FlushAll();
 				sinceFlush = 0;
 				hellWorld.chunks.clear();
 				hellWorld.InvalidateChunkCache();
@@ -301,16 +306,16 @@ bool convertAlphaLevel(std::string& _dir) {
 	hellWorld.SaveChunks(/*saveIfEntities=*/true);
 
 	// Save everything
-	overworldRegionManager.FlushAll();
-	hellRegionManager.FlushAll();
+	overworldRegionManager->FlushAll();
+	hellRegionManager->FlushAll();
 
 	// Shutdown the worlds
 	world.Shutdown();
 	hellWorld.Shutdown();
 
 	// Release the region managers
-	overworldRegionManager.Release();
-	hellRegionManager.Release();
+	overworldRegionManager->Release();
+	hellRegionManager->Release();
 
 	world.chunks.clear();
 	world.InvalidateChunkCache();
@@ -356,7 +361,6 @@ bool convertAlphaLevel(std::string& _dir) {
 // Converts an old betrock server world to mcregion
 bool convertBetrockServerLevel(std::string& _dir) {
 	Blocks::RegisterAll();
-	RegionManager regionManager;
 	SaveManager saveManager;
 	WorldManager world;
 	recreateTempDir("ConvertedWorld");
@@ -367,14 +371,14 @@ bool convertBetrockServerLevel(std::string& _dir) {
 	fs::path srcPlayers = fs::path(_dir) / "players";
 	fs::path srcRegion = fs::path(_dir) / "region";
 
-	world.regionManager = &regionManager;
+	world.regionManager = std::make_unique<RegionManager>();
 
 	if (!fs::exists(srcRegion)) {
 		Logger::Error << "Invalid Betrock level file!\n";
 		return false;
 	}
 
-	if (!regionManager.Initialize("ConvertedWorld/region")) {
+	if (!world.regionManager->Initialize("ConvertedWorld/region")) {
 		Logger::Error << "Failed to initialize overworld region manager for conversion!\n";
 		return false;
 	}
@@ -543,7 +547,7 @@ bool convertBetrockServerLevel(std::string& _dir) {
 
 			if (count % 256 == 0) {
 				world.SaveChunks(true);
-				regionManager.FlushAll();
+				world.regionManager->FlushAll();
 				world.chunks.clear();
 				world.InvalidateChunkCache();
 			}
@@ -583,7 +587,7 @@ bool convertBetrockServerLevel(std::string& _dir) {
 
 			if (count % 256 == 0) {
 				world.SaveChunks(true);
-				regionManager.FlushAll();
+				world.regionManager->FlushAll();
 				world.chunks.clear();
 				world.InvalidateChunkCache();
 			}

@@ -301,6 +301,7 @@ set(SHARED_SOURCES
     src/bpp_shared/teleporter.cpp
     src/bpp_shared/direction.cpp
     src/bpp_shared/gamerules.cpp
+    src/bpp_shared/runtime.cpp
 
     # Generation
     src/bpp_shared/world/noise/noise_generator.cpp

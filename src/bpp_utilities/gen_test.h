@@ -26,7 +26,7 @@
 
 // Overworld chunk generation speed test.
 //
-// Usage:  ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
+// Usage:  ChunkBenchmark::PerformChunkGenSpeedTest(*gameRuntime.GetWorldForDimension(Dimension::Overworld));
 //
 // For every seed in GEN_TEST_SEEDS the overworld is generated GEN_TEST_RUNS_PER_SEED times at render distance
 // GEN_TEST_RENDER_DISTANCE (a 41x41 square of chunks centred on 0,0). One "run" is one finished world: every chunk
@@ -95,19 +95,21 @@ namespace Detail {
 // everything back when it goes out of scope (including on early return).
 class WorldStateGuard {
 public:
-	WorldStateGuard(WorldManager& _world, RegionManager& _emptyRegions)
-	    : world(_world), savedRegions(_world.regionManager), savedSeed(_world.seed),
+	explicit WorldStateGuard(WorldManager& _world)
+	    : world(_world), savedRegions(std::move(_world.regionManager)), savedSeed(_world.seed),
 	      savedChunks(std::move(_world.chunks)) {
 		world.chunks.clear(); // A moved-from map is only guaranteed to be valid, not empty
 		world.InvalidateChunkCache();
-		world.regionManager = &_emptyRegions;
+		// Never initialised, so it has no folder and ChunkExists() is always false
+		world.regionManager = std::make_unique<RegionManager>();
+		world.regionManager->world = &world;
 	}
 
 	~WorldStateGuard() {
 		world.pool.wait();
 		world.chunks.clear();
 		world.chunks = std::move(savedChunks);
-		world.regionManager = savedRegions;
+		world.regionManager = std::move(savedRegions);
 		world.InitWorldSeed(savedSeed); // Also restores the shared biome generator
 		world.InvalidateChunkCache();
 	}
@@ -117,7 +119,7 @@ public:
 
 private:
 	WorldManager& world;
-	RegionManager* savedRegions;
+	std::unique_ptr<RegionManager> savedRegions;
 	int64_t savedSeed;
 	std::unordered_map<Int32_2, std::shared_ptr<Chunk>> savedChunks;
 };
@@ -204,11 +206,7 @@ inline GenSpeedResult PerformChunkGenSpeedTest(WorldManager& _world) {
 		return result;
 	}
 
-	// Never initialised, so it has no folder and ChunkExists() is always false: every chunk gets generated.
-	RegionManager emptyRegions;
-	emptyRegions.world = &_world;
-	// Destroyed before emptyRegions, so the world never points at a dead manager
-	Detail::WorldStateGuard guard(_world, emptyRegions);
+	Detail::WorldStateGuard guard(_world);
 
 	const int radius = GEN_TEST_RENDER_DISTANCE;
 	const int chunksPerWorld = (radius * 2 + 1) * (radius * 2 + 1);

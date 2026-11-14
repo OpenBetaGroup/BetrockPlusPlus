@@ -27,8 +27,7 @@ void PlayerConnStateManager::HandleConnectionState(PlayerSession& _session, Serv
 		WaitForSpawnChunks(_session, _server);
 		break;
 	case ConnectionState::Playing: {
-		WorldManager& sessionWorld = _session.dimension == Dimension::Nether ? _server.gameRuntime.worldHell
-		                                                                     : _server.gameRuntime.world;
+		WorldManager& sessionWorld = *_server.GetWorldForDimension(_session.dimension);
 		_server.chunkSender.Enqueue(_session, sessionWorld, 16);
 		_server.chunkSender.Flush(_session);
 		if (_server.IsTickFrozen() || sessionWorld.elapsedTicks % 20 == 0) {
@@ -186,11 +185,15 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	_session.LoadPlayerNbt(playerNbt);
 
 	// Get the right world pointer
-	WorldManager& sessionWorld = _session.dimension == Dimension::Nether ? _server.gameRuntime.worldHell
-	                                                                     : _server.gameRuntime.world;
+	WorldManager* sessionWorld = _server.GetWorldForDimension(_session.dimension);
+	if (!sessionWorld) {
+		sessionWorld = _server.GetWorldForDimension(Dimension::Overworld);
+		_session.position.pos = Vec3{ -1, -1000000, -1 };
+	}
+	_session.dimension = sessionWorld->dimension->id;
 
 	_session.entity->session = &_session;
-	_session.entity->id = sessionWorld.entityManager.GetNextEntityId();
+	_session.entity->id = sessionWorld->entityManager.GetNextEntityId();
 	_session.entity->dim = _session.dimension == Dimension::Nether ? Dimension::Nether : Dimension::Overworld;
 
 	{
@@ -201,12 +204,12 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	Packet::Login response;
 	response.entityIdProtocolVersion = _session.entity->id;
 	response.username = _session.username;
-	response.worldSeed = _server.gameRuntime.world.seed;
+	response.worldSeed = sessionWorld->seed;
 	response.dimension = Dimension(_session.dimension);
 	response.Serialize(_session.stream);
 
 	Packet::SetSpawnPosition spawn;
-	spawn.position = sessionWorld.spawnPoint;
+	spawn.position = sessionWorld->spawnPoint;
 	spawn.Serialize(_session.stream);
 
 	Packet::SetHealth health;
@@ -214,11 +217,11 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	health.Serialize(_session.stream);
 
 	Packet::SetTime time;
-	time.time = sessionWorld.elapsedTicks;
+	time.time = sessionWorld->elapsedTicks;
 	time.Serialize(_session.stream);
 
 	// Get a fresh respawn point
-	Int3 respawnPoint = sessionWorld.GetSpawnPoint(/*Random Adjust=*/true);
+	Int3 respawnPoint = sessionWorld->GetSpawnPoint(/*Random Adjust=*/true);
 	Vec3 spawnLocation = { double(respawnPoint.x) + 0.5, double(CHUNK_HEIGHT) * 4.0, double(respawnPoint.z) + 0.5 };
 
 	// If our session position is the default then overwrite it
@@ -299,8 +302,7 @@ static bool PortalAreaReady(WorldManager& _world, const Vec3& _pos) {
 }
 
 void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server& _server) {
-	WorldManager& sessionWorld = _session.dimension == Dimension::Nether ? _server.gameRuntime.worldHell
-	                                                                     : _server.gameRuntime.world;
+	WorldManager& sessionWorld = *_server.GetWorldForDimension(_session.dimension);
 	_session.position.viewDistanceOverride = _session.pendingPortalPlacement ? PORTAL_SEARCH_CHUNK_RADIUS + 1
 	                                                                         : (_session.portalAreaLoaded ? 0 : 3);
 	_server.chunkSender.Enqueue(_session, sessionWorld, _server.flushChunkCount);

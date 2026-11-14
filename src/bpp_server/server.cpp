@@ -90,7 +90,7 @@ bool Server::ExecuteCommand(std::string_view _command, PlayerSession* _sender) n
 		ctx.sender = _sender;
 		ctx.session = _sender;
 		ctx.executionEntity = _sender ? _sender->entity.get() : nullptr;
-		ctx.world = _sender ? GetWorldForDimension(_sender->dimension) : &gameRuntime.world;
+		ctx.world = _sender ? GetWorldForDimension(_sender->dimension) : gameRuntime.GetWorldForDimension(Dimension::Overworld);
 		ctx.server = this;
 
 		return commandManager.Parse(_command, ctx);
@@ -404,48 +404,59 @@ void Server::Startup() {
 		};
 	};
 
-	auto registerSpawnProtection = [this](WorldManager& _world) {
-		_world.canModifyBlock = [this, &_world](Entity& _entity, Int3 _pos) {
+	// A little jank but it works!
+	// Spawn protection
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+		_world->canModifyBlock = [this, _world](Entity& _entity, Int3 _pos) {
 			auto* player = dynamic_cast<EntityMPPlayer*>(&_entity);
-			return !player || !player->session || IsValidActionInSpawnRadius(*player->session, *this, _pos, _world);
+			return !player || !player->session || IsValidActionInSpawnRadius(*player->session, *this, _pos, *_world);
 		};
-	};
-	registerSpawnProtection(gameRuntime.world);
-	registerSpawnProtection(gameRuntime.worldHell);
+	});
+	
+	// Block updates
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+		auto dimension = _world->dimension->id;
+		_world->onBlockUpdate = makeBlockUpdateCallback(dimension, *GetBlockChangeMapForDimension(dimension));
+	});
+	
+	// World events
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { 
+		_world->onWorldEvent = [this, _world](PacketData::WorldEvent _eventType, Int3 _position, int32_t _data,
+		                              PlayerSession* _triggeringSession) {
+			WorldEventBroadcaster::BroadcastWorldEvent(*this, _eventType, _position, _data, _world->dimension->id,
+			                                           _triggeringSession);
+		};
+	});
 
-	gameRuntime.world.onBlockUpdate = makeBlockUpdateCallback(Dimension::Overworld, chunkBlockChanges);
-	gameRuntime.worldHell.onBlockUpdate = makeBlockUpdateCallback(Dimension::Nether, chunkBlockChangesHell);
+	// Note event
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+		_world->onNotePlay = [this, _world](Int3 _pos, int8_t _instrumentState, int8_t _instrumentDirection) {
+			WorldEventBroadcaster::BroadcastNoteEvent(*this, _pos, _instrumentState, _instrumentDirection,
+			                                          _world->dimension->id);
+		};
+	});
 
-	gameRuntime.world.onWorldEvent = [this](PacketData::WorldEvent _eventType, Int3 _position, int32_t _data,
-	                                        PlayerSession* _triggeringSession) {
-		WorldEventBroadcaster::BroadcastWorldEvent(*this, _eventType, _position, _data, Dimension::Overworld,
-		                                           _triggeringSession);
-	};
-	gameRuntime.worldHell.onWorldEvent = [this](PacketData::WorldEvent _eventType, Int3 _position, int32_t _data,
-	                                            PlayerSession* _triggeringSession) {
-		WorldEventBroadcaster::BroadcastWorldEvent(*this, _eventType, _position, _data, Dimension::Nether,
-		                                           _triggeringSession);
-	};
+	// Explosions
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+		// Sent by position, not by who can see the exploder: TNT and beds explode with no exploder
+		_world->onExplosion = [this, _world](Vec3 _pos, float _size, std::unordered_set<Int3>& _blockPositions,
+		                                        Entity* /*_exploder*/) {
+			WorldEventBroadcaster::BroadcastExplosion(*this, _pos, _size, _blockPositions, _world->dimension->id);
+		};
+	});
 
-	gameRuntime.world.onNotePlay = [this](Int3 _pos, int8_t _instrumentState, int8_t _instrumentDirection) {
-		WorldEventBroadcaster::BroadcastNoteEvent(*this, _pos, _instrumentState, _instrumentDirection,
-		                                          Dimension::Overworld);
-	};
-	gameRuntime.worldHell.onNotePlay = [this](Int3 _pos, int8_t _instrumentState, int8_t _instrumentDirection) {
-		WorldEventBroadcaster::BroadcastNoteEvent(*this, _pos, _instrumentState, _instrumentDirection,
-		                                          Dimension::Nether);
-	};
+	// TEMPORARY!! vv
+	// Entity tracking and spawn chunks need to be dynamic
+	auto overworld = gameRuntime.GetWorldForDimension(Dimension::Overworld);
+	auto nether = gameRuntime.GetWorldForDimension(Dimension::Nether);
 
-	registerEntityTrackerCallbacks(overworldEntityTracker, gameRuntime.world.entityManager);
-	registerEntityTrackerCallbacks(hellEntityTracker, gameRuntime.worldHell.entityManager);
-
-	registerExplosionCallback(gameRuntime.world, Dimension::Overworld);
-	registerExplosionCallback(gameRuntime.worldHell, Dimension::Nether);
+	registerEntityTrackerCallbacks(overworldEntityTracker, overworld->entityManager);
+	registerEntityTrackerCallbacks(hellEntityTracker, nether->entityManager);
 
 	// Get spawn ready
 	int spawnChunkDistance = this->spawnChunkRadius;
 	int totalSpawnChunks = (spawnChunkDistance + spawnChunkDistance + 1) * (spawnChunkDistance + spawnChunkDistance + 1);
-	Logger::Info << "Server spawn is " << Int2(int(gameRuntime.world.spawnPoint.x), int(gameRuntime.world.spawnPoint.z))
+	Logger::Info << "Server spawn is " << Int2(int(overworld->spawnPoint.x), int(overworld->spawnPoint.z))
 	             << "\n";
 
 	Logger::Info << "Preparing spawn chunks..\n";
@@ -454,24 +465,24 @@ void Server::Startup() {
 		std::unordered_set<Int32_2> wanted;
 		for (int dx = -spawnChunkDistance; dx <= spawnChunkDistance; dx++) {
 			for (int dz = -spawnChunkDistance; dz <= spawnChunkDistance; dz++) {
-				Int32_2 pos = { (gameRuntime.world.spawnPoint.x >> 4) + dx, (gameRuntime.world.spawnPoint.z >> 4) + dz };
+				Int32_2 pos = { (overworld->spawnPoint.x >> 4) + dx, (overworld->spawnPoint.z >> 4) + dz };
 				wanted.insert(pos);
 			}
 		}
 
 		// Actually request chunks
 		for (auto pos : wanted) {
-			if (!gameRuntime.world.chunks.contains(pos)) {
+			if (!overworld->chunks.contains(pos)) {
 				auto c = std::make_shared<Chunk>();
 				c->spawnChunk = true;
 				c->cpos = pos;
-				gameRuntime.world.chunks.emplace(pos, std::move(c));
+				overworld->chunks.emplace(pos, std::move(c));
 			}
-			if (!gameRuntime.worldHell.chunks.contains(pos)) {
+			if (!nether->chunks.contains(pos)) {
 				auto c = std::make_shared<Chunk>();
 				c->spawnChunk = true;
 				c->cpos = pos;
-				gameRuntime.worldHell.chunks.emplace(pos, std::move(c));
+				nether->chunks.emplace(pos, std::move(c));
 			}
 		}
 
@@ -517,7 +528,7 @@ void Server::Startup() {
 		//ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
 
 		Logger::Info << "Loading spawn chunks for Overworld: (" << totalSpawnChunks << ")\n";
-		loadSpawnChunks(gameRuntime.world);
+		loadSpawnChunks(*overworld);
 
 		/*
 		std::vector<Chunk*> chunks;
@@ -529,7 +540,7 @@ void Server::Startup() {
 		*/
 
 		Logger::Info << "Loading spawn chunks for Hell: (" << totalSpawnChunks << ")\n";
-		loadSpawnChunks(gameRuntime.worldHell);
+		loadSpawnChunks(*nether);
 	}
 
 	float startupSeconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - startupStart).count();
@@ -635,8 +646,6 @@ void Server::Stop() {
 		session->stream.FlushWriteBufferBlocking();
 	}
 	ServerSocketManager::CloseSocket(serverSocket);
-	gameRuntime.world.Shutdown();
-	gameRuntime.worldHell.Shutdown();
 
 	// Save our level file
 	SaveLevelFile();
@@ -646,17 +655,20 @@ void Server::Stop() {
 	SaveOperators();
 	SaveBannedPlayers();
 	SaveBannedIps();
+
+	gameRuntime.CloseCurrentWorld();
 }
 
 void Server::SaveLevelFile() {
-	LevelData& curLevelData = gameRuntime.saveManager.GetLevelData();
-	curLevelData.randomSeed = gameRuntime.world.seed;
-	curLevelData.spawnPoint = gameRuntime.world.spawnPoint;
-	curLevelData.time = gameRuntime.world.elapsedTicks;
-	curLevelData.raining = gameRuntime.world.weatherSystem.isRaining;
-	curLevelData.rainTime = gameRuntime.world.weatherSystem.rainTimer;
-	curLevelData.thundering = gameRuntime.world.weatherSystem.isThundering;
-	curLevelData.thunderTime = gameRuntime.world.weatherSystem.thunderTimer;
+	auto overworld = gameRuntime.GetWorldForDimension(Dimension::Overworld);
+	LevelData& curLevelData  = gameRuntime.saveManager.GetLevelData();
+	curLevelData.randomSeed  = overworld->seed;
+	curLevelData.spawnPoint  = overworld->spawnPoint;
+	curLevelData.time        = overworld->elapsedTicks;
+	curLevelData.raining     = overworld->weatherSystem.isRaining;
+	curLevelData.rainTime    = overworld->weatherSystem.rainTimer;
+	curLevelData.thundering  = overworld->weatherSystem.isThundering;
+	curLevelData.thunderTime = overworld->weatherSystem.thunderTimer;
 	gameRuntime.saveManager.SaveLevelFile(curLevelData);
 }
 
@@ -726,8 +738,9 @@ bool Server::ToggleTickFreeze() {
 	tickFrozen = !tickFrozen;
 	if (!tickFrozen)
 		pendingTickSteps = 0;
-	gameRuntime.world.SetFrozen(tickFrozen);
-	gameRuntime.worldHell.SetFrozen(tickFrozen);
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+		_world->SetFrozen(tickFrozen);
+	});
 	return tickFrozen;
 }
 
@@ -786,6 +799,8 @@ void Server::Tick() {
 		ExecuteCommand(command, nullptr);
 	}
 
+	auto overworld = gameRuntime.GetWorldForDimension(Dimension::Overworld);
+
 	if (sampling)
 		tickProfiler.Record(TickTask::OffTickTasks, Clock::now() - offTickStart);
 	std::chrono::nanoseconds autosaveElapsed{ 0 };
@@ -793,20 +808,12 @@ void Server::Tick() {
 	AcceptNewPlayers();
 	chunkSender.BeginTick();
 
-	std::vector<ClientPosition> overworldPositions;
-	std::vector<ClientPosition> netherPositions;
 	for (auto& session : players) {
 		session->stream.DrainToBuffer();
 		if (session->connState == ConnectionState::WaitingForSpawnChunks ||
 		    session->connState == ConnectionState::Playing) {
 			// Process our packets
 			ProcessIncoming(*session);
-
-			// Register with the correct dimension
-			if (session->dimension == Dimension::Nether)
-				netherPositions.push_back(session->position);
-			else
-				overworldPositions.push_back(session->position);
 
 			// Update our break state
 			this->UpdateBlockBreaking(*session, *GetWorldForDimension(session->dimension));
@@ -824,7 +831,7 @@ void Server::Tick() {
 	const bool advanceSimulation = !tickFrozen || pendingTickSteps > 0;
 	const uint64_t autosaveIntervalTicks = std::max<uint64_t>(
 	    1, static_cast<uint64_t>(std::llround(GetTickRate() * Gamerule::Get<double>(Gamerule::Id::AutosaveInterval))));
-	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % autosaveIntervalTicks == 0) {
+	if (advanceSimulation && overworld->tickScheduler.currentTick % autosaveIntervalTicks == 0) {
 		for (const auto& session : players) {
 			if (session->connState != ConnectionState::WaitingForSpawnChunks &&
 			    session->connState != ConnectionState::Playing)
@@ -846,10 +853,9 @@ void Server::Tick() {
 	}
 	if (sampling)
 		tickProfiler.Record(TickTask::OffTickTasks, Clock::now() - inventoryStart);
-	gameRuntime.world.Tick(overworldPositions, advanceSimulation, sampling ? &tickProfiler : nullptr);
-	gameRuntime.world.Update(overworldPositions);
-	gameRuntime.worldHell.Tick(netherPositions, advanceSimulation, sampling ? &tickProfiler : nullptr);
-	gameRuntime.worldHell.Update(netherPositions);
+
+	// This will tick all the worlds
+	gameRuntime.Tick(this->players, advanceSimulation, sampling ? &tickProfiler : nullptr);
 
 	if (advanceSimulation && pendingTickSteps > 0)
 		--pendingTickSteps;
@@ -862,10 +868,13 @@ void Server::Tick() {
 
 	// Send all of the block changes that have accumulated since the last Tick, then clear the list.
 	// TODO: Maybe globally re-use these?
-	std::unordered_map<Int32_2, std::vector<PendingBlock>> localBlockChanges;
-	std::unordered_map<Int32_2, std::vector<PendingBlock>> localBlockChangesHell;
-	localBlockChanges.swap(chunkBlockChanges);
-	localBlockChangesHell.swap(chunkBlockChangesHell);
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { 
+		std::unordered_map<Int32_2, std::vector<PendingBlock>> localBlockChanges;
+		localBlockChanges.swap(*GetBlockChangeMapForDimension(_world->dimension->id));
+
+		// Dispatch block changes
+		ChunkBroadcaster::BroadcastBlockChanges(*this, localBlockChanges, _world->dimension->id, *_world);
+	});
 
 	auto networkOutputStart = Clock::now();
 
@@ -873,12 +882,8 @@ void Server::Tick() {
 	overworldEntityTracker.Tick();
 	hellEntityTracker.Tick();
 
-	// Dispatch block changes
-	ChunkBroadcaster::BroadcastBlockChanges(*this, localBlockChanges, Dimension::Overworld, gameRuntime.world);
-	ChunkBroadcaster::BroadcastBlockChanges(*this, localBlockChangesHell, Dimension::Nether, gameRuntime.worldHell);
-
 	// Send weather updates
-	bool raining = gameRuntime.world.weatherSystem.IsRaining();
+	bool raining = overworld->weatherSystem.IsRaining();
 	if (raining != lastSentRaining) {
 		lastSentRaining = raining;
 		Packet::GameEvent pkt;
@@ -914,7 +919,7 @@ void Server::Tick() {
 		tickProfiler.Record(TickTask::Network, networkInputElapsed + Clock::now() - networkOutputStart);
 
 	// Autosave
-	if (advanceSimulation && gameRuntime.world.tickScheduler.currentTick % autosaveIntervalTicks == 0) {
+	if (advanceSimulation && overworld->tickScheduler.currentTick % autosaveIntervalTicks == 0) {
 		auto saveStart = Clock::now();
 		SaveLevelFile();
 		if (sampling)
@@ -1244,7 +1249,7 @@ std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
 };
 
 void Server::ProcessIncoming(PlayerSession& _session) {
-	WorldManager& sessionWorld = _session.dimension == Dimension::Nether ? gameRuntime.worldHell : gameRuntime.world;
+	WorldManager& sessionWorld = *GetWorldForDimension(_session.dimension);
 
 	// Nothing the client sends before it is fully in-game is meaningful, drop it in O(1)
 	if (_session.connState != ConnectionState::Playing || !_session.stream.IsConnected()) {

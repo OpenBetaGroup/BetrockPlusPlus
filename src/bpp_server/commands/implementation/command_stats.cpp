@@ -50,8 +50,8 @@ std::string GenerateUsageBar(double _total, double _active, double _overworld, d
 std::string ShowStats(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto& players = ctx.server->GetPlayers();
-	const WorldManager& overworld = ctx.server->gameRuntime.world;
-	const WorldManager& nether = ctx.server->gameRuntime.worldHell;
+	const WorldManager& overworld = *ctx.server->gameRuntime.GetWorldForDimension(Dimension::Overworld);
+	const WorldManager& nether    = *ctx.server->gameRuntime.GetWorldForDimension(Dimension::Nether);
 	const size_t chunksOverworld = overworld.chunks.size();
 	const size_t chunksNether = nether.chunks.size();
 	auto sumChunkBytes = [](const auto& _chunks) {
