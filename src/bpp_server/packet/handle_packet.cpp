@@ -520,19 +520,13 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 			                       blockId, heldItem->data);
 			if (result) {
 				heldItem->DecrementCount(1);
+				PacketUtilities::SendSlot(_session, 0, _session.inventory.activeHotbarSlot + 36, heldItem);
 			}
 		}
 
 		// This helps with responsiveness
 		resyncBlock(position);
 		resyncBlock(placePosition);
-
-		// Check if the result failed
-		ItemStack* now = _session.inventory.GetHeldItem();
-		ItemStack serverStack = now ? *now : ItemStack{};
-		if (serverStack != _pkt.item) {
-			PacketUtilities::SendSlot(_session, 0, _session.inventory.activeHotbarSlot + 36, now);
-		}
 	} else if (Items::IsItem(heldItem->id)) {
 		bool isBucketItem = (heldItem->id == Items::Id::BUCKET || heldItem->id == Items::Id::BUCKET_WATER ||
 		                     heldItem->id == Items::Id::BUCKET_LAVA);

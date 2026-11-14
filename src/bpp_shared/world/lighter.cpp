@@ -75,7 +75,7 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 	// Cache each neighbor's light value the first time it's read so the later
 	// propagation check below doesn't have to re-query the same cell.
 	// Order: -x, +x, -y, +y, -z, +z
-	int neighborLight[6];
+	int neighborLight[6] = {};
 	bool haveNeighbor[6] = { false, false, false, false, false, false };
 
 	auto neighbor = [&](int _i, Chunk* _nc, int _nlx, int _ny, int _nlz) -> int {
@@ -109,18 +109,6 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 		if (oldVal == newVal)
 			return;
 		chunk->SetSkyLight({ lx, _y, lz }, uint8_t(newVal));
-		// vvv BELOW IS DISABLED vvv
-		// Call a block update on the block that had its lighting updated
-		// Beta doesn't have a direct on lighting change packet for server -> client
-		// So this is what we have to resort to
-		// Technically, this doesn't work for any light update that doesn't change more than 9 blocks but its good enough
-		/*
-		if (_world.onBlockUpdate)
-			_world.onBlockUpdate(PendingBlock{ .block{ BlockType(blockId), chunk->GetMeta({ lx, _y, lz }) },
-			                                   .blockPos{ _x, _y, _z },
-			                                   .light{ chunk->GetBlockLight({ lx, _y, lz }), uint8_t(newVal) } },
-			                     chunk->cpos);
-								 */
 	} else {
 		int emitted = Blocks::blockProperties[blockId].lightEmission;
 		if (opacity < 15) {
@@ -132,14 +120,6 @@ void Lighter::PropagateLightAt(int _x, int _y, int _z, LightType _type, WorldMan
 		if (oldVal == newVal)
 			return;
 		chunk->SetBlockLight({ lx, _y, lz }, uint8_t(newVal));
-		if (_world.onBlockUpdate)
-			_world.onBlockUpdate(
-			    PendingBlock{
-			        .block{ BlockType(blockId), chunk->GetMeta({ lx, _y, lz }) },
-			        .blockPos{ _x, _y, _z },
-			        .light{ uint8_t(newVal), chunk->GetSkyLight({ lx, _y, lz }) },
-			    },
-			    chunk->cpos);
 	}
 
 	// Propagate to neighbors. Reuses the cached reads from scanBest() above
@@ -190,20 +170,6 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 	else
 		chunk->SetBlockLight({ lx, _y, lz }, 0);
 
-	// vvv BELOW IS DISABLED vvv
-	/*
-	if (_world.onBlockUpdate)
-		_world.onBlockUpdate(
-		    PendingBlock{
-		        .block{ blockId, meta },
-		        .blockPos{ _x, _y, _z },
-		        // Whichever type we just unlit was just set to 0 above
-		        .light{ (_type == LightType::Block) ? uint8_t(0) : otherLight,
-		                (_type == LightType::Sky) ? uint8_t(0) : otherLight },
-		    },
-		    chunk->cpos);
-			*/
-
 	unlightQueue.push_back({ { _x, _y, _z }, _type, oldVal });
 
 	// Drain everything at once since there isn't a lot of unlighting events
@@ -249,19 +215,6 @@ void Lighter::UnlightAt(int _x, int _y, int _z, LightType _type, WorldManager& _
 					nc->SetSkyLight({ nlx, ny, nlz }, 0);
 				else
 					nc->SetBlockLight({ nlx, ny, nlz }, 0);
-
-				// vvv BELOW IS DISABLED vvv
-				/*
-				if (_world.onBlockUpdate)
-					_world.onBlockUpdate(
-					    PendingBlock{
-					        .block{ nBlockId, nMeta },
-					        .blockPos{ nx, ny, nz },
-					        .light{ (t == LightType::Block) ? uint8_t(0) : nOtherLight,
-					                (t == LightType::Sky) ? uint8_t(0) : nOtherLight },
-					    },
-					    nc->cpos);
-				*/
 				unlightQueue.push_back({ { nx, ny, nz }, t, nVal });
 				// Always re-queue for re-light
 				ScheduleLightUpdate({ nx, ny, nz }, t);
