@@ -19,19 +19,6 @@ class WorldManager;
 
 struct Addon;
 
-struct bp_entity {
-	Entity* entity;
-};
-
-struct bp_player {
-	PlayerSession* session;
-	std::unordered_map<Addon*, void*> addonData;
-};
-
-struct bp_world {
-	WorldManager* manager;
-};
-
 namespace AddonHelper {
 
 inline bp_item_stack ToBpStack(const ItemStack* _item) noexcept {

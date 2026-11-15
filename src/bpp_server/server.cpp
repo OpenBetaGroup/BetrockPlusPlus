@@ -1236,7 +1236,7 @@ std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
 			             << "\n";
 			SendGlobalChatMessage("§e" + session->username + " left the game.");
 
-			const bp_player_leave_event event{ &session->apiPlayer };
+			const bp_player_leave_event event{ reinterpret_cast<bp_player*>(&session) };
 			addonManager.Broadcast(&bp_addon_events::playerLeave, event);
 
 			if (session->entity->entityManager)

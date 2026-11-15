@@ -86,7 +86,7 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 		++_session.recentChatMessageCount;
 
 	{
-		bp_player_chat_event event{ .player = &_session.apiPlayer, .message = _pkt.message.c_str(), .cancel = false };
+		bp_player_chat_event event{ .player = reinterpret_cast<bp_player*>(&_session), .message = _pkt.message.c_str(), .cancel = false };
 		_server.GetAddonManager().Broadcast(&bp_addon_events::playerChat, event);
 
 		if (event.cancel)
@@ -148,7 +148,7 @@ static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server)
 	if (_session.entity)
 		_session.position.pos = _session.entity->position;
 
-	bp_player_move_event event{ .player = &_session.apiPlayer,
+	bp_player_move_event event{ .player = reinterpret_cast<bp_player*>(&_session),
 		                        .from = { _session.position.pos.x, _session.position.pos.y, _session.position.pos.z },
 		                        .to = { _to.x, _to.y, _to.z },
 		                        .cancel = false };
@@ -299,8 +299,8 @@ void MineBlock(Packet::MineBlock& _pkt, PlayerSession& _session, WorldManager& _
 		//TODO: Extract common bp_block_use_event and bp_block_break_event code to some helper
 		ItemStack* heldItem = _session.inventory.GetHeldItem();
 
-		bp_block_break_event event{ .player = &_session.apiPlayer,
-			                        .world = &_world.apiWorld,
+		bp_block_break_event event{ .player = reinterpret_cast<bp_player*>(&_session),
+			                        .world = reinterpret_cast<bp_world*>(&_world),
 			                        .tool = AddonHelper::ToBpStack(heldItem),
 			                        .blockPos = { packetPos.x, packetPos.y, packetPos.z },
 			                        .block = { .id = newBlockId, .meta = _world.GetMetadata(packetPos) },
@@ -364,8 +364,8 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 	ItemStack* heldItem = _session.inventory.GetHeldItem();
 
 	{
-		bp_block_use_event event{ .player = &_session.apiPlayer,
-			                      .world = &_world.apiWorld,
+		bp_block_use_event event{ .player = reinterpret_cast<bp_player*>(&_session),
+			                      .world = reinterpret_cast<bp_world*>(&_world),
 			                      .heldItem = AddonHelper::ToBpStack(heldItem),
 			                      .blockPos = { position.x, position.y, position.z },
 			                      .block = { block, _world.GetMetadata(position) },
@@ -416,7 +416,7 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 	// NOTE:
 	// Invalid Use packet is sent ANYTIME the client predicts a placement will fail (like placing a block inside of yourself)
 	if (_pkt.face == PacketData::FaceDirection::INVALID_USE) {
-		bp_item_use_event event{ .player = &_session.apiPlayer,
+		bp_item_use_event event{ .player = reinterpret_cast<bp_player*>(&_session),
 			                     .item = AddonHelper::ToBpStack(heldItem),
 			                     .cancel = false };
 
@@ -496,8 +496,8 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 
 		auto blockId = BlockType(heldItem->id.value);
 
-		bp_block_place_event event{ .player = &_session.apiPlayer,
-			                        .world = &_world.apiWorld,
+		bp_block_place_event event{ .player = reinterpret_cast<bp_player*>(&_session),
+			                        .world = reinterpret_cast<bp_world*>(&_world),
 			                        .blockPos = { placePosition.x, placePosition.y, placePosition.z },
 			                        .blockId = blockId,
 			                        .cancel = false };

@@ -50,7 +50,7 @@ bp_player* GetPlayerAt(const bp_api* _api, int _index) {
 	if (!player)
 		return nullptr;
 
-	return &player->apiPlayer;
+	return reinterpret_cast<bp_player*>(player.get());
 }
 
 void ServerStop(const bp_api* _api, float _timeout) {
@@ -86,75 +86,71 @@ const char* ServerGetVersion() {
 }
 
 void PlayerSendMessage(bp_player* _player, const char* _message) {
+	auto player = reinterpret_cast<PlayerSession*>(_player);
+
 	Packet::ChatMessage pak;
 	pak.message = std::string(_message);
-	pak.Serialize(_player->session->stream);
+	pak.Serialize(player->stream);
 }
 
 void PlayerKick(const bp_api* _api, bp_player* _player, const char* _reason) {
+	auto player = reinterpret_cast<PlayerSession*>(_player);
 	Addon* addon = InternalGetAddon(_api);
-	addon->server->DisconnectPlayer(_reason, *_player->session);
+	addon->server->DisconnectPlayer(_reason, *player);
 }
 
 const char* PlayerGetUsername(bp_player* _player) {
-	return _player->session->username.c_str();
+	auto player = reinterpret_cast<PlayerSession*>(_player);
+	return player->username.c_str();
 }
 
 bp_entity* PlayerGetEntity(bp_player* _player) {
-	// Peak C++
-	return &_player->session->entity->apiEntity;
+	auto player = reinterpret_cast<PlayerSession*>(_player);
+	return reinterpret_cast<bp_entity*>(&player->entity);
 }
 
 bp_vec3 EntityGetPosition(bp_entity* _entity) {
-	return { _entity->entity->position.x, _entity->entity->position.y, _entity->entity->position.z };
+	auto entity = reinterpret_cast<Entity*>(_entity);
+	return { entity->position.x, entity->position.y, entity->position.z };
 }
 
 void EntitySetPosition(bp_entity* _entity, bp_vec3 _pos) {
-	_entity->entity->Teleport({ _pos.x, _pos.y, _pos.z });
+	auto entity = reinterpret_cast<Entity*>(_entity);
+	entity->Teleport({ _pos.x, _pos.y, _pos.z });
 }
 
 bp_world* EntityGetWorld(bp_entity* _entity) {
-	return &_entity->entity->world->apiWorld;
+	auto entity = reinterpret_cast<Entity*>(_entity);
+	return reinterpret_cast<bp_world*>(&entity->world);
 }
 
 bp_block GetBlock(bp_world* _world, bp_block_pos _pos) {
+	auto world = reinterpret_cast<WorldManager*>(_world);
 	Int3 blockPos{ _pos.x, _pos.y, _pos.z };
-	auto id = _world->manager->GetBlockId(blockPos);
-	auto meta = _world->manager->GetMetadata(blockPos);
+	auto id = world->GetBlockId(blockPos);
+	auto meta = world->GetMetadata(blockPos);
 	return bp_block{ .id = id, .meta = meta };
 }
 
 void SetBlock(bp_world* _world, bp_block_pos _pos, bp_block _block) {
+	auto world = reinterpret_cast<WorldManager*>(_world);
 	Int3 blockPos{ _pos.x, _pos.y, _pos.z };
-	_world->manager->SetBlock(blockPos, Block{ .type = static_cast<BlockType>(_block.id), .data = _block.meta });
+	world->SetBlock(blockPos, Block{ .type = static_cast<BlockType>(_block.id), .data = _block.meta });
 }
 
 void SendBlockUpdate(bp_world* _world, bp_block_pos _pos, bp_block _block) {
-	Int3 blockPos{ _pos.x, _pos.y, _pos.z };
-	if (!_world->manager->onBlockUpdate)
+	auto world = reinterpret_cast<WorldManager*>(_world);
+	if (!world->onBlockUpdate)
 		return;
-	auto* chunk = _world->manager->GetChunkRaw({ _pos.x >> 4, _pos.z >> 4 });
+	auto* chunk = world->GetChunkRaw({ _pos.x >> 4, _pos.z >> 4 });
 	if (!chunk)
 		return;
 	Int3 local{ _pos.x & 15, _pos.y, _pos.z & 15 };
-	_world->manager->onBlockUpdate(PendingBlock{ .block{ .type = static_cast<BlockType>(_block.id),
+	world->onBlockUpdate(PendingBlock{ .block{ .type = static_cast<BlockType>(_block.id),
 	                                                     .data = _block.meta },
 	                                             .blockPos{ _pos.x, _pos.y, _pos.z },
 	                                             .light{ chunk->GetBlockLight(local), chunk->GetSkyLight(local) } },
 	                               chunk->cpos);
-}
-
-void* GetPlayerData(const bp_api* _api, bp_player* _player) {
-	Addon* addon = InternalGetAddon(_api);
-	auto it = _player->addonData.find(addon);
-	if (it == _player->addonData.end())
-		return nullptr;
-
-	return it->second;
-}
-
-void SetPlayerData(const bp_api* _api, bp_player* _player, void* _data) {
-	_player->addonData[InternalGetAddon(_api)] = _data;
 }
 
 bool ExecuteAddonCommand(const bp_api* _api, bp_player* _sender, const char* _command) noexcept {
@@ -169,19 +165,8 @@ bool ExecuteAddonCommand(const bp_api* _api, bp_player* _sender, const char* _co
 		if (!server->CanExecuteCommands())
 			return false;
 
-		std::shared_ptr<PlayerSession> sender;
-		if (_sender) {
-			for (const auto& session : server->GetPlayers()) {
-				if (session && &session->apiPlayer == _sender) {
-					sender = session;
-					break;
-				}
-			}
-			if (!sender)
-				return false;
-		}
-
-		return server->ExecuteCommand(_command, sender.get());
+		auto sender = reinterpret_cast<PlayerSession*>(_sender);
+		return server->ExecuteCommand(_command, sender);
 	} catch (...) {
 		return false;
 	}
@@ -196,7 +181,6 @@ bp_api MakeAddonAPI() {
 		.player = { .sendMessage = PlayerSendMessage, .kick = PlayerKick, .getUsername = PlayerGetUsername, .getEntity = PlayerGetEntity, },
 		.entity = { .getPosition = EntityGetPosition, .setPosition = EntitySetPosition, .getWorld = EntityGetWorld },
 		.world = { .setBlock = SetBlock, .getBlock = GetBlock, .sendBlockUpdate = SendBlockUpdate },
-		.data = { .setPlayer = SetPlayerData, .getPlayer = GetPlayerData },
 		.commands = { .execute = ExecuteAddonCommand }
 	};
 }
