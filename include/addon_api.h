@@ -86,11 +86,6 @@ struct bp_api {
 	} world;
 
 	struct {
-		void (*setPlayer)(const bp_api* api, bp_player* player, void* _data);
-		void* (*getPlayer)(const bp_api* api, bp_player* player);
-	} data;
-
-	struct {
 		bool (*execute)(const bp_api* api, bp_player* sender, const char* command);
 	} commands;
 };
