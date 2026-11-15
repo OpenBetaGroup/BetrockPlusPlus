@@ -236,10 +236,10 @@ bool convertAlphaLevel(std::string& _dir) {
 	WorldManager world;
 	WorldManager hellWorld;
 
-	world.regionManager = std::move(overworldRegionManager);
-	hellWorld.regionManager = std::move(hellRegionManager);
 	overworldRegionManager->world = &world;
 	hellRegionManager->world = &hellWorld;
+	world.regionManager = std::move(overworldRegionManager);
+	hellWorld.regionManager = std::move(hellRegionManager);
 
 	world.dimension = std::make_unique<DimensionOverworld>(0);
 	hellWorld.dimension = std::make_unique<DimensionNether>(0);
@@ -260,7 +260,7 @@ bool convertAlphaLevel(std::string& _dir) {
 
 			if (++sinceFlush >= FLUSH_BATCH_SIZE) {
 				world.SaveChunks(/*saveIfEntities=*/true);
-				overworldRegionManager->FlushAll();
+				world.regionManager->FlushAll();
 				sinceFlush = 0;
 				world.chunks.clear();
 				world.InvalidateChunkCache();
@@ -290,7 +290,7 @@ bool convertAlphaLevel(std::string& _dir) {
 
 			if (++sinceFlush >= FLUSH_BATCH_SIZE) {
 				hellWorld.SaveChunks(/*saveIfEntities=*/true);
-				hellRegionManager->FlushAll();
+				hellWorld.regionManager->FlushAll();
 				sinceFlush = 0;
 				hellWorld.chunks.clear();
 				hellWorld.InvalidateChunkCache();
@@ -306,16 +306,16 @@ bool convertAlphaLevel(std::string& _dir) {
 	hellWorld.SaveChunks(/*saveIfEntities=*/true);
 
 	// Save everything
-	overworldRegionManager->FlushAll();
-	hellRegionManager->FlushAll();
+	world.regionManager->FlushAll();
+	hellWorld.regionManager->FlushAll();
 
 	// Shutdown the worlds
 	world.Shutdown();
 	hellWorld.Shutdown();
 
 	// Release the region managers
-	overworldRegionManager->Release();
-	hellRegionManager->Release();
+	world.regionManager->Release();
+	hellWorld.regionManager->Release();
 
 	world.chunks.clear();
 	world.InvalidateChunkCache();
