@@ -20,10 +20,6 @@
 #include <optional>
 #include <vector>
 
-#ifdef BUILD_SERVER
-#include "addon/addon_impl.h"
-#endif
-
 struct EntityFlags {
 	bool isBurning = false;
 	bool isSneaking = false;
@@ -71,10 +67,6 @@ struct LightningEntity;
 // TODO: Reorder some of these. Having a bunch of bools
 // like this between bigger types is bad for alignment
 struct Entity {
-#ifdef BUILD_SERVER // Maybe this shouldn't be here
-	bp_entity apiEntity;
-#endif
-
 	// For randomness
 	Java::Random rand;
 
@@ -180,11 +172,7 @@ struct Entity {
 
 	float entityBrightness = 0.0f;
 
-	Entity()
-#ifdef BUILD_SERVER
-	    : apiEntity(this)
-#endif
-	{
+	Entity() {
 		RebuildCollider();
 	}
 	virtual ~Entity() = default;
@@ -245,8 +233,8 @@ struct Entity {
 		double halfWidth = double(width) / 2.0;
 		double bottom = position.y - double(yOffset) + double(ySize);
 		collider = { position.x - halfWidth,  bottom,
-			         position.z - halfWidth,  position.x + halfWidth,
-			         bottom + double(height), position.z + halfWidth };
+		             position.z - halfWidth,  position.x + halfWidth,
+		             bottom + double(height), position.z + halfWidth };
 	}
 
 	void SetSize(Vec2 _size) {

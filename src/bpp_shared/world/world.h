@@ -42,10 +42,6 @@
 #include <unordered_map>
 #include <vector>
 
-#ifdef BUILD_SERVER
-#include "addon/addon_impl.h"
-#endif
-
 struct PendingBlock {
 	Block block{ BLOCK_AIR, 0 };
 	Int3 blockPos{ 0, 0, 0 };
@@ -83,9 +79,6 @@ private:
 	static BiomeGenerator biomeGenerator;
 
 public:
-#ifdef BUILD_SERVER
-	bp_world apiWorld;
-#endif
 	BS::thread_pool<> pool{ 2 };
 	std::unique_ptr<RegionManager> regionManager = nullptr;
 	TickTime elapsedTicks = 0;
@@ -110,11 +103,7 @@ public:
 	std::unique_ptr<DimensionBase> dimension;
 	WeatherSystem weatherSystem;
 
-	WorldManager()
-#ifdef BUILD_SERVER
-	    : apiWorld(this)
-#endif
-	{
+	WorldManager() {
 		entityManager.world = this;
 		tickScheduler.world = this;
 		distHashCounter = uint32_t(rand.NextInt());

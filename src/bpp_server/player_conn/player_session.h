@@ -9,7 +9,6 @@
 #pragma once
 #include "../entities/entity_mp_player.h"
 #include "../trackers/entity_tracker.h"
-#include "addon/addon_impl.h"
 #include "dimensions.h"
 #include "inventory/interactions/player.h"
 #include "inventory/inventory_interaction.h"
@@ -44,7 +43,6 @@ struct PendingBlockBreak {
 
 class Server;
 struct PlayerSession {
-	bp_player apiPlayer;
 	NetworkStream stream;
 	ClientPosition position;
 	Server* server = nullptr;
@@ -122,7 +120,7 @@ struct PlayerSession {
 	Dimension dimension = Dimension::Overworld; // 0 = overworld, -1 = nether
 
 	explicit PlayerSession(int _socket, Runtime& _gameRuntime)
-	    : apiPlayer(this), stream(_socket), inventoryInteraction(&inventory, _gameRuntime) {}
+	    : stream(_socket), inventoryInteraction(&inventory, _gameRuntime) {}
 	~PlayerSession() {
 		// So our player entity despawns from the world
 		if (entity) {
@@ -149,7 +147,8 @@ struct PlayerSession {
 
 		entity->hasBedSpawn = _nbt.Has("SpawnX") && _nbt.Has("SpawnY") && _nbt.Has("SpawnZ");
 		if (entity->hasBedSpawn) {
-			entity->spawnPosition = { _nbt.Get("SpawnX").GetInt(), _nbt.Get("SpawnY").GetInt(), _nbt.Get("SpawnZ").GetInt() };
+			entity->spawnPosition = { _nbt.Get("SpawnX").GetInt(), _nbt.Get("SpawnY").GetInt(),
+			                          _nbt.Get("SpawnZ").GetInt() };
 		}
 
 		if (_nbt.Has("Inventory")) {
@@ -160,7 +159,7 @@ struct PlayerSession {
 				if (networkSlot < 0 || networkSlot >= int(inventory.slots.size()))
 					continue;
 				inventory.slots[size_t(networkSlot)] = ItemStack{ item.Get("id").GetShort(), item.Get("Count").GetByte(),
-					                                              item.Get("Damage").GetShort() };
+				                                                  item.Get("Damage").GetShort() };
 			}
 		}
 
