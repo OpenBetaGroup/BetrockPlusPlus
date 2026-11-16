@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ADDON_API_VERSION 2
+#define ADDON_API_VERSION 3
 
 typedef struct bp_api bp_api;
 typedef struct bp_player bp_player;
@@ -45,6 +45,23 @@ typedef struct {
 	int8_t id;
 	uint8_t meta;
 } bp_block;
+
+typedef enum {
+	BP_DAMAGE_NONE,
+	BP_DAMAGE_FALL,
+	BP_DAMAGE_DROWN,
+	BP_DAMAGE_BURN,
+	BP_DAMAGE_LAVA,
+	BP_DAMAGE_PUNCH,
+	BP_DAMAGE_ARROW,
+	BP_DAMAGE_EXPLOSION,
+	BP_DAMAGE_LIGHTNING,
+	BP_DAMAGE_SUFFOCATION,
+	BP_DAMAGE_COMMAND,
+	BP_DAMAGE_VOID,
+	BP_DAMAGE_CACTUS,
+	BP_DAMAGE_ITEM
+} bp_damage_type;
 
 struct bp_api {
 	uint32_t version;
@@ -102,20 +119,23 @@ typedef struct {
 	bp_player* player;
 	const char* message;
 
+	// --- Modifiable fields ---
 	bool cancel;
 } bp_player_chat_event;
 
 typedef struct {
 	bp_player* player;
+
+	// --- Modifiable fields ---
 	bp_vec3 from;
 	bp_vec3 to;
-
 	bool cancel;
 } bp_player_move_event;
 
 typedef struct {
 	bp_player* player;
 
+	// --- Modifiable fields ---
 	bp_item_stack item;
 	bool cancel;
 } bp_item_use_event;
@@ -124,6 +144,7 @@ typedef struct {
 	bp_player* player;
 	bp_world* world;
 
+	// --- Modifiable fields ---
 	bp_item_stack heldItem;
 	bp_block_pos blockPos;
 	bp_block block;
@@ -134,6 +155,7 @@ typedef struct {
 	bp_player* player;
 	bp_world* world;
 
+	// --- Modifiable fields ---
 	bp_item_stack tool;
 	bp_block_pos blockPos;
 	bp_block block;
@@ -144,6 +166,7 @@ typedef struct {
 	bp_player* player;
 	bp_world* world;
 
+	// --- Modifiable fields ---
 	bp_block_pos blockPos;
 	int8_t blockId;
 	bool cancel;
@@ -151,8 +174,11 @@ typedef struct {
 
 typedef struct {
 	bp_entity* entity;
+	bp_entity* attacker; // Can be NULL
 
+	// --- Modifiable fields ---
 	int amount;
+	bp_damage_type type;
 	bool cancel;
 } bp_entity_damage_event;
 
