@@ -15,5 +15,4 @@ struct Addon {
 	bp_api api;
 	void* dynHandle;
 	Server* server;
-	std::unordered_map<PlayerSession*, void*> playerData;
 };
