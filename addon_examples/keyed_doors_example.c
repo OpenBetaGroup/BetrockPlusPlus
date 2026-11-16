@@ -216,12 +216,12 @@ void WriteSave(const bp_api* api) {
 	fclose(file);
 }
 
-void OnLoad(const bp_api* api, const bp_addon_load* ev) {
+void OnLoad(const bp_api* api) {
 	LoadSave(api);
 	api->log.info(api, "Test addon loaded!");
 }
 
-void OnUnload(const bp_api* api, const bp_addon_unload* ev) {
+void OnUnload(const bp_api* api) {
 	api->log.info(api, "Test addon shutting down...");
 	WriteSave(api);
 }

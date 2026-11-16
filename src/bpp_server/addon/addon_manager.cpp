@@ -103,8 +103,31 @@ void AddonManager::Load() {
 		addon->info = addonFn(&addon->api);
 		addon->dynHandle = handle;
 
+		// Check for min version (0 = any/ignore)
+		if (addon->info.min_api_version != 0 && ADDON_API_VERSION < addon->info.min_api_version) {
+			Logger::Error <<
+				std::format("Addon at \"{}\" requires at least addon API v{} (using v{})\n",
+					addonPath.string(),
+					addon->info.min_api_version,
+					ADDON_API_VERSION
+				);
+			dlclose(handle);
+			continue;
+		}
+		// Check for max version (0 = any/ignore)
+		if (addon->info.max_api_version != 0 && ADDON_API_VERSION > addon->info.max_api_version) {
+			Logger::Error <<
+				std::format("Addon at \"{}\" supports at most addon API v{} (using v{})\n",
+					addonPath.string(),
+					addon->info.max_api_version,
+					ADDON_API_VERSION
+				);
+			dlclose(handle);
+			continue;
+		}
+
 		if (addon->info.events.addonLoad)
-			addon->info.events.addonLoad(&addon->api, {});
+			addon->info.events.addonLoad(&addon->api);
 
 		Logger::Info << "Loaded addon '" << addon->info.id << "'\n";
 
@@ -117,7 +140,10 @@ AddonManager::AddonManager(Server* _server) : server(_server) {}
 AddonManager::~AddonManager() {
 	for (const auto& addon : addons) {
 		if (addon->info.events.addonUnload)
-			addon->info.events.addonUnload(&addon->api, {});
+			addon->info.events.addonUnload(&addon->api);
+
+		for (const auto& name : addon->registeredCommands)
+			server->GetCommandManager().Dispatcher().remove_command(name.c_str());
 
 		Logger::Info << "Unloaded addon '" << addon->info.id << "'\n";
 

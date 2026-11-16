@@ -10,7 +10,7 @@
 
 // Used primarily for determining what kind of damage killed a mob, for death messages
 
-enum class DamageType : int8_t {
+enum class DamageType : uint8_t {
 	None,
 	Fall,
 	Drown,

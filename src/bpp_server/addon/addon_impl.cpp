@@ -217,10 +217,10 @@ void AddCmdNodeChild(bp_cmd_node* _parent, bp_cmd_node* _child) {
 	_parent->children.push_back(_child);
 }
 
-void SetCmdNodeAction(const bp_api* _api, bp_cmd_node* _node, bp_cmd_action_fn _action) {
-	_node->action = [_action, _api](const strategos::CmdNode& _cmdNode, void* _userData) {
-		const bp_cmd_action_ctx context{ _cmdNode, CmdCtx(_userData) };
-		_action(_api, &context);
+void SetCmdNodeAction(const bp_api* _api, bp_cmd_node* _node, bp_cmd_action_fn _action, void* _userData) {
+	_node->action = [_action, _api, _userData](const strategos::CmdNode& _cmdNode, void* _cmdCtxPtr) {
+		const bp_cmd_action_ctx context{ .cmdNode = _cmdNode, .cmdCtx = CmdCtx(_cmdCtxPtr) };
+		_action(_api, &context, _userData);
 	};
 }
 
@@ -264,9 +264,9 @@ bool GetCmdBooleanArg(const bp_cmd_action_ctx* _ctx, const char* _name, bool* _o
 	return false;
 }
 
-bool GetCmdEnumArg(const bp_cmd_action_ctx* _ctx, const char* _name, const char** _out) {
-	if (auto value = _ctx->cmdNode.get_arg<std::string>(_name)) {
-		*_out = value->c_str();
+bool GetCmdEnumArg(const bp_cmd_action_ctx* _ctx, const char* _name, int* _out) {
+	if (auto value = _ctx->cmdNode.get_arg<int>(_name)) {
+		*_out = *value;
 		return true;
 	}
 	return false;
@@ -274,9 +274,9 @@ bool GetCmdEnumArg(const bp_cmd_action_ctx* _ctx, const char* _name, const char*
 
 bool GetCmdVec3Arg(const bp_cmd_action_ctx* _ctx, const char* _name, bp_cmd_vec3* _out) {
 	if (auto value = _ctx->cmdNode.get_arg<strategos::Vec3>(_name)) {
-		_out->pos[0] = value->pos[0];
-		_out->pos[1] = value->pos[1];
-		_out->pos[2] = value->pos[2];
+		_out->x = value->pos[0];
+		_out->y = value->pos[1];
+		_out->z = value->pos[2];
 		_out->relativeAxes = value->relative_axes;
 		return true;
 	}
@@ -299,7 +299,18 @@ strategos::Node TranslateCommandTree(const bp_cmd_node* _root) {
 
 void RegisterCommand(const bp_api* _api, bp_cmd_node* _root) {
 	Addon* addon = InternalGetAddon(_api);
+	addon->registeredCommands.push_back(_root->name);
 	addon->server->GetCommandManager().Dispatcher().add_command(TranslateCommandTree(_root));
+}
+
+bool UnregisterCommand(const bp_api* _api, const char* _name) {
+	Addon* addon = InternalGetAddon(_api);
+	auto it = std::ranges::find(addon->registeredCommands, _name);
+	if (it == addon->registeredCommands.end())
+		return false;
+	addon->registeredCommands.erase(it);
+
+	return addon->server->GetCommandManager().Dispatcher().remove_command(_name);
 }
 
 bp_api MakeAddonAPI() {
@@ -326,6 +337,7 @@ bp_api MakeAddonAPI() {
 			.getVec3Arg = GetCmdVec3Arg,
 			.setAction = SetCmdNodeAction,
 			.registerCommand = RegisterCommand,
+			.unregisterCommand = UnregisterCommand,
 			.execute = ExecuteCommand }
 	};
 }

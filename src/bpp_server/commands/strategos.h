@@ -282,6 +282,15 @@ public:
 		return *this;
 	}
 
+	bool remove_command(std::string_view name) {
+		auto it = std::ranges::find(rootNode.children, name, &Node::name);
+		if (it == rootNode.children.end())
+			return false;
+
+		rootNode.children.erase(it);
+		return true;
+	}
+
 	[[nodiscard]] const Node& root() const {
 		return rootNode;
 	}

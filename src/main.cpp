@@ -195,9 +195,9 @@ static void InitCrashHandler(const std::string& _platformString) {
 		try {
 			if (server) {
 				std::string versionString(PROJECT_VERSION_FULL_STRING);
-				const bp_crash_event event{ .crash_log = report.data(),
-					                        .crash_log_path = reportPath.data(),
-					                        .version_string = versionString.data() };
+				const bp_crash_event event{ .crash_log = report.c_str(),
+					                        .crash_log_path = reportPath.c_str(),
+					                        .version_string = versionString.c_str() };
 				server->GetAddonManager().Broadcast(&bp_addon_events::crash, event);
 			}
 		} catch (...) {

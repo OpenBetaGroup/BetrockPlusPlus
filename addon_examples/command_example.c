@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void GetNote(const bp_api* api, const bp_cmd_action_ctx* ctx) {
+void GetNote(const bp_api* api, const bp_cmd_action_ctx* ctx, void* userData) {
 	int index;
 	if (!api->cmd.getIntegerArg(ctx, "index", &index)) return;
 
@@ -13,7 +13,7 @@ void GetNote(const bp_api* api, const bp_cmd_action_ctx* ctx) {
 	free(msg);
 }
 
-void SetNote(const bp_api* api, const bp_cmd_action_ctx* ctx) {
+void SetNote(const bp_api* api, const bp_cmd_action_ctx* ctx, void* userData) {
 	int index;
 	if (!api->cmd.getIntegerArg(ctx, "index", &index)) return;
 	const char* value;
@@ -25,7 +25,7 @@ void SetNote(const bp_api* api, const bp_cmd_action_ctx* ctx) {
 	free(msg);
 }
 
-void OnLoad(const bp_api* api, const bp_addon_load* ev) {
+void OnLoad(const bp_api* api) {
 	// Create all the nodes we need for our command tree
 	bp_cmd_node* note = api->cmd.makeNode("note", BP_CMD_LITERAL);
 	bp_cmd_node* get = api->cmd.makeNode("get", BP_CMD_LITERAL);
@@ -44,8 +44,8 @@ void OnLoad(const bp_api* api, const bp_addon_load* ev) {
 	api->cmd.addChild(set_index, set_value);
 
 	// Finish off the tree by putting executors at each end
-	api->cmd.setAction(api, get_index, GetNote);
-	api->cmd.setAction(api, set_value, SetNote);
+	api->cmd.setAction(api, get_index, GetNote, NULL);
+	api->cmd.setAction(api, set_value, SetNote, NULL);
 
 	// And finally register our root nodes as commands
 	api->cmd.registerCommand(api, get);
@@ -54,7 +54,7 @@ void OnLoad(const bp_api* api, const bp_addon_load* ev) {
 	api->log.info(api, "Command test addon loaded!");
 }
 
-void OnUnload(const bp_api* api, const bp_addon_unload* ev) {
+void OnUnload(const bp_api* api) {
 	api->log.info(api, "Command test addon shutting down...");
 }
 

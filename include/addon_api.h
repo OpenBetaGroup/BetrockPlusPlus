@@ -16,9 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-//TODO: Turn into function call,
-// as definitions don't exist outside of the C preprocessor
-#define ADDON_API_VERSION 4
+#define ADDON_API_VERSION 5
 
 typedef struct bp_api bp_api;
 typedef struct bp_player bp_player;
@@ -50,7 +48,8 @@ typedef struct {
 	uint8_t meta;
 } bp_block;
 
-typedef enum {
+typedef uint8_t bp_damage_type;
+enum {
 	BP_DAMAGE_NONE,
 	BP_DAMAGE_FALL,
 	BP_DAMAGE_DROWN,
@@ -65,9 +64,10 @@ typedef enum {
 	BP_DAMAGE_VOID,
 	BP_DAMAGE_CACTUS,
 	BP_DAMAGE_ITEM
-} bp_damage_type;
+};
 
-typedef enum {
+typedef uint8_t bp_cmd_node_type;
+enum {
 	BP_CMD_LITERAL,
 	BP_CMD_STRING,
 	BP_CMD_GREEDY_STRING,
@@ -76,21 +76,23 @@ typedef enum {
 	BP_CMD_BOOLEAN,
 	BP_CMD_ENUM,
 	BP_CMD_VEC3,
-} bp_cmd_node_type;
+};
 
-typedef enum {
+typedef uint8_t bp_axis;
+enum {
 	BP_AXIS_X,
 	BP_AXIS_Y,
 	BP_AXIS_Z,
-} bp_axis;
+};
 
 typedef struct {
-	float pos[3];
-	//TODO: Maybe some helper macros or inline implementation functions for this?
+	float x;
+	float y;
+	float z;
 	uint8_t relativeAxes; // bitmask
 } bp_cmd_vec3;
 
-typedef void (*bp_cmd_action_fn)(const bp_api* api, const bp_cmd_action_ctx* ctx);
+typedef void (*bp_cmd_action_fn)(const bp_api* api, const bp_cmd_action_ctx* ctx, void* userData);
 
 struct bp_api {
 	uint32_t version;
@@ -104,8 +106,7 @@ struct bp_api {
 
 	struct {
 		int (*getPlayerCount)(const bp_api* api);
-		// Used with getPlayerCount
-		bp_player* (*getPlayerAt)(const bp_api* api, int index);
+		bp_player* (*getPlayerAt)(const bp_api* api, int index); // Used with getPlayerCount
 		void (*stop)(const bp_api* api, float timeout);
 		double (*getMsptAverage)(const bp_api* api);
 		double (*getTpsAverage)(const bp_api* api);
@@ -144,10 +145,15 @@ struct bp_api {
 		bool (*getIntegerArg)(const bp_cmd_action_ctx* ctx, const char* name, int* out);
 		bool (*getFloatArg)(const bp_cmd_action_ctx* ctx, const char* name, float* out);
 		bool (*getBooleanArg)(const bp_cmd_action_ctx* ctx, const char* name, bool* out);
-		bool (*getEnumArg)(const bp_cmd_action_ctx* ctx, const char* name, const char** out);
+		// Output is an index in the original enum values array
+		bool (*getEnumArg)(const bp_cmd_action_ctx* ctx, const char* name, int* out);
 		bool (*getVec3Arg)(const bp_cmd_action_ctx* ctx, const char* name, bp_cmd_vec3* out);
-		void (*setAction)(const bp_api* api, bp_cmd_node* node, bp_cmd_action_fn action);
+		void (*setAction)(const bp_api* api, bp_cmd_node* node, bp_cmd_action_fn action, void* userData);
+		// Note: This consumes the root node and it's children, don't hold references to them
 		void (*registerCommand)(const bp_api* api, bp_cmd_node* root);
+		// Note: All addon commands are automatically unregistered on unloads/disablements
+		// Returns true if any commands were un-registered
+		bool (*unregisterCommand)(const bp_api* api, const char* name);
 		bool (*execute)(const bp_api* api, bp_player* sender, const char* cmdline);
 	} cmd;
 };
@@ -231,16 +237,10 @@ typedef struct {
 } bp_server_tick_event;
 
 typedef struct {
-	char* crash_log;
-	char* crash_log_path;
-	char* version_string;
+	const char* crash_log;
+	const char* crash_log_path;
+	const char* version_string;
 } bp_crash_event;
-
-typedef struct {
-} bp_addon_load;
-
-typedef struct {
-} bp_addon_unload;
 
 typedef void (*bp_player_join_fn)(const bp_api* api, const bp_player_join_event* event);
 typedef void (*bp_player_leave_fn)(const bp_api* api, const bp_player_leave_event* event);
@@ -253,8 +253,8 @@ typedef void (*bp_block_place_fn)(const bp_api* api, bp_block_place_event* event
 typedef void (*bp_entity_damage_fn)(const bp_api* api, bp_entity_damage_event* event);
 typedef void (*bp_server_tick_fn)(const bp_api* api, const bp_server_tick_event* event);
 typedef void (*bp_crash_event_fn)(const bp_api* api, const bp_crash_event* event);
-typedef void (*bp_addon_load_fn)(const bp_api* api, const bp_addon_load* event);
-typedef void (*bp_addon_unload_fn)(const bp_api* api, const bp_addon_unload* event);
+typedef void (*bp_addon_load_fn)(const bp_api* api);
+typedef void (*bp_addon_unload_fn)(const bp_api* api);
 
 typedef struct {
 	bp_player_join_fn playerJoin;
@@ -276,6 +276,9 @@ typedef struct {
 	const char* id;
 	const char* name;
 	const char* version;
+	// API version 0 = uninitialized/ignore/any
+	uint32_t min_api_version;
+	uint32_t max_api_version;
 
 	bp_addon_events events;
 } bp_addon_info;
@@ -289,9 +292,23 @@ typedef bp_addon_info (*bp_addon_fn)(const bp_api* api);
 // Standalone functions
 bool bp_block_pos_equals(bp_block_pos a, bp_block_pos b);
 
+bool bp_cmd_vec3_is_relative(bp_cmd_vec3 vec, bp_axis axis);
+void bp_cmd_vec3_set_relative(bp_cmd_vec3* vec, bp_axis axis, bool relative);
+
 #ifdef ADDON_API_IMPLEMENTATION
 bool bp_block_pos_equals(bp_block_pos a, bp_block_pos b) {
 	return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+bool bp_cmd_vec3_is_relative(bp_cmd_vec3 vec, bp_axis axis) {
+	return (vec.relativeAxes & (1u << axis)) != 0;
+}
+
+void bp_cmd_vec3_set_relative(bp_cmd_vec3* vec, bp_axis axis, bool relative) {
+	if (relative)
+		vec->relativeAxes |= (1u << axis);
+	else
+		vec->relativeAxes &= ~(1u << axis);
 }
 #endif
 

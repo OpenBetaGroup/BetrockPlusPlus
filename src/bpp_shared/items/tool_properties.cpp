@@ -255,7 +255,7 @@ void AttackWithItem(Entity& _targetEntity, Entity& _sourceEntity, ItemStack* _st
 	EntityHealth damage = 1;
 	if (toolProperties.contains(_stack->id))
 		damage = CalculateDamage(toolProperties[_stack->id].type, MaterialToLevel(toolProperties[_stack->id].material));
-	InflictDamage(_targetEntity, _sourceEntity, damage, DamageType::Item);
+	InflictDamage(_targetEntity, _sourceEntity, damage, _stack->id <= 0 ? DamageType::Punch : DamageType::Item);
 
 	// Players alert wolves
 	auto player = dynamic_cast<PlayerEntity*>(&_sourceEntity);
@@ -403,7 +403,7 @@ void UseFishingRod(PlayerSession& _session, ItemStack* _stack, Entity& /*_target
 		fish->itemStack = { Items::Id::FISH, 1, 0 };
 		fish->dim = player->dim;
 		fish->velocity = { delta.x * PULL_STRENGTH, delta.y * PULL_STRENGTH + MathHelper::SqrtDouble(length) * 0.08,
-			               delta.z * PULL_STRENGTH };
+		                   delta.z * PULL_STRENGTH };
 
 		player->world->entityManager.AddEntity(fish);
 		duraCost = 1;
@@ -466,7 +466,7 @@ void UseMinecart(WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& /*_
 		cart->cartType = MinecartType::Furnace;
 
 	Vec3 spawnPos = { double(float(_pos.x) + 0.5f), double(float(_pos.y) + 0.5f) + double(cart->yOffset),
-		              double(float(_pos.z) + 0.5f) };
+	                  double(float(_pos.z) + 0.5f) };
 	cart->Teleport(spawnPos);
 	cart->prevPosition = { spawnPos.x, double(float(_pos.y) + 0.5f), spawnPos.z }; // vanilla prevPos skips yOffset
 	_world.entityManager.AddEntity(cart);
