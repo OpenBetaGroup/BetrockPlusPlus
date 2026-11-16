@@ -106,7 +106,7 @@ const char* PlayerGetUsername(bp_player* _player) {
 
 bp_entity* PlayerGetEntity(bp_player* _player) {
 	auto player = reinterpret_cast<PlayerSession*>(_player);
-	return reinterpret_cast<bp_entity*>(&player->entity);
+	return reinterpret_cast<bp_entity*>(player->entity.get());
 }
 
 bp_vec3 EntityGetPosition(bp_entity* _entity) {
@@ -121,7 +121,7 @@ void EntitySetPosition(bp_entity* _entity, bp_vec3 _pos) {
 
 bp_world* EntityGetWorld(bp_entity* _entity) {
 	auto entity = reinterpret_cast<Entity*>(_entity);
-	return reinterpret_cast<bp_world*>(&entity->world);
+	return reinterpret_cast<bp_world*>(entity->world);
 }
 
 bp_block GetBlock(bp_world* _world, bp_block_pos _pos) {
