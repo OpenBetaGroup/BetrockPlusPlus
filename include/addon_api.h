@@ -16,12 +16,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ADDON_API_VERSION 3
+//TODO: Turn into function call,
+// as definitions don't exist outside of the C preprocessor
+#define ADDON_API_VERSION 4
 
 typedef struct bp_api bp_api;
 typedef struct bp_player bp_player;
 typedef struct bp_entity bp_entity;
 typedef struct bp_world bp_world;
+typedef struct bp_cmd_node bp_cmd_node;
+typedef struct bp_cmd_action_ctx bp_cmd_action_ctx;
 
 typedef struct {
 	double x;
@@ -63,6 +67,31 @@ typedef enum {
 	BP_DAMAGE_ITEM
 } bp_damage_type;
 
+typedef enum {
+	BP_CMD_LITERAL,
+	BP_CMD_STRING,
+	BP_CMD_GREEDY_STRING,
+	BP_CMD_INTEGER,
+	BP_CMD_FLOAT,
+	BP_CMD_BOOLEAN,
+	BP_CMD_ENUM,
+	BP_CMD_VEC3,
+} bp_cmd_node_type;
+
+typedef enum {
+	BP_AXIS_X,
+	BP_AXIS_Y,
+	BP_AXIS_Z,
+} bp_axis;
+
+typedef struct {
+	float pos[3];
+	//TODO: Maybe some helper macros or inline implementation functions for this?
+	uint8_t relativeAxes; // bitmask
+} bp_cmd_vec3;
+
+typedef void (*bp_cmd_action_fn)(const bp_api* api, const bp_cmd_action_ctx* ctx);
+
 struct bp_api {
 	uint32_t version;
 	void* internal; // Don't touch this.
@@ -94,6 +123,7 @@ struct bp_api {
 		bp_vec3 (*getPosition)(bp_entity* entity);
 		void (*setPosition)(bp_entity* entity, bp_vec3 position);
 		bp_world* (*getWorld)(bp_entity* entity);
+		bp_player* (*toPlayer)(bp_entity* entity); // Only works if the entity is a player, of course, NULL otherwise
 	} entity;
 
 	struct {
@@ -103,8 +133,23 @@ struct bp_api {
 	} world;
 
 	struct {
-		bool (*execute)(const bp_api* api, bp_player* sender, const char* command);
-	} commands;
+		bp_cmd_node* (*makeNode)(const char* name, bp_cmd_node_type type);
+		bp_cmd_node* (*makeIntegerEx)(const char* name, int min, int max);
+		bp_cmd_node* (*makeFloatEx)(const char* name, float min, float max);
+		bp_cmd_node* (*makeEnum)(const char* name, const char* values[]); // Null-terminated array
+		void (*addChild)(bp_cmd_node* parent, bp_cmd_node* child);
+		void (*sendActionFeedback)(const bp_cmd_action_ctx* ctx, const char* message);
+		bp_entity* (*getActionExecutor)(const bp_cmd_action_ctx* ctx); // Might return NULL (e.g. console runs)
+		bool (*getStringArg)(const bp_cmd_action_ctx* ctx, const char* name, const char** out);
+		bool (*getIntegerArg)(const bp_cmd_action_ctx* ctx, const char* name, int* out);
+		bool (*getFloatArg)(const bp_cmd_action_ctx* ctx, const char* name, float* out);
+		bool (*getBooleanArg)(const bp_cmd_action_ctx* ctx, const char* name, bool* out);
+		bool (*getEnumArg)(const bp_cmd_action_ctx* ctx, const char* name, const char** out);
+		bool (*getVec3Arg)(const bp_cmd_action_ctx* ctx, const char* name, bp_cmd_vec3* out);
+		void (*setAction)(const bp_api* api, bp_cmd_node* node, bp_cmd_action_fn action);
+		void (*registerCommand)(const bp_api* api, bp_cmd_node* root);
+		bool (*execute)(const bp_api* api, bp_player* sender, const char* cmdline);
+	} cmd;
 };
 
 typedef struct {

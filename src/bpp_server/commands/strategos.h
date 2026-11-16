@@ -7,7 +7,9 @@
 */
 
 // A modified version of Strategos by jwaxy
-// https://gist.github.com/jwaxy/3e92259f20ef69ebb62528801ccefcb5#file-strategos-cpp
+// https://gist.github.com/jwaxy/3e92259f20ef69ebb6252	8801ccefcb5#file-strategos-cpp
+
+//TODO: Separate implementation to strategos.cpp
 
 #pragma once
 
@@ -34,7 +36,6 @@ struct Node;
 
 enum class NodeType : uint8_t {
 	Literal = 0,
-	Root,
 	String,
 	GreedyString,
 	Integer,
@@ -42,6 +43,7 @@ enum class NodeType : uint8_t {
 	Boolean,
 	Enum,
 	Vec3,
+	Root,
 };
 
 enum class Axis : uint8_t {
@@ -54,7 +56,7 @@ struct Vec3 {
 	float pos[3]{};
 	uint8_t relative_axes = 0; // bitmask
 
-	[[nodiscard]] constexpr auto is_relative(Axis axis) const noexcept -> bool {
+	[[nodiscard]] constexpr bool is_relative(Axis axis) const noexcept {
 		return relative_axes & (1 << std::to_underlying(axis));
 	}
 
@@ -80,7 +82,7 @@ struct formatter<strategos::Vec3> : formatter<std::string> {
 
 namespace strategos {
 
-using ActionFunc = std::function<std::string(const CmdNode& ctx, void* user_data)>;
+using ActionFunc = std::function<void(const CmdNode& ctx, void* user_data)>;
 using PermissionFunc = std::function<bool(void* user_data)>;
 
 struct IntSettings {
@@ -113,7 +115,7 @@ struct Suggestion {
 // Settings are used to specify metadata like constraints for a node.
 using NodeSettings = std::variant<std::monostate, IntSettings, FloatSettings, EnumSettings>;
 
-struct Node {
+struct AbstractNode {
 	NodeType type{};
 	std::string name;
 	NodeSettings settings;
@@ -122,7 +124,9 @@ struct Node {
 	bool requiresOperator = false;
 	SuggestionSource suggestionSource = SuggestionSource::None;
 	std::function<std::vector<std::string>()> suggestionProvider;
+};
 
+struct Node : AbstractNode {
 	// catchall string nodes follow typed or literal children so matches win.
 	std::vector<Node> children;
 
@@ -215,14 +219,14 @@ struct CmdNode {
 	const CmdNode* next{ nullptr };
 
 	template <typename T>
-	[[nodiscard]] auto get() const noexcept -> std::optional<T> {
+	[[nodiscard]] std::optional<T> get() const noexcept {
 		if (auto* val = std::get_if<T>(&data)) {
 			return *val;
 		}
 		return std::nullopt;
 	}
 
-	[[nodiscard]] auto get_child(size_t index) const noexcept -> const CmdNode* {
+	[[nodiscard]] const CmdNode* get_child(size_t index) const noexcept {
 		auto* current = this;
 		for (size_t i = 0; i < index && current; ++i) {
 			current = current->next;
@@ -231,7 +235,7 @@ struct CmdNode {
 	}
 
 	template <typename T>
-	[[nodiscard]] auto get_arg(size_t index) const noexcept -> std::optional<T> {
+	[[nodiscard]] std::optional<T> get_arg(size_t index) const noexcept {
 		if (auto* child = get_child(index)) {
 			return child->get<T>();
 		}
@@ -239,7 +243,7 @@ struct CmdNode {
 	}
 
 	template <typename T>
-	[[nodiscard]] auto get_arg(std::string_view name) const noexcept -> std::optional<T> {
+	[[nodiscard]] std::optional<T> get_arg(std::string_view name) const noexcept {
 		for (auto* current = this; current; current = current->next) {
 			if (current->node && current->node->name == name) {
 				return current->get<T>();
@@ -249,7 +253,7 @@ struct CmdNode {
 	}
 };
 
-enum class ParseError : uint8_t {
+enum class ParseErrorType : uint8_t {
 	InvalidToken,
 	OutOfRange,
 	IncompleteCommand,
@@ -258,13 +262,11 @@ enum class ParseError : uint8_t {
 	NoPermission,
 };
 
-struct ErrorInfo {
-	ParseError error;
+struct ParseError {
+	ParseErrorType type;
 	std::string message;
 	size_t position{ 0 };
 };
-
-using ActionResult = std::expected<std::string, ErrorInfo>;
 
 class BrigadierContext {
 private:
@@ -285,8 +287,8 @@ public:
 	}
 
 	// LLM disclosure
-	[[nodiscard]] auto suggest(std::string_view input, bool canOperate, std::span<const std::string> players) const
-	    -> std::vector<Suggestion> {
+	[[nodiscard]] std::vector<Suggestion> suggest(std::string_view input, bool canOperate,
+	                                              std::span<const std::string> players) const {
 		size_t base = 0;
 		while (base < input.size() && input[base] == ' ')
 			++base;
@@ -323,11 +325,11 @@ public:
 	}
 	// End LLM disclosure
 
-	[[nodiscard]] auto execute(std::string_view cmdline, void* user_data = nullptr,
-	                           PermissionFunc canOperate = nullptr) const -> ActionResult {
+	[[nodiscard]] std::optional<ParseError> execute(std::string_view cmdline, void* user_data = nullptr,
+	                                   PermissionFunc canOperate = nullptr) const {
 		auto tokens = tokenize(cmdline);
 		if (tokens.empty()) {
-			return std::unexpected(ErrorInfo{ .error = ParseError::IncompleteCommand, .message = "Empty command" });
+			return ParseError{ .type = ParseErrorType::IncompleteCommand, .message = "Empty command" };
 		}
 
 		std::vector<CmdNode> cmd_ctx;
@@ -344,17 +346,17 @@ public:
 			       (!canOperate || !canOperate(user_data));
 		};
 		auto operatorError = []() {
-			return std::unexpected(
-			    ErrorInfo{ .error = ParseError::NoPermission, .message = "Only operators can use this command!" });
+			return
+			    ParseError{ .type = ParseErrorType::NoPermission, .message = "Only operators can use this command!" };
 		};
 
 		while (token_idx < tokens.size()) {
 			if (current->children.empty()) {
 				if (lacksOperator())
 					return operatorError();
-				return std::unexpected(ErrorInfo{ .error = ParseError::TooManyArguments,
+				return ParseError{ .type = ParseErrorType::TooManyArguments,
 				                                  .message = std::format("Unexpected token '{}'", tokens[token_idx]),
-				                                  .position = token_idx });
+				                                  .position = token_idx };
 			}
 
 			auto [matched_node, consumed] = find_matching_child(*current, tokens, token_idx);
@@ -362,11 +364,11 @@ public:
 			if (!matched_node) {
 				if (lacksOperator())
 					return operatorError();
-				return std::unexpected(
-				    ErrorInfo{ .error = ParseError::UnknownCommand,
-				               .message = std::format("Unknown token '{}'. Expected: {}", tokens[token_idx],
-				                                      get_expected_names(*current)),
-				               .position = token_idx });
+				return
+				    ParseError{ .type = ParseErrorType::UnknownCommand,
+					           .message = std::format("Unknown token '{}'. Expected: {}", tokens[token_idx],
+					                                  get_expected_names(*current)),
+					           .position = token_idx };
 			}
 
 			auto& cmd_node = cmd_ctx.emplace_back();
@@ -377,9 +379,9 @@ public:
 				return operatorError();
 
 			if (!parse_node_value(*matched_node, tokens, token_idx, consumed, cmdline, cmd_node.data)) {
-				return std::unexpected(ErrorInfo{ .error = ParseError::InvalidToken,
+				return ParseError{ .type = ParseErrorType::InvalidToken,
 				                                  .message = std::format("Invalid value for '{}'", matched_node->name),
-				                                  .position = token_idx });
+				                                  .position = token_idx };
 			}
 
 			cmd_ctx[cmd_ctx.size() - 2].next = &cmd_node;
@@ -392,20 +394,21 @@ public:
 			return operatorError();
 
 		if (!current->action) {
-			return std::unexpected(
-			    ErrorInfo{ .error = ParseError::IncompleteCommand,
-			               .message = std::format("Incomplete command. Expected: {}", get_expected_names(*current)) });
+			return
+			    ParseError{ .type = ParseErrorType::IncompleteCommand,
+				           .message = std::format("Incomplete command. Expected: {}", get_expected_names(*current)) };
 		}
 
-		return current->action(cmd_ctx[1], user_data);
+		current->action(cmd_ctx[1], user_data);
+		return std::nullopt;
 	}
 
 private:
 	// LLM Disclosure
-	[[nodiscard]] auto suggest_at(const Node& root, std::span<const std::string_view> tokens,
-	                              std::span<const size_t> offsets, size_t completed, std::string_view prefix,
-	                              size_t replaceStart, bool canOperate, std::span<const std::string> players,
-	                              unsigned depth) const -> std::vector<Suggestion> {
+	[[nodiscard]] std::vector<Suggestion> suggest_at(const Node& root, std::span<const std::string_view> tokens,
+	                                                 std::span<const size_t> offsets, size_t completed,
+	                                                 std::string_view prefix, size_t replaceStart, bool canOperate,
+	                                                 std::span<const std::string> players, unsigned depth) const {
 		std::vector<Suggestion> output;
 		const Node* current = &root;
 		size_t index = 0;
@@ -480,10 +483,10 @@ private:
 		return output;
 	}
 
-	[[nodiscard]] auto suggest_nested(std::span<const std::string_view> tokens, std::span<const size_t> offsets,
-	                                  size_t completed, std::string_view prefix, size_t replaceStart, bool canOperate,
-	                                  std::span<const std::string> players, unsigned depth) const
-	    -> std::vector<Suggestion> {
+	[[nodiscard]] std::vector<Suggestion> suggest_nested(std::span<const std::string_view> tokens,
+	                                                     std::span<const size_t> offsets, size_t completed,
+	                                                     std::string_view prefix, size_t replaceStart, bool canOperate,
+	                                                     std::span<const std::string> players, unsigned depth) const {
 		std::vector<std::string_view> normalizedTokens(tokens.begin(), tokens.end());
 		std::vector<size_t> normalizedOffsets(offsets.begin(), offsets.end());
 		if (!prefix.empty() && prefix.front() == '/') {
@@ -508,7 +511,7 @@ private:
 			output.push_back({ start, std::string(value) });
 	} // End LLM disclosure
 
-	[[nodiscard]] static auto tokenize(std::string_view input) -> std::vector<std::string_view> {
+	[[nodiscard]] static std::vector<std::string_view> tokenize(std::string_view input) {
 		std::vector<std::string_view> tokens;
 		for (size_t pos = 0; pos < input.size();) {
 			while (pos < input.size() && input[pos] == ' ')
@@ -560,8 +563,9 @@ private:
 		return tokens;
 	}
 
-	[[nodiscard]] static auto find_matching_child(const Node& parent, std::span<const std::string_view> tokens,
-	                                              size_t token_idx) -> std::pair<const Node*, size_t> {
+	[[nodiscard]] static std::pair<const Node*, size_t> find_matching_child(const Node& parent,
+	                                                                        std::span<const std::string_view> tokens,
+	                                                                        size_t token_idx) {
 		const auto& token = tokens[token_idx];
 
 		for (const auto& child : parent.children) {
@@ -574,7 +578,7 @@ private:
 		return { nullptr, 0 };
 	}
 
-	[[nodiscard]] static auto matches_node_type(const Node& node, std::string_view token) -> bool {
+	[[nodiscard]] static bool matches_node_type(const Node& node, std::string_view token) {
 		switch (node.type) {
 		case NodeType::Literal:
 			return node.name == token;
@@ -605,8 +609,8 @@ private:
 		}
 	}
 
-	[[nodiscard]] static auto get_consumed_tokens(const Node& node, std::span<const std::string_view> tokens,
-	                                              size_t token_idx) -> size_t {
+	[[nodiscard]] static size_t get_consumed_tokens(const Node& node, std::span<const std::string_view> tokens,
+	                                                size_t token_idx) {
 		if (node.type == NodeType::GreedyString)
 			return tokens.size() - token_idx - 1;
 		if (node.type == NodeType::Vec3 && tokens.size() > token_idx + 2)
@@ -614,9 +618,9 @@ private:
 		return 0;
 	}
 
-	[[nodiscard]] static auto parse_node_value(const Node& node, std::span<const std::string_view> tokens,
+	[[nodiscard]] static bool parse_node_value(const Node& node, std::span<const std::string_view> tokens,
 	                                           size_t token_idx, size_t consumed, std::string_view original,
-	                                           CmdNodeData& data) -> bool {
+	                                           CmdNodeData& data) {
 		const auto& token = tokens[token_idx];
 
 		switch (node.type) {
@@ -697,15 +701,15 @@ private:
 		}
 	}
 
-	[[nodiscard]] static auto validate_int(std::string_view token) -> bool {
+	[[nodiscard]] static bool validate_int(std::string_view token) {
 		return parse_int(token).has_value();
 	}
 
-	[[nodiscard]] static auto validate_float(std::string_view token) -> bool {
+	[[nodiscard]] static bool validate_float(std::string_view token) {
 		return parse_float(token).has_value();
 	}
 
-	[[nodiscard]] static auto parse_int(std::string_view token) -> std::optional<int> {
+	[[nodiscard]] static std::optional<int> parse_int(std::string_view token) {
 		if (token.empty())
 			return std::nullopt;
 
@@ -730,7 +734,7 @@ private:
 		}
 	}
 
-	[[nodiscard]] static auto parse_float(std::string_view token) -> std::optional<float> {
+	[[nodiscard]] static std::optional<float> parse_float(std::string_view token) {
 		if (token.empty())
 			return std::nullopt;
 
@@ -743,7 +747,7 @@ private:
 		}
 	}
 
-	[[nodiscard]] static auto validate_vec3_component(std::string_view token) -> bool {
+	[[nodiscard]] static bool validate_vec3_component(std::string_view token) {
 		if (token.empty())
 			return false;
 
@@ -757,7 +761,7 @@ private:
 		return validate_float(t);
 	}
 
-	[[nodiscard]] static auto parse_vec3_component(std::string_view token, Vec3& vec, Axis axis) -> bool {
+	[[nodiscard]] static bool parse_vec3_component(std::string_view token, Vec3& vec, Axis axis) {
 		auto t = token;
 		bool relative = false;
 		float value = 0.0f;
@@ -785,7 +789,7 @@ private:
 		return true;
 	}
 
-	[[nodiscard]] static auto get_expected_names(const Node& node) -> std::string {
+	[[nodiscard]] static std::string get_expected_names(const Node& node) {
 		std::string result;
 
 		for (const auto& child : node.children) {
@@ -804,15 +808,15 @@ private:
 		return result.empty() ? "<end>" : result;
 	}
 
-	[[nodiscard]] static auto node_type_to_string(NodeType type) -> std::string_view {
+	[[nodiscard]] static std::string_view node_type_to_string(NodeType type) {
 		using enum NodeType;
 		switch (type) {
 		case Literal:
 			return "literal";
-		case Root:
-			return "root";
 		case String:
 			return "string";
+		case GreedyString:
+			return "greedy_string";
 		case Integer:
 			return "integer";
 		case Float:
@@ -823,6 +827,8 @@ private:
 			return "enum";
 		case Vec3:
 			return "vec3";
+		case Root:
+			return "root";
 		default:
 			return "unknown";
 		}

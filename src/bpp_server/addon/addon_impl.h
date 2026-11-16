@@ -11,13 +11,23 @@
 
 #include "addon_api.h"
 #include "inventory/item_stack.h"
-#include <unordered_map>
+#include "commands/strategos.h"
 
 struct Entity;
 struct PlayerSession;
+struct CommandContext;
 class WorldManager;
 
 struct Addon;
+
+struct bp_cmd_action_ctx {
+	const strategos::CmdNode& cmdNode;
+	CommandContext& cmdCtx;
+};
+
+struct bp_cmd_node : strategos::AbstractNode {
+	std::vector<bp_cmd_node*> children;
+};
 
 namespace AddonHelper {
 

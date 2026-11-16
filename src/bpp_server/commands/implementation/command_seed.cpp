@@ -10,10 +10,9 @@
 
 namespace {
 
-std::string ShowSeed(const strategos::CmdNode&, void* _userData) {
+void ShowSeed(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	SendFeedback(ctx, "§e" + std::to_string(ctx.world->seed));
-	return "";
 }
 
 } // namespace

@@ -11,19 +11,25 @@
 
 namespace {
 
-std::string ExecuteAsTarget(const strategos::CmdNode& _command, void* _userData) {
+void ExecuteAsTarget(const strategos::CmdNode& _command, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
-	if (ctx.executionDepth >= 16)
-		return "Maximum execute depth exceeded!";
+	if (ctx.executionDepth >= 16) {
+		SendErrorFeedback(ctx, "Maximum execute depth exceeded!");
+		return;
+	}
 
 	auto targetArg = _command.get_arg<std::string>("target");
 	auto nestedCommand = _command.get_arg<std::string>("command");
-	if (!targetArg || !nestedCommand)
-		return ERROR_REASON_PARAMETERS;
+	if (!targetArg || !nestedCommand) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
 	auto targets = ResolveCmdTargets(*targetArg, ctx);
-	if (!targets)
-		return targets.error();
+	if (!targets) {
+		SendErrorFeedback(ctx, targets.error());
+		return;
+	}
 	for (const CommandTarget& target : *targets) {
 		Entity* entity = target.entity;
 		if (!entity || entity->isDead)
@@ -36,7 +42,6 @@ std::string ExecuteAsTarget(const strategos::CmdNode& _command, void* _userData)
 		if (!ctx.manager->Parse(*nestedCommand, nested) || !nested.executionSucceeded)
 			ctx.executionSucceeded = false;
 	}
-	return "";
 }
 
 } // namespace

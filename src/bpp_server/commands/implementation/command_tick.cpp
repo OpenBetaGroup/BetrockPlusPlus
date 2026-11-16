@@ -39,101 +39,115 @@ bool ParseDouble(const std::string& _value, double& _result) {
 	return true;
 }
 
-std::string RequestSample(void* _userData, Server::SampleMode _mode, int _ticks) {
+void RequestSample(void* _userData, Server::SampleMode _mode, int _ticks) {
 	auto& ctx = CmdCtx(_userData);
-	if (!ctx.server->BeginTickSample(_mode, _ticks, ctx.sender))
-		return "A tick sample is already pending or active.";
+	if (!ctx.server->BeginTickSample(_mode, _ticks, ctx.sender)) {
+		SendErrorFeedback(ctx, "A tick sample is already pending or active.");
+		return;
+	}
 
 	SendFeedback(ctx, std::format("§7Tick sample started; report in {} ticks.", _ticks));
-	return {};
 }
 
-std::string Health(const strategos::CmdNode&, void* _userData) {
-	return RequestSample(_userData, Server::SampleMode::Health, 100);
+void Health(const strategos::CmdNode&, void* _userData) {
+	RequestSample(_userData, Server::SampleMode::Health, 100);
 }
 
-std::string HealthTicks(const strategos::CmdNode& _node, void* _userData) {
+void HealthTicks(const strategos::CmdNode& _node, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
 	auto ticks = _node.get_arg<std::string>("ticks");
 	int count = 0;
 
-	if (!ticks || !ParsePositiveInt(*ticks, count))
-		return ERROR_REASON_PARAMETERS;
+	if (!ticks || !ParsePositiveInt(*ticks, count)) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
-	return RequestSample(_userData, Server::SampleMode::Health, count);
+	RequestSample(_userData, Server::SampleMode::Health, count);
 }
 
-std::string Entities(const strategos::CmdNode&, void* _userData) {
-	return RequestSample(_userData, Server::SampleMode::Entities, 100);
+void Entities(const strategos::CmdNode&, void* _userData) {
+	RequestSample(_userData, Server::SampleMode::Entities, 100);
 }
 
-std::string EntitiesTicks(const strategos::CmdNode& _node, void* _userData) {
+void EntitiesTicks(const strategos::CmdNode& _node, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
 	auto ticks = _node.get_arg<std::string>("ticks");
 	int count = 0;
 
-	if (!ticks || !ParsePositiveInt(*ticks, count))
-		return ERROR_REASON_PARAMETERS;
+	if (!ticks || !ParsePositiveInt(*ticks, count)) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
-	return RequestSample(_userData, Server::SampleMode::Entities, count);
+	RequestSample(_userData, Server::SampleMode::Entities, count);
 }
 
-std::string Freeze(const strategos::CmdNode&, void* _userData) {
+void Freeze(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const bool frozen = ctx.server->ToggleTickFreeze();
 
 	SendFeedback(ctx, frozen ? "§eTick simulation frozen." : "§eTick simulation resumed.");
-	return {};
 }
 
-std::string StepCount(int _count, void* _userData);
+void StepCount(int _count, void* _userData);
 
-std::string Step(const strategos::CmdNode&, void* _userData) {
-	return StepCount(1, _userData);
+void Step(const strategos::CmdNode&, void* _userData) {
+	StepCount(1, _userData);
 }
 
-std::string StepTicks(const strategos::CmdNode& _node, void* _userData) {
+void StepTicks(const strategos::CmdNode& _node, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
 	auto ticks = _node.get_arg<std::string>("ticks");
 	int count = 0;
 
-	if (!ticks || !ParsePositiveInt(*ticks, count))
-		return ERROR_REASON_PARAMETERS;
+	if (!ticks || !ParsePositiveInt(*ticks, count)) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
-	return StepCount(count, _userData);
+	StepCount(count, _userData);
 }
 
-std::string StepCount(int _count, void* _userData) {
+void StepCount(int _count, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 
-	if (!ctx.server->IsTickFrozen())
-		return "Tick stepping requires freeze.";
+	if (!ctx.server->IsTickFrozen()) {
+		SendErrorFeedback(ctx, "Tick stepping requires freeze.");
+		return;
+	}
 
 	ctx.server->QueueTickSteps(_count);
 	SendFeedback(ctx, std::format("§eQueued {} simulation tick(s).", _count));
-	return {};
 }
 
-std::string Rate(const strategos::CmdNode&, void* _userData) {
+void Rate(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 
 	SendFeedback(ctx, std::format("§eTarget tick rate: {:.2f} TPS.", ctx.server->GetTickRate()));
-	return {};
 }
 
-std::string SetRate(const strategos::CmdNode& _node, void* _userData) {
+void SetRate(const strategos::CmdNode& _node, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto token = _node.get_arg<std::string>("tps");
 
-	if (!token || token->empty())
-		return ERROR_REASON_PARAMETERS;
+	if (!token || token->empty()) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
 	double rate = 0.0;
-	if (!ParseDouble(*token, rate) || rate <= 0.0)
-		return ERROR_REASON_PARAMETERS;
+	if (!ParseDouble(*token, rate) || rate <= 0.0) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 	ctx.server->SetTickRate(rate);
-	if (ctx.server->GetTickRate() != rate)
-		return ERROR_REASON_PARAMETERS;
+	if (ctx.server->GetTickRate() != rate) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
 	SendFeedback(ctx, std::format("§eTarget tick rate set to {:.2f} TPS.", rate));
-	return {};
 }
 
 } // namespace

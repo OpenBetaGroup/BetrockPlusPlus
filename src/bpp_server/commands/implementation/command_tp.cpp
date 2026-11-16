@@ -27,16 +27,20 @@ std::string EntityName(const CommandTarget& _target) {
 	return "entity " + std::to_string(_target.entity->id);
 }
 
-std::string TeleportToCoords(const CommandTarget& _source, const CommandContext& _ctx, const strategos::Vec3& _cmdPos) {
+void TeleportToCoords(const CommandTarget& _source, const CommandContext& _ctx, const strategos::Vec3& _cmdPos) {
 	Entity* entity = _source.entity;
-	if (!entity || entity->isDead)
-		return "Teleport source does not exist!";
+	if (!entity || entity->isDead) {
+		SendErrorFeedback(_ctx, "Teleport source does not exist!");
+		return;
+	}
 	CommandContext sourceContext = _ctx;
 	sourceContext.executionEntity = entity;
 	sourceContext.session = _source.session;
 	auto resolved = ResolveCmdPos(sourceContext, _cmdPos);
-	if (!resolved)
-		return resolved.error();
+	if (!resolved) {
+		SendErrorFeedback(_ctx, resolved.error());
+		return;
+	}
 	Vec3 pos = *resolved;
 	ClampTeleport(pos);
 	if (_source.session && _source.session->entity)
@@ -44,49 +48,58 @@ std::string TeleportToCoords(const CommandTarget& _source, const CommandContext&
 	else
 		entity->Teleport(pos);
 	SendFeedback(_ctx, "§eTeleported " + EntityName(_source) + " to " + pos.Str());
-	return "";
 }
 
-std::string TpSelfCoords(const strategos::CmdNode& _cmd, void* _userData) {
+void TpSelfCoords(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
-	if (!ctx.session || !ctx.session->entity)
-		return ERROR_PLAYER_REQUIRED;
+	if (!ctx.session || !ctx.session->entity) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_REQUIRED);
+		return;
+	}
 	auto pos = _cmd.get_arg<strategos::Vec3>("pos");
-	if (!pos)
-		return ERROR_REASON_PARAMETERS;
-	return TeleportToCoords({ ctx.session->entity.get(), ctx.session }, ctx, *pos);
+	if (!pos) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
+	TeleportToCoords({ ctx.session->entity.get(), ctx.session }, ctx, *pos);
 }
 
-std::string TpPlayerCoords(const strategos::CmdNode& _cmd, void* _userData) {
+void TpPlayerCoords(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto sourceArg = _cmd.get_arg<std::string>("player");
 	auto pos = _cmd.get_arg<strategos::Vec3>("pos");
-	if (!sourceArg || !pos)
-		return ERROR_REASON_PARAMETERS;
+	if (!sourceArg || !pos) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
 	auto sources = ResolveCmdTargets(*sourceArg, ctx);
-	if (!sources)
-		return sources.error();
-	for (const CommandTarget& source : *sources) {
-		auto result = TeleportToCoords(source, ctx, *pos);
-		if (!result.empty())
-			SendFeedback(ctx, result);
+	if (!sources) {
+		SendErrorFeedback(ctx, sources.error());
+		return;
 	}
-	return "";
+	for (const CommandTarget& source : *sources)
+		TeleportToCoords(source, ctx, *pos);
 }
 
-std::string TpPlayerTarget(const strategos::CmdNode& _cmd, void* _userData) {
+void TpPlayerTarget(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto sourceArg = _cmd.get_arg<std::string>("player");
 	auto targetArg = _cmd.get_arg<std::string>("target");
-	if (!sourceArg || !targetArg)
-		return ERROR_REASON_PARAMETERS;
+	if (!sourceArg || !targetArg) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 	auto sources = ResolveCmdTargets(*sourceArg, ctx);
-	if (!sources)
-		return sources.error();
+	if (!sources) {
+		SendErrorFeedback(ctx, sources.error());
+		return;
+	}
 	auto destinations = ResolveCmdTargets(*targetArg, ctx);
-	if (!destinations)
-		return destinations.error();
+	if (!destinations) {
+		SendErrorFeedback(ctx, destinations.error());
+		return;
+	}
 
 	for (const CommandTarget& source : *sources) {
 		if (!source.entity || source.entity->isDead)
@@ -106,7 +119,6 @@ std::string TpPlayerTarget(const strategos::CmdNode& _cmd, void* _userData) {
 			SendFeedback(ctx, "§eTeleported " + EntityName(source) + " to " + EntityName(destination));
 		}
 	}
-	return "";
 }
 
 } // namespace

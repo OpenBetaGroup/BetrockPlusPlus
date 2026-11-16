@@ -12,9 +12,10 @@
 #include <csignal>
 
 namespace {
-std::string CrashServer(const strategos::CmdNode& /*_cmd*/, void* /*_userData*/) {
+void CrashServer(const strategos::CmdNode& /*_cmd*/, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
 	std::raise(SIGSEGV);
-	return "hm... this didn't crash";
+	SendErrorFeedback(ctx, "hm... this didn't crash");
 }
 } // namespace
 

@@ -28,7 +28,7 @@ bool CanSeeCommand(const strategos::Node& _cmd, CommandContext& _ctx) {
 	return !_cmd.requiresOperator || IsOperator(_ctx);
 }
 
-std::string ListCommands(const strategos::CmdNode&, void* _userData) {
+void ListCommands(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto& commands = ctx.dispatcher->root().children;
 
@@ -50,20 +50,23 @@ std::string ListCommands(const strategos::CmdNode&, void* _userData) {
 	}
 	if (line != "§7")
 		SendFeedback(ctx, line);
-	return "";
 }
 
-std::string HelpCommand(const strategos::CmdNode& _cmd, void* _userData) {
+void HelpCommand(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto name = _cmd.get_arg<std::string>("command");
-	if (!name)
-		return "Command not found!";
+	if (!name) {
+		SendErrorFeedback(ctx, "Command not found!");
+		return;
+	}
 
 	for (const auto& cmd : ctx.dispatcher->root().children) {
 		if (cmd.name != *name)
 			continue;
-		if (!CanSeeCommand(cmd, ctx))
-			return ERROR_PERMISSIONS;
+		if (!CanSeeCommand(cmd, ctx)) {
+			SendErrorFeedback(ctx, ERROR_PERMISSIONS);
+			return;
+		}
 		SendFeedback(ctx, "§7" + cmd.name + ": " + cmd.description);
 		std::vector<std::string> usages;
 		CollectUsages(cmd, "", usages);
@@ -74,9 +77,9 @@ std::string HelpCommand(const strategos::CmdNode& _cmd, void* _userData) {
 		}
 		if (cmd.requiresOperator)
 			SendFeedback(ctx, "§7(Requires operator)");
-		return "";
+		return;
 	}
-	return "Command not found!";
+	SendErrorFeedback(ctx, "Command not found!");
 }
 
 } // namespace

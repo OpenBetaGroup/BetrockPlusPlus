@@ -33,55 +33,65 @@ struct WhitelistSession {
 	WhitelistSession& operator=(const WhitelistSession&) = delete;
 };
 
-std::string WhitelistAdd(const strategos::CmdNode& _cmd, void* _userData) {
+void WhitelistAdd(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto name = _cmd.get_arg<std::string>("username");
-	if (!name)
-		return ERROR_REASON_TOO_FEW_PARAMETERS;
-	if (!IsValidUsername(*name))
-		return "Invalid username!";
+	if (!name) {
+		SendErrorFeedback(ctx, ERROR_REASON_TOO_FEW_PARAMETERS);
+		return;
+	}
+	if (!IsValidUsername(*name)) {
+		SendErrorFeedback(ctx, "Invalid username!");
+		return;
+	}
 	WhitelistSession list(*ctx.server);
 	auto it = FindUsername(ctx.server->whitelistedUsernames, *name);
-	if (it != ctx.server->whitelistedUsernames.end())
-		return "User is already on whitelist!";
+	if (it != ctx.server->whitelistedUsernames.end()) {
+		SendErrorFeedback(ctx, "User is already on whitelist!");
+		return;
+	}
 	ctx.server->whitelistedUsernames.push_back(NormalizeUsername(*name));
-	if (!ctx.server->SaveWhitelist())
-		return "Failed to save whitelist!";
+	if (!ctx.server->SaveWhitelist()) {
+		SendErrorFeedback(ctx, "Failed to save whitelist!");
+		return;
+	}
 	SendFeedback(ctx, std::format("{} has been added to the whitelist!", *name));
-	return "";
 }
 
-std::string WhitelistRemove(const strategos::CmdNode& _cmd, void* _userData) {
+void WhitelistRemove(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto name = _cmd.get_arg<std::string>("username");
-	if (!name)
-		return ERROR_REASON_TOO_FEW_PARAMETERS;
+	if (!name) {
+		SendErrorFeedback(ctx, ERROR_REASON_TOO_FEW_PARAMETERS);
+		return;
+	}
 	WhitelistSession list(*ctx.server);
 	auto it = FindUsername(ctx.server->whitelistedUsernames, *name);
-	if (it == ctx.server->whitelistedUsernames.end())
-		return "User is not on the whitelist!";
+	if (it == ctx.server->whitelistedUsernames.end()) {
+		SendErrorFeedback(ctx, "User is not on the whitelist!");
+		return;
+	}
 	ctx.server->whitelistedUsernames.erase(it);
-	if (!ctx.server->SaveWhitelist())
-		return "Failed to save whitelist!";
+	if (!ctx.server->SaveWhitelist()) {
+		SendErrorFeedback(ctx, "Failed to save whitelist!");
+		return;
+	}
 	SendFeedback(ctx, std::format("{} has been removed from the whitelist!", *name));
-	return "";
 }
 
-std::string WhitelistOn(const strategos::CmdNode&, void* _userData) {
+void WhitelistOn(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	ctx.server->SetWhitelistEnabled(true);
 	SendFeedback(ctx, "Whitelist has been enabled!");
-	return "";
 }
 
-std::string WhitelistOff(const strategos::CmdNode&, void* _userData) {
+void WhitelistOff(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	ctx.server->SetWhitelistEnabled(false);
 	SendFeedback(ctx, "Whitelist has been disabled!");
-	return "";
 }
 
-std::string WhitelistList(const strategos::CmdNode&, void* _userData) {
+void WhitelistList(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	WhitelistSession list(*ctx.server);
 	const auto& names = ctx.server->whitelistedUsernames;
@@ -98,16 +108,16 @@ std::string WhitelistList(const strategos::CmdNode&, void* _userData) {
 	}
 	if (line != "§7")
 		SendFeedback(ctx, line);
-	return "";
 }
 
-std::string WhitelistReload(const strategos::CmdNode&, void* _userData) {
+void WhitelistReload(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
-	if (!ctx.server->useWhitelist)
-		return "Whitelist is not enabled!";
+	if (!ctx.server->useWhitelist) {
+		SendErrorFeedback(ctx, "Whitelist is not enabled!");
+		return;
+	}
 	ctx.server->ReloadWhitelist();
 	SendFeedback(ctx, "Reloaded whitelist!");
-	return "";
 }
 
 } // namespace

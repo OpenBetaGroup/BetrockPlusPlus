@@ -12,12 +12,16 @@
 
 namespace {
 
-std::string TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
+void TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
-	if (!ctx.session || !ctx.session->entity)
-		return ERROR_PLAYER_REQUIRED;
-	if (!ctx.world)
-		return ERROR_REASON_ERROR;
+	if (!ctx.session || !ctx.session->entity) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_REQUIRED);
+		return;
+	}
+	if (!ctx.world) {
+		SendErrorFeedback(ctx, ERROR_REASON_ERROR);
+		return;
+	}
 
 	WorldManager* overworld = ctx.server->GetWorldForDimension(Dimension::Overworld);
 	Int32_3 ipos = overworld->GetSpawnPoint(false);
@@ -30,11 +34,11 @@ std::string TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 			       double(ipos.z) + 0.5 };
 		if (ctx.world->dimension->id != Dimension::Overworld) {
 			ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, dest);
-			return "";
+			return;
 		}
 
 		SendTeleport(*ctx.session, dest);
-		return "";
+		return;
 	}
 
 	// Fallback
@@ -43,10 +47,9 @@ std::string TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 		Vec3 tpPos = { dest.x, CHUNK_HEIGHT + 1.0, dest.z };
 		ctx.server->SendPlayerToDimension(Dimension::Overworld, *ctx.session, tpPos);
 		SendTeleport2d(*ctx.session, dest);
-		return "";
+		return;
 	}
 	SendTeleport2d(*ctx.session, dest);
-	return "";
 }
 
 } // namespace

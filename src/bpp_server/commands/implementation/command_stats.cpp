@@ -47,7 +47,7 @@ std::string GenerateUsageBar(double _total, double _active, double _overworld, d
 	return bar;
 }
 
-std::string ShowStats(const strategos::CmdNode&, void* _userData) {
+void ShowStats(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto& players = ctx.server->GetPlayers();
 	const WorldManager& overworld = *ctx.server->gameRuntime.GetWorldForDimension(Dimension::Overworld);
@@ -89,7 +89,6 @@ std::string ShowStats(const strategos::CmdNode&, void* _userData) {
 	};
 	for (const auto& line : lines)
 		SendFeedback(ctx, line);
-	return "";
 }
 
 } // namespace

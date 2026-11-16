@@ -16,26 +16,31 @@
 namespace {
 
 // Kills the session that ran the command
-std::string KillSelf(const strategos::CmdNode& _cmd, void* _userData) {
+void KillSelf(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto playerEntity = static_cast<PlayerEntity*>(ctx.sender->entity.get());
 	playerEntity->AttackEntityFrom(nullptr, playerEntity->health, DamageType::Command);
-	return "";
 }
 
 // Kill others
-std::string KillOther(const strategos::CmdNode& _cmd, void* _userData) {
+void KillOther(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto targets = _cmd.get_arg<std::string>("player");
-	if (!targets)
-		return ERROR_REASON_PARAMETERS;
-	if (!IsOperator(ctx))
-		return ERROR_OPERATOR;
+	if (!targets) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
+	if (!IsOperator(ctx)) {
+		SendErrorFeedback(ctx, ERROR_OPERATOR);
+		return;
+	}
 	if (!targets->empty()) {
 		if (targets->front() == '@') {
 			auto collected = ResolveCmdTargets(*targets, ctx);
-			if (!collected)
-				return collected.error();
+			if (!collected) {
+				SendErrorFeedback(ctx, collected.error());
+				return;
+			}
 
 			size_t killed = 0;
 			for (const CommandTarget& resolved : *collected) {
@@ -49,18 +54,19 @@ std::string KillOther(const strategos::CmdNode& _cmd, void* _userData) {
 				}
 			}
 			SendFeedback(ctx, "§eKilled (" + std::to_string(killed) + ") entities!");
-			return "";
+			return;
 		} else {
 			auto targetSession = ctx.server->GetSessionByUsername(*targets);
-			if (!targetSession)
-				return "Invalid player target!";
+			if (!targetSession) {
+				SendErrorFeedback(ctx, "Invalid player target!");
+				return;
+			}
 			auto playerEntity = static_cast<PlayerEntity*>(targetSession->entity.get());
 			playerEntity->AttackEntityFrom(nullptr, playerEntity->health, DamageType::Command);
-			return "";
+			return;
 		}
 	}
 	KillSelf(_cmd, _userData);
-	return "";
 }
 
 } // namespace

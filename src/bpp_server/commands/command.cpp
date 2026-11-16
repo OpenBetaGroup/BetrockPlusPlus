@@ -42,6 +42,10 @@ void SendFeedback(const CommandContext& _ctx, const std::string& _message) {
 	SendCommandFeedback(_ctx.sender, _message);
 }
 
+void SendErrorFeedback(const CommandContext& _ctx, const std::string& _message) {
+	SendFeedback(_ctx, "§c" + _message);
+}
+
 ItemStack ParseItemStack(const std::string& _itemArg, std::optional<int> _count) {
 	ItemStack item;
 

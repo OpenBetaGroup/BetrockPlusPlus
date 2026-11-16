@@ -10,39 +10,42 @@
 
 namespace {
 
-std::string GetTime(const strategos::CmdNode&, void* _userData) {
+void GetTime(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	SendFeedback(ctx, "§eCurrent Time is " + std::to_string(ctx.world->elapsedTicks) + " (Day " +
 	                      std::to_string(int64_t(std::floor(ctx.world->elapsedTicks / DAY_LENGTH))) + ")");
-	return "";
 }
 
-std::string SetTime(const strategos::CmdNode& _cmd, void* _userData) {
+void SetTime(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto ticks = _cmd.get_arg<std::string>("ticks");
-	if (!ticks)
-		return ERROR_REASON_PARAMETERS;
+	if (!ticks) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 	try {
 		ctx.world->elapsedTicks = std::stol(*ticks);
 	} catch (...) {
-		return ERROR_REASON_PARAMETERS;
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
 	}
 	SendFeedback(ctx, "§eSet time to " + std::to_string(ctx.world->elapsedTicks));
-	return "";
 }
 
-std::string AddTime(const strategos::CmdNode& _cmd, void* _userData) {
+void AddTime(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto ticks = _cmd.get_arg<std::string>("ticks");
-	if (!ticks)
-		return ERROR_REASON_PARAMETERS;
+	if (!ticks) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 	try {
 		ctx.world->elapsedTicks += std::stol(*ticks);
 	} catch (...) {
-		return ERROR_REASON_PARAMETERS;
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
 	}
 	SendFeedback(ctx, "§eSet time to " + std::to_string(ctx.world->elapsedTicks));
-	return "";
 }
 
 } // namespace

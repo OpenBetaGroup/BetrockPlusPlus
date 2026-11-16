@@ -12,7 +12,7 @@
 
 namespace {
 
-std::string ListPlayers(const strategos::CmdNode&, void* _userData) {
+void ListPlayers(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto& players = ctx.server->GetPlayers();
 	SendFeedback(ctx, std::format("§7-- {} Player(s) --", players.size()));
@@ -28,7 +28,6 @@ std::string ListPlayers(const strategos::CmdNode&, void* _userData) {
 		line += p->username + ((i < (players.size() - 1)) ? ", " : "");
 	}
 	SendFeedback(ctx, line);
-	return "";
 }
 
 } // namespace
