@@ -9,7 +9,11 @@
 #include "runtime.h"
 #include "player_conn/player_session.h"
 
+#ifdef BUILD_SERVER
+Runtime::Runtime(Server* _server) : server(_server) {
+#else
 Runtime::Runtime() {
+#endif
 	Blocks::RegisterAll();
 	Items::RegisterAll();
 	recipeManager.AddVanillaRecipes();
@@ -27,8 +31,12 @@ void Runtime::InitializeDimension(std::unique_ptr<DimensionBase> _dimension) {
 		return;
 	}
 
-	// Setup our world
-	std::unique_ptr<WorldManager> newWorld = std::make_unique<WorldManager>();
+	// Set up our world
+#ifdef BUILD_SERVER
+	auto newWorld = std::make_unique<WorldManager>(server);
+#else
+	auto newWorld = std::make_unique<WorldManager>();
+#endif
 	newWorld->entityManager.nextEntityId = &sharedEntityId;
 	newWorld->dimension = std::move(_dimension);
 	newWorld->regionManager = std::make_unique<RegionManager>();
@@ -126,7 +134,11 @@ void Runtime::Init(std::string _levelPath, std::string _seedOverride, int _rende
 		if (initResult == LevelInitFailureReason::ALPHA_FORMATTED) {
 			Logger::Info << "Alpha Formatted world detected! Attempting to convert...\n";
 			saveManager.Release();
+#ifdef BUILD_SERVER
+			auto conversionResult = Utilities::convertAlphaLevel(_levelPath, server);
+#else
 			auto conversionResult = Utilities::convertAlphaLevel(_levelPath);
+#endif
 
 			if (!conversionResult) {
 				// We failed to convert

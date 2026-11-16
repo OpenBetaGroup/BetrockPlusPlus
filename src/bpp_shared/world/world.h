@@ -29,10 +29,10 @@
 #include "managers/weather_system.h"
 #include "packet_data.h"
 #include "tile_entities/tile_entity_manager.h"
+#include "world/dimension/dimension.h"
 #include "world/spawner.h"
 #include "world/storage/region_manager.h"
 #include "world_access.h"
-#include "world/dimension/dimension.h"
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -53,6 +53,10 @@ constexpr TickTime DAY_LENGTH = 24000;
 // The window of time (relative to DAY_LENGTH) during which beds may be used
 constexpr TickTime NIGHT_START_TICK = 12541;
 constexpr TickTime NIGHT_END_TICK = 23458;
+
+#ifdef BUILD_SERVER
+class Server;
+#endif
 
 class WorldManager : public WorldAccess {
 private:
@@ -103,7 +107,17 @@ public:
 	std::unique_ptr<DimensionBase> dimension;
 	WeatherSystem weatherSystem;
 
-	WorldManager() {
+#ifdef BUILD_SERVER
+	Server* server;
+#endif
+
+#ifdef BUILD_SERVER
+	explicit WorldManager(Server* _server)
+	    : server(_server)
+#else
+	WorldManager()
+#endif
+	{
 		entityManager.world = this;
 		tickScheduler.world = this;
 		distHashCounter = uint32_t(rand.NextInt());

@@ -82,7 +82,11 @@ bool isAlphaLevel(const std::string& _dir) {
 	return (result.size() > 0);
 }
 
+#ifdef BUILD_SERVER
+bool convertAlphaLevel(std::string& _dir, Server* _server) {
+#else
 bool convertAlphaLevel(std::string& _dir) {
+#endif
 	auto decompressChunk = [](const char* _compressedData, size_t _compressedSize,
 	                          size_t& _decompressedSize) -> std::unique_ptr<char[]> {
 		// TODO: Where does 81920 come from??? Who wrote this? Keeping it just because it seems to not have fucked up thus far...
@@ -232,9 +236,14 @@ bool convertAlphaLevel(std::string& _dir) {
 	overworldRegionManager->Initialize(tempDir + "/region");
 	hellRegionManager->Initialize(tempDir + "/DIM-1/region");
 
-	// Setup our world(s)
+	// Set up our world(s)
+#ifdef BUILD_SERVER
+	WorldManager world(_server);
+	WorldManager hellWorld(_server);
+#else
 	WorldManager world;
 	WorldManager hellWorld;
+#endif
 
 	overworldRegionManager->world = &world;
 	hellRegionManager->world = &hellWorld;
@@ -359,10 +368,18 @@ bool convertAlphaLevel(std::string& _dir) {
 }
 
 // Converts an old betrock server world to mcregion
+#ifdef BUILD_SERVER
+bool convertBetrockServerLevel(std::string& _dir, Server* _server) {
+#else
 bool convertBetrockServerLevel(std::string& _dir) {
+#endif
 	Blocks::RegisterAll();
 	SaveManager saveManager;
+#ifdef BUILD_SERVER
+	WorldManager world(_server);
+#else
 	WorldManager world;
+#endif
 	recreateTempDir("ConvertedWorld");
 
 	saveManager.Initialize("ConvertedWorld", true);

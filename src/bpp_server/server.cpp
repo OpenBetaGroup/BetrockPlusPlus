@@ -47,7 +47,7 @@
 #include "version.h"
 #include <chrono>
 
-Server::Server() : config("server.properties"), gamerulesConfig("gamerules.txt"), gameRuntime(), addonManager(this) {
+Server::Server() : config("server.properties"), gamerulesConfig("gamerules.txt"), gameRuntime(this), addonManager(this) {
 	ServerBlock::Initialize();
 	LoadConfig();
 

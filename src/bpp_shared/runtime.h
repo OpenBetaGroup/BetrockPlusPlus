@@ -33,7 +33,12 @@ struct Runtime {
 	// Each world shares an entity id counter
 	EntityId sharedEntityId = 2;
 
+#ifdef BUILD_SERVER
+	Server* server;
+	Runtime(Server* _server);
+#else
 	Runtime();
+#endif
 
 	void InitializeDimension(std::unique_ptr<DimensionBase> _dimension);
 
