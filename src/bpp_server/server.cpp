@@ -158,7 +158,7 @@ void Server::SendPlayerToDimension(Dimension _dim, PlayerSession& _session, std:
 	pkt.dimension = _dim;
 	pkt.Serialize(_session.stream);
 	_session.connState = ConnectionState::WaitingForSpawnChunks;
-	_session.position.pos = _session.entity->position;
+	_session.position = _session.entity->position;
 	_session.pendingTeleport = _session.entity->position;
 	_session.pendingPosition.reset();
 	SendEntityToDimension(_dim, _session.entity);

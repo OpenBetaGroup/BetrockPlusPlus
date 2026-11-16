@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-only
 */
-
+#pragma once
 #include "../../noise/noise_octaves_perlin.h"
 #include "../generator.h"
 #include "../shared/cave_gen.h"

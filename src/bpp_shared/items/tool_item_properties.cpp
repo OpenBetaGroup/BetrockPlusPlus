@@ -388,7 +388,8 @@ void RegisterAll() {
 	};
 
 	itemBehavior[MAP].whileHeld = [](ItemStack* /*_stack*/, PlayerSession& _session, Server& _server) {
-		auto pos = _session.position.GetBlockPos();
+		Int2 pos = { int(std::floor(_session.position.x)), int(std::floor(_session.position.z)) };
+
 		std::vector<Map::MarkerPlacement> markers = {
 			// TODO: Evil fuck-ass offset magic???
 			Map::MakeMarker(Map::Icon::WhiteArrow, _session.rotation.x,

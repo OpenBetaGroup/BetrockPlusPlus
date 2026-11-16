@@ -44,8 +44,11 @@ struct PendingBlockBreak {
 class Server;
 struct PlayerSession {
 	NetworkStream stream;
-	ClientPosition position;
+	Vec3 position;
 	Server* server = nullptr;
+
+	// Override
+	int viewDistanceOverride = 0;
 
 	// Nether spawn finding
 	bool pendingPortalPlacement = false;
@@ -163,7 +166,7 @@ struct PlayerSession {
 			}
 		}
 
-		this->position.pos = entity->position;
+		this->position = entity->position;
 		this->rotation.x = entity->rotationYaw;
 		this->rotation.z = entity->rotationPitch;
 	}

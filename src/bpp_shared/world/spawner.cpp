@@ -23,6 +23,8 @@
 #include "entities/entity_zombie_pig.h"
 #include "world.h"
 
+#include "player_conn/player_session.h"
+
 EntitySpawner::EntitySpawner() {
 	// Water
 	SpawnCategory water;
@@ -122,7 +124,7 @@ int EntitySpawner::GetCategoryCount(WorldManager& _world, SpawnCategory& _catego
 	return count;
 }
 
-void EntitySpawner::TrySpawnEntities(WorldManager& _world, const std::vector<ClientPosition>& _players) {
+void EntitySpawner::TrySpawnEntities(WorldManager& _world, const std::vector<std::shared_ptr<PlayerSession>>& _players) {
 	BuildActiveSet(_world, _players);
 
 	if (chunksToSpawnIn.empty())
@@ -196,12 +198,12 @@ void EntitySpawner::TrySpawnEntities(WorldManager& _world, const std::vector<Cli
 	}
 }
 
-void EntitySpawner::BuildActiveSet(WorldManager& _world, const std::vector<ClientPosition>& _players) {
+void EntitySpawner::BuildActiveSet(WorldManager& _world, const std::vector<std::shared_ptr<PlayerSession>>& _players) {
 	int range = std::min(8, _world.GetSimulationDistance());
 	chunksToSpawnIn.clear();
 
 	for (auto& player : _players) {
-		Int2 playerChunkPos = player.GetChunkPos();
+		Int2 playerChunkPos = { int(std::floor(player->position.x)) >> 4, int(std::floor(player->position.z)) >> 4 };
 		for (int dx = -range; dx <= range; dx++) {
 			for (int dz = -range; dz <= range; dz++) {
 				Int2 chunkPos = { playerChunkPos.x + dx, playerChunkPos.z + dz };

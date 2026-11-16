@@ -16,7 +16,7 @@
 
 class WorldManager;
 struct Chunk;
-struct ClientPosition;
+struct PlayerSession;
 struct MobEntity;
 struct Entity;
 
@@ -53,7 +53,7 @@ struct EntitySpawner {
 
 	EntitySpawner();
 
-	void TrySpawnEntities(WorldManager& _world, const std::vector<ClientPosition>& _players);
-	void BuildActiveSet(WorldManager& _world, const std::vector<ClientPosition>& _players);
+	void TrySpawnEntities(WorldManager& _world, const std::vector<std::shared_ptr<PlayerSession>>& _players);
+	void BuildActiveSet(WorldManager& _world, const std::vector<std::shared_ptr<PlayerSession>>& _players);
 	int GetCategoryCount(WorldManager& _world, SpawnCategory& _category);
 };

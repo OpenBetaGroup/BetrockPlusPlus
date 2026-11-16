@@ -188,7 +188,7 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	WorldManager* sessionWorld = _server.GetWorldForDimension(_session.dimension);
 	if (!sessionWorld) {
 		sessionWorld = _server.GetWorldForDimension(Dimension::Overworld);
-		_session.position.pos = Vec3{ -1, -1000000, -1 };
+		_session.position = Vec3{ -1, -1000000, -1 };
 	}
 	_session.dimension = sessionWorld->dimension->id;
 
@@ -225,16 +225,16 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	Vec3 spawnLocation = { double(respawnPoint.x) + 0.5, double(CHUNK_HEIGHT) * 4.0, double(respawnPoint.z) + 0.5 };
 
 	// If our session position is the default then overwrite it
-	if (_session.position.pos == Vec3{ -1, -1000000, -1 }) {
+	if (_session.position == Vec3{ -1, -1000000, -1 }) {
 		_session.pendingRespawn = true;
 		_session.entity->Teleport(spawnLocation);
-		_session.position.pos = spawnLocation;
+		_session.position = spawnLocation;
 		_session.pendingTeleport = spawnLocation;
 	}
 
 	// Log that we logged in!
 	Logger::Info << "Player " << _session.username << " logged in with entity ID " << _session.entity->id << " at ("
-	             << _session.position.pos.x << ", " << _session.position.pos.y << ", " << _session.position.pos.z
+	             << _session.position.x << ", " << _session.position.y << ", " << _session.position.z
 	             << ")\n";
 
 	// Update our last trusted position and rotation
@@ -303,25 +303,25 @@ static bool PortalAreaReady(WorldManager& _world, const Vec3& _pos) {
 
 void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server& _server) {
 	WorldManager& sessionWorld = *_server.GetWorldForDimension(_session.dimension);
-	_session.position.viewDistanceOverride = _session.pendingPortalPlacement ? PORTAL_SEARCH_CHUNK_RADIUS + 1
+	_session.viewDistanceOverride = _session.pendingPortalPlacement ? PORTAL_SEARCH_CHUNK_RADIUS + 1
 	                                                                         : (_session.portalAreaLoaded ? 0 : 3);
 	_server.chunkSender.Enqueue(_session, sessionWorld, _server.flushChunkCount);
 	_server.chunkSender.Flush(_session);
 
 	if (_session.pendingPortalPlacement) {
-		if (!PortalAreaReady(sessionWorld, _session.position.pos))
+		if (!PortalAreaReady(sessionWorld, _session.position))
 			return;
 
 		Teleporter::PlaceAtValidTransferSpot(sessionWorld, *_session.entity);
-		_session.position.pos = _session.entity->position;
-		_session.pendingTeleport = _session.position.pos;
+		_session.position = _session.entity->position;
+		_session.pendingTeleport = _session.position;
 		_session.pendingPortalPlacement = false;
 		_session.portalAreaLoaded = true;
 	}
 
 	// Spawn chunk radius; 3 chunks in each direction
-	int spawnChunkX = int(std::floor(_session.position.pos.x)) >> 4;
-	int spawnChunkZ = int(std::floor(_session.position.pos.z)) >> 4;
+	int spawnChunkX = int(std::floor(_session.position.x)) >> 4;
+	int spawnChunkZ = int(std::floor(_session.position.z)) >> 4;
 
 	int radius = std::min<int>(3, sessionWorld.GetViewRadius());
 
@@ -342,7 +342,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 		return;
 
 	// If we didn't find a respawn point, check our respawn state
-	std::optional<Vec3> respawnOptional = _session.position.pos;
+	std::optional<Vec3> respawnOptional = _session.position;
 	if (_session.pendingRespawn) {
 		if (!_session.entity->world)
 			_session.entity->world = &sessionWorld;
@@ -360,7 +360,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 	// Update our last trusted position
 	_session.entity->position = respawnPos;
 	_session.pendingTeleport = respawnPos;
-	_session.position.pos = respawnPos;
+	_session.position = respawnPos;
 	_session.entity->RebuildCollider();
 
 	// Tell our client
@@ -372,7 +372,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server&
 	pkt.Serialize(_session.stream);
 
 	// Set view distance to server default
-	_session.position.viewDistanceOverride = 0;
+	_session.viewDistanceOverride = 0;
 	_session.portalAreaLoaded = false;
 	_session.pendingPortalPlacement = false;
 

@@ -101,7 +101,7 @@ inline void SendTeleport(PlayerSession& _target, Vec3 _position, float _yaw = 0.
 	_target.entity->Teleport(_position, { _yaw, _pitch });
 
 	_target.pendingTeleport = _position;
-	_target.position.pos = _position;
+	_target.position = _position;
 	_target.pendingPosition.reset();
 
 	Packet::PlayerPositionAndRotation pkt;

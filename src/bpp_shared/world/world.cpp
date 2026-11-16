@@ -23,6 +23,8 @@
 #include <memory>
 #include <unordered_set>
 
+#include "player_conn/player_session.h"
+
 Biome WorldManager::GetBiome(Int2 _wpos) {
 	auto chunk = GetChunkShared(Int32_2{ _wpos.x >> 4, _wpos.z >> 4 });
 	if (!chunk || chunk->state.load() < ChunkState::Generated)
@@ -359,7 +361,8 @@ std::vector<AABB> WorldManager::GetCollidingBoundingBoxes(const AABB& _area, Ent
 }
 
 // Tick
-void WorldManager::Tick(const std::vector<ClientPosition>& _players, bool _advanceSimulation, TickProfiler* _profiler) {
+void WorldManager::Tick(const std::vector<std::shared_ptr<PlayerSession>>& _players, bool _advanceSimulation,
+                        TickProfiler* _profiler) {
 	using Clock = std::chrono::steady_clock;
 
 	if (_advanceSimulation) {
@@ -441,7 +444,7 @@ void WorldManager::Tick(const std::vector<ClientPosition>& _players, bool _advan
 		_profiler->Record(TickTask::ChunkLoading, Clock::now() - pipelineStart);
 }
 
-void WorldManager::PerformRandomTicks(const std::vector<ClientPosition>& _players) {
+void WorldManager::PerformRandomTicks(const std::vector<std::shared_ptr<PlayerSession>>& _players) {
 	// Build our active set here
 	// Adjusted base on the simulation distance
 	int simulationDist = this->GetSimulationDistance();
@@ -449,7 +452,7 @@ void WorldManager::PerformRandomTicks(const std::vector<ClientPosition>& _player
 	std::unordered_map<Int2, Chunk*> wanted;
 	wanted.reserve(_players.size() * int64_t(simulationWidth * simulationWidth));
 	for (auto& player : _players) {
-		auto anchor = player.GetChunkPos();
+		Int2 anchor = { int(std::floor(player->position.x)) >> 4, int(std::floor(player->position.z)) >> 4 };
 		for (int dx = -simulationDist; dx <= simulationDist; dx++) {
 			for (int dz = -simulationDist; dz <= simulationDist; dz++) {
 				Int2 chunkPos = { dx + anchor.x, dz + anchor.z };
@@ -536,7 +539,7 @@ void WorldManager::SaveChunks(const bool _saveIfEntities, const bool _deleteEnti
 	}
 }
 
-void WorldManager::Update(const std::vector<ClientPosition>& _players) {
+void WorldManager::Update(const std::vector<std::shared_ptr<PlayerSession>>& _players) {
 	PumpPipeline(_players);
 }
 
@@ -758,11 +761,11 @@ void WorldManager::SeedChunkLighting(Int32_2 _pos) {
 	PropagateChunkLightBorders(_pos);
 }
 
-void WorldManager::UpdateLoadRadius(const std::vector<ClientPosition>& _players) {
+void WorldManager::UpdateLoadRadius(const std::vector<std::shared_ptr<PlayerSession>>& _players) {
 	std::unordered_set<Int32_2> wanted;
 	for (const auto& player : _players) {
-		Int2 center = player.GetChunkPos();
-		int viewDist = (player.viewDistanceOverride) ? player.viewDistanceOverride : viewRadius;
+		Int2 center = { int(std::floor(player->position.x)) >> 4, int(std::floor(player->position.z)) >> 4 };
+		int viewDist = (player->viewDistanceOverride) ? player->viewDistanceOverride : viewRadius;
 		for (int dx = -viewDist; dx <= viewDist; dx++)
 			for (int dz = -viewDist; dz <= viewDist; dz++)
 				wanted.insert({ center.x + dx, center.z + dz });
@@ -810,7 +813,7 @@ void WorldManager::UpdateLoadRadius(const std::vector<ClientPosition>& _players)
 	}
 }
 
-void WorldManager::PumpPipeline(const std::vector<ClientPosition>& _players) {
+void WorldManager::PumpPipeline(const std::vector<std::shared_ptr<PlayerSession>>& _players) {
 	const int playerCount = int(_players.size());
 	const int slicePerPlayer = 16;
 

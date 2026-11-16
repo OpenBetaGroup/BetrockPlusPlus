@@ -57,11 +57,11 @@ struct ChunkSender {
 		_world.lightManager.ProcessLightQueue(_world);
 		if (_batchSize < 0)
 			_batchSize = static_cast<int>(pool.get_thread_count()) * 2;
-		int cx = int(std::floor(_session.position.pos.x)) >> 4;
-		int cz = int(std::floor(_session.position.pos.z)) >> 4;
+		int cx = int(std::floor(_session.position.x)) >> 4;
+		int cz = int(std::floor(_session.position.z)) >> 4;
 
-		int radius = _session.position.viewDistanceOverride
-		                 ? std::min(_session.position.viewDistanceOverride, _world.GetViewRadius())
+		int radius = _session.viewDistanceOverride
+		                 ? std::min(_session.viewDistanceOverride, _world.GetViewRadius())
 		                 : _world.GetViewRadius();
 
 		std::vector<Int32_2> toSend;

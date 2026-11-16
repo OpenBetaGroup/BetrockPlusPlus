@@ -23,7 +23,7 @@ void WorldEventBroadcaster::BroadcastNoteEvent(Server& _server, Int3 _position, 
 		if (session->dimension != _dimension)
 			continue;
 
-		Vec3 playerPos = session->position.pos;
+		Vec3 playerPos = session->position;
 		double dx = playerPos.x - (double(_position.x) + 0.5);
 		double dy = playerPos.y - (double(_position.y) + 0.5);
 		double dz = playerPos.z - (double(_position.z) + 0.5);
@@ -68,7 +68,7 @@ void WorldEventBroadcaster::BroadcastExplosion(Server& _server, Vec3 _position, 
 		if (session->dimension != _dimension)
 			continue;
 
-		Vec3 playerPos = session->position.pos;
+		Vec3 playerPos = session->position;
 		double dx = _position.x - playerPos.x;
 		double dy = _position.y - playerPos.y;
 		double dz = _position.z - playerPos.z;
@@ -108,7 +108,7 @@ void WorldEventBroadcaster::BroadcastWorldEvent(Server& _server, PacketData::Wor
 		if (session->dimension != _dimension)
 			continue;
 
-		Vec3 playerPos = session->position.pos;
+		Vec3 playerPos = session->position;
 		double dx = playerPos.x - (double(_position.x) + 0.5);
 		double dy = playerPos.y - (double(_position.y) + 0.5);
 		double dz = playerPos.z - (double(_position.z) + 0.5);

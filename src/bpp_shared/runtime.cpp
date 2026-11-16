@@ -80,12 +80,12 @@ void Runtime::CloseCurrentWorld() {
 void Runtime::Tick(std::vector<std::shared_ptr<PlayerSession>>& _players, bool _advanceSimulation,
                    TickProfiler* profiler) {
 	// Build our sorted player sets
-	std::unordered_map<Dimension, std::vector<ClientPosition>> activePlayers;
+	std::unordered_map<Dimension, std::vector<std::shared_ptr<PlayerSession>>> activePlayers;
 	for (auto& it : dimensions) {
 		activePlayers.try_emplace(it.first);
 	}
 	for (auto& player : _players) {
-		activePlayers[player->dimension].push_back(player->position);
+		activePlayers[player->dimension].push_back(player);
 	}
 
 	// Tick each world

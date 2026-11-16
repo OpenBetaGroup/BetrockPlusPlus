@@ -146,10 +146,10 @@ static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server)
 	}
 
 	if (_session.entity)
-		_session.position.pos = _session.entity->position;
+		_session.position = _session.entity->position;
 
 	bp_player_move_event event{ .player = reinterpret_cast<bp_player*>(&_session),
-		                        .from = { _session.position.pos.x, _session.position.pos.y, _session.position.pos.z },
+		                        .from = { _session.position.x, _session.position.y, _session.position.z },
 		                        .to = { _to.x, _to.y, _to.z },
 		                        .cancel = false };
 	_server.GetAddonManager().Broadcast(&bp_addon_events::playerMove, event);
@@ -168,7 +168,7 @@ static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server)
 	if (event.cancel)
 		return false;
 
-	_session.position.pos = { event.from.x, event.from.y, event.from.z };
+	_session.position = { event.from.x, event.from.y, event.from.z };
 	_session.pendingPosition = finalTo;
 
 	return true;
@@ -810,7 +810,7 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	newEntity->Teleport(spawnLocation);
 	world->entityManager.AddEntity(newEntity, newEntity->id);
 
-	_session.position.pos = spawnLocation;
+	_session.position = spawnLocation;
 	_session.pendingTeleport = spawnLocation;
 	_session.pendingPosition.reset();
 

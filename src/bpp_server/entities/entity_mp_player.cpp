@@ -70,7 +70,7 @@ void EntityMPPlayer::WakeUp(bool _confirmSpawn) {
 	session->entityTracker->SendPacketToViewers(anim, this->id);
 
 	this->Teleport(this->position, { rotationYaw, rotationPitch });
-	session->position.pos = this->position;
+	session->position = this->position;
 	session->pendingTeleport = this->position;
 	Packet::PlayerPositionAndRotation pos;
 	pos.rotation = session->rotation;
@@ -93,7 +93,7 @@ void EntityMPPlayer::OnMountEntity() {
 
 void EntityMPPlayer::OnDismountEntity() {
 	if (this->session)
-		this->session->position.pos = this->position;
+		this->session->position = this->position;
 	if (this->session->entityTracker) {
 		Packet::AddPassenger pkt;
 		pkt.passengerEntityId = this->id;
@@ -195,7 +195,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 		// Update our position to the session
 		if (!this->session)
 			return;
-		this->session->position.pos = this->position;
+		this->session->position = this->position;
 		return;
 	}
 
@@ -215,7 +215,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 			session->pendingTeleport = savedTp;
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
-			session->position.pos = *session->pendingTeleport;
+			session->position = *session->pendingTeleport;
 			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
@@ -235,7 +235,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 			session->pendingPosition.reset();
 			// Still not there, so send another tp packet and reset our position
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
-			session->position.pos = *session->pendingTeleport;
+			session->position = *session->pendingTeleport;
 			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
@@ -257,7 +257,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 			session->pendingTeleport = tpPos;
 
 			this->Teleport(*session->pendingTeleport, { rotationYaw, rotationPitch });
-			session->position.pos = *session->pendingTeleport;
+			session->position = *session->pendingTeleport;
 			Packet::PlayerPosition pkt;
 			pkt.onGround = onGround;
 			pkt.position = { position.x, position.y + PLAYER_EYE_HEIGHT, position.z };
@@ -269,7 +269,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 	if (this->isSleeping) {
 		if (session->pendingPosition) {
-			session->position.pos = this->position;
+			session->position = this->position;
 			session->pendingPosition.reset();
 		}
 		return;
@@ -373,7 +373,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 		if (residual < 0.0625) {
 			this->position = claimed; // Trust it
-			session->position.pos = claimed;
+			session->position = claimed;
 			this->velocity = resolvedDelta;
 			// Reset ySize so step up works right
 			ySize = 0.0f;
@@ -408,7 +408,7 @@ void EntityMPPlayer::HandlePositionChecks() {
 
 			// TP our player back
 			this->Teleport(safeRollback, { rotationYaw, rotationPitch });
-			session->position.pos = safeRollback;
+			session->position = safeRollback;
 			// Wait until our client catches up
 			session->pendingTeleport = safeRollback;
 			Packet::PlayerPosition pkt;

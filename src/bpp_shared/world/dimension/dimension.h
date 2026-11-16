@@ -31,6 +31,8 @@ struct BiomeGetter {
 	virtual std::unique_ptr<BiomeGenerator> GetNewBiomeGen() {
 		return nullptr;
 	}
+
+	virtual ~BiomeGetter() = default;
 };
 
 // The base wrapper of each dimension

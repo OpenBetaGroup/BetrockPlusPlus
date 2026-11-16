@@ -111,13 +111,13 @@ public:
 
 	~WorldManager() override {}
 
-	void Tick(const std::vector<ClientPosition>& _players, bool _advanceSimulation = true,
+	void Tick(const std::vector<std::shared_ptr<PlayerSession>>& _players, bool _advanceSimulation = true,
 	          TickProfiler* _profiler = nullptr);
-	void Update(const std::vector<ClientPosition>& _players);
+	void Update(const std::vector<std::shared_ptr<PlayerSession>>& _players);
 	void SaveChunks(const bool _saveIfEntities = false, const bool _deleteEntities = false);
 	void Shutdown();
 	void SeedChunkLighting(Int32_2 _pos);
-	void PerformRandomTicks(const std::vector<ClientPosition>& _players);
+	void PerformRandomTicks(const std::vector<std::shared_ptr<PlayerSession>>& _players);
 	std::vector<AABB> GetCollidingBoundingBoxes(const AABB& _area, Entity* _mover = nullptr);
 	void FlushBleedWrites();
 	void PropagateChunkLightBorders(Int32_2 _cpos);
@@ -135,8 +135,8 @@ public:
 	bool HandleFluidAcceleration(const AABB& _collider, const Material& _material, Entity& _entity);
 	bool IsMaterialInAabb(const AABB& _collider, const Material& _material);
 	bool IsAabbInFluidLevel(const AABB& _collider, const Material& _material);
-	void UpdateLoadRadius(const std::vector<ClientPosition>& _players);
-	void PumpPipeline(const std::vector<ClientPosition>& _players);
+	void UpdateLoadRadius(const std::vector<std::shared_ptr<PlayerSession>>& _players);
+	void PumpPipeline(const std::vector<std::shared_ptr<PlayerSession>>& _players);
 	void PopulateReady(int _maxPopulates = 16);
 	void DrainLoadQueue();
 	void DropInventory(Inventory& inventory, Int3 _wpos);
