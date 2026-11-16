@@ -61,7 +61,7 @@ if(NOT BUILD_SERVER)
     endif()
 endif()
 
-project(Betrock++ VERSION 0.3.7)
+project(Betrock++ VERSION 0.3.8)
 
 # Drop fortify for Alpine
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND EXISTS "/usr/include/fortify/stdio.h")
