@@ -113,7 +113,7 @@ void OnBlockBreak(const bp_api* api, bp_block_break_event* ev) {
 	api->player.sendMessage(ev->player, msg);
 	free(msg);
 
-	ev->cancel = true;
+	// ev->cancel = true;
 }
 
 void OnBlockPlace(const bp_api* api, bp_block_place_event* ev) {
@@ -122,7 +122,7 @@ void OnBlockPlace(const bp_api* api, bp_block_place_event* ev) {
 	api->player.sendMessage(ev->player, msg);
 	free(msg);
 
-	ev->cancel = true;
+	// ev->cancel = true;
 }
 
 void OnItemUse(const bp_api* api, bp_item_use_event* ev) {
@@ -151,7 +151,7 @@ void OnPlayerChat(const bp_api* api, bp_player_chat_event* ev) {
 
 void OnEntityDamage(const bp_api* api, bp_entity_damage_event* ev) {
 	char* msg;
-	asprintf(&msg, "An entity got %d damage!", ev->amount);
+	asprintf(&msg, "An entity got %d damage, with type %d! Cancelling...", ev->amount, ev->type);
 
 	int playerCount = api->server.getPlayerCount(api);
 	for (int i = 0; i < playerCount; ++i) {
@@ -175,11 +175,11 @@ void OnPlayerMove(const bp_api* api, bp_player_move_event* ev) {
 
 	free(msg);
 
-	if (counter++ > 50) {
-		ev->from.y *= 5; // do a funny
-		ev->to.y *= 5; // do a funny
-		counter = 0;
-	}
+	// if (counter++ > 50) {
+	// 	ev->from.y *= 5; // do a funny
+	// 	ev->to.y *= 5; // do a funny
+	// 	counter = 0;
+	// }
 }
 
 void LoadSave(const bp_api* api) {

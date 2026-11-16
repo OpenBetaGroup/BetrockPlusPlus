@@ -6,7 +6,6 @@
  */
 
 #include "entity_mobile.h"
-#include "addon/addon_impl.h"
 #include "entities/entity.h"
 #include "entities/entity_player.h"
 #include "inventory/item_stack.h"
@@ -16,12 +15,16 @@
 #include <cmath>
 #include <optional>
 
+#ifdef BUILD_SERVER
+#include "server.h"
+#include "addon/addon_impl.h"
+#endif
+
 MobileEntity::MobileEntity() {
 	stepHeight = 0.5;
 	preventEntitySpawning = true;
 }
 
-// TODO: Pass those into API as needed :p
 void MobileEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	health = 0;
 }
@@ -318,7 +321,7 @@ bool MobileEntity::HeadInOpaqueBlock() {
 		offset.z = (float((corner >> 2) % 2) - 0.5f) * width * 0.9f;
 		auto fd = MathHelper::FloorDouble;
 		Int3 cornerBlockPos = { fd(position.x + offset.x), fd(position.y + GetEyeHeight() + offset.y),
-			                    fd(position.z + offset.z) };
+		                        fd(position.z + offset.z) };
 		if (world->IsBlockNormalCube(cornerBlockPos))
 			return true;
 	}
@@ -389,6 +392,24 @@ bool MobileEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _ty
 	age = 0;
 	if (health <= 0)
 		return false;
+
+#ifdef BUILD_SERVER
+	{
+		bp_entity_damage_event event{ .entity = reinterpret_cast<bp_entity*>(this),
+									  .attacker = reinterpret_cast<bp_entity*>(_entity),
+									  .amount = _damage,
+									  .type = static_cast<bp_damage_type>(_type),
+									  .cancel = false };
+
+		world->server->GetAddonManager().Broadcast(&bp_addon_events::entityDamage, event);
+
+		if (event.cancel)
+			return false;
+
+		_damage = event.amount;
+		_type = static_cast<DamageType>(event.type);
+	}
+#endif
 
 	bool freshHit = true;
 
