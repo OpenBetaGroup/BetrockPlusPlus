@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ADDON_API_VERSION 1
+#define ADDON_API_VERSION 2
 
 typedef struct bp_api bp_api;
 typedef struct bp_player bp_player;
