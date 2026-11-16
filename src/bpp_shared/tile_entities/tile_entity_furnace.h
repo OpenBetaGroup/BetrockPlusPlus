@@ -29,11 +29,7 @@ public:
 
 	TileEntityFurnace(Int3 _pPosition) : TileEntityFurnace(_pPosition, 0, 0, 0) {};
 
-	TileEntityFurnace(Int3 _pPosition, int _burnTime, int _maxBurnTime, int _cookTime)
-	    : TileEntity(TileType::FURNACE, _pPosition), burnTime(_burnTime), maxBurnTime(_maxBurnTime),
-	      cookTime(_cookTime) {
-		canTick = true;
-	};
+	TileEntityFurnace(Int3 _pPosition, int _burnTime, int _maxBurnTime, int _cookTime);
 
 	Tag Serialize() override;
 	void Deserialize(const Tag& _tag) override;

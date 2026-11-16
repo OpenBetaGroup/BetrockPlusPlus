@@ -25,3 +25,13 @@ Tag TileEntityChest::Serialize() {
 	SerializeInventory(root, inventory);
 	return root;
 }
+
+TileEntityChest::TileEntityChest(Int3 _pPosition) : TileEntity(TileType::CHEST, _pPosition) {
+	// Mark the chunk dirty on inventory change
+	inventory.onModified = [&]() {
+		if (chunk) {
+			chunk->isModified = true;
+			inventory.isModified = false;
+		}
+	};
+};

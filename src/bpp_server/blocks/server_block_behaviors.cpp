@@ -166,6 +166,12 @@ void ServerBlock::Initialize() {
 		auto jukebox = _world.GetTileEntityAs<TileEntityJukebox>(_position);
 		if (!jukebox)
 			return false;
+		
+		// Update the chunk the jukebox is in
+		auto updateChunk = [&]() {
+			if (jukebox->chunk)
+				jukebox->chunk->isModified = true;
+		};
 
 		// Pop out item if already playing something
 		if (jukebox->recordItemId != Items::Id::INVALID) {
@@ -176,6 +182,7 @@ void ServerBlock::Initialize() {
 
 			if (auto& fn = _world.onWorldEvent)
 				fn(PacketData::WorldEvent::RECORD_PLAY, _position, 0, nullptr);
+			updateChunk();
 			return false;
 		}
 
@@ -188,6 +195,7 @@ void ServerBlock::Initialize() {
 
 		if (auto& fn = _world.onWorldEvent)
 			fn(PacketData::WorldEvent::RECORD_PLAY, _position, int32_t(int16_t(jukebox->recordItemId)), nullptr);
+		updateChunk();
 		return false;
 	};
 	blockBehaviors[BLOCK_BED].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSession& _session,

@@ -14,11 +14,10 @@
 struct TileEntityDispenser : TileEntity {
 	Java::Random rand;
 	InventoryDispenser inventory;
-	TileEntityDispenser(Int3 _pPosition) : TileEntity(TileType::DISPENSER, _pPosition) {};
+	TileEntityDispenser(Int3 _pPosition);
 
 	Tag Serialize() override;
 	void Deserialize(const Tag& _tag) override;
-	void Tick(WorldManager& _world) override;
 
 	std::optional<ItemStack*> GetRandomStackInInventory() {
 		int chosen = -1;

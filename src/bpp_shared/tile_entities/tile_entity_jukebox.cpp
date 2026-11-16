@@ -9,9 +9,9 @@
 
 #include "tile_entity_jukebox.h"
 
-void TileEntityJukebox::Deserialize(const Tag& /*_tag*/) {
-	// no-op
-	return;
+void TileEntityJukebox::Deserialize(const Tag& _tag) {
+	if (_tag.Has("Record"))
+		recordItemId = static_cast<ItemId>(_tag.Get("Record").GetInt());
 }
 
 Tag TileEntityJukebox::Serialize() {

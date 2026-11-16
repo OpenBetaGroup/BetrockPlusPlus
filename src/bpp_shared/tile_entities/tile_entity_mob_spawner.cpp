@@ -29,8 +29,10 @@ void TileEntityMobSpawner::Tick(WorldManager& _world) {
 	if (!PlayerInRange(_world))
 		return;
 
-	auto updateDelay = [](Java::Random& _rand) -> int {
+	auto updateDelay = [&](Java::Random& _rand) -> int {
 		return 200 + _rand.NextInt(600);
+		if (chunk)
+			chunk->isModified = true;
 	};
 
 	// Why not <= 0? Because notch wrote this as "delay == -1"..

@@ -12,7 +12,7 @@
 // Chest
 struct TileEntityChest : TileEntity {
 	InventoryChest inventory;
-	TileEntityChest(Int3 _pPosition) : TileEntity(TileType::CHEST, _pPosition) {};
+	TileEntityChest(Int3 _pPosition);
 
 	Tag Serialize() override;
 	void Deserialize(const Tag& _tag) override;

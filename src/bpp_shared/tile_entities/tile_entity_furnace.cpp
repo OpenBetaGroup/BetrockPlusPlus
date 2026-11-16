@@ -108,11 +108,6 @@ void TileEntityFurnace::Tick(WorldManager& _world) {
 		if (cookTime != oldCookTime)
 			dirtyFlags |= FLAG_COOK_TIME;
 	}
-
-	if (chunk && inventory.isModified) {
-		chunk->isModified = true;
-		inventory.isModified = false;
-	}
 }
 
 int TileEntityFurnace::CalculateFuelTime() const {
@@ -166,3 +161,16 @@ Tag TileEntityFurnace::Serialize() {
 
 	return root;
 }
+
+TileEntityFurnace::TileEntityFurnace(Int3 _pPosition, int _burnTime, int _maxBurnTime, int _cookTime)
+    : TileEntity(TileType::FURNACE, _pPosition), burnTime(_burnTime), maxBurnTime(_maxBurnTime), cookTime(_cookTime) {
+	canTick = true;
+
+	// Mark the chunk dirty on inventory change
+	inventory.onModified = [&]() {
+		if (chunk) {
+			chunk->isModified = true;
+			inventory.isModified = false;
+		}
+	};
+};

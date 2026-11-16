@@ -789,6 +789,10 @@ void RegisterRedstoneBehaviors() {
 		if (!noteblockTe)
 			return;
 		noteblockTe->note = (noteblockTe->note + 1) % 25;
+		
+		// Update the chunk the noteblock is in
+		if (noteblockTe->chunk)
+			noteblockTe->chunk->isModified = true;
 		PlayNoteblock(_world, _pos);
 	};
 

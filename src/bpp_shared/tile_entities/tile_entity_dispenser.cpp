@@ -13,15 +13,18 @@ void TileEntityDispenser::Deserialize(const Tag& _tag) {
 	LoadSlots(_tag, this->inventory.slots);
 }
 
-void TileEntityDispenser::Tick(WorldManager& /*_world*/) {
-	if (chunk && inventory.isModified) {
-		chunk->isModified = true;
-		inventory.isModified = false;
-	}
-}
-
 Tag TileEntityDispenser::Serialize() {
 	auto root = TileEntity::Serialize();
 	SerializeInventory(root, inventory);
 	return root;
 }
+
+TileEntityDispenser::TileEntityDispenser(Int3 _pPosition) : TileEntity(TileType::DISPENSER, _pPosition) {
+	// Mark the chunk dirty on inventory change
+	inventory.onModified = [&]() {
+		if (chunk) {
+			chunk->isModified = true;
+			inventory.isModified = false;
+		}
+	};
+};

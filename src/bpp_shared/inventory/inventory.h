@@ -15,6 +15,8 @@
 struct Inventory {
 	std::string name = "Inventory";
 	std::vector<ItemStack> slots;
+	std::function<void()> onModified = nullptr;
+
 	bool isModified = false;
 
 	Inventory(size_t _size) : slots(_size) {}
@@ -65,6 +67,8 @@ struct Inventory {
 	}
 	virtual void OnInventoryChanged() {
 		isModified = true;
+		if (onModified)
+			onModified();
 	}
 	virtual ~Inventory() = default;
 
