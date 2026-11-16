@@ -19,6 +19,7 @@ option(BPP_USE_CCACHE "Use ccache as compiler launcher when it is installed" ON)
 option(BPP_USE_MOLD "Link with mold when it is installed and the compiler supports it (Linux only)" ON)
 set(GENERATION_PRECISION "DOUBLE" CACHE STRING "Reduces perlin and simplex noise precision (all values other than DOUBLE are experimental and not really supported)")
 set_property(CACHE GENERATION_PRECISION PROPERTY STRINGS "DOUBLE" "FLOAT" "LONG" "INT")
+option(BUILD_ADDON_EXAMPLES "Build example addons" OFF)
 
 option(BUILD_SERVER "Build as server" ON)
 option(SDL_VENDORED "Use vendored (locally built) SDL library" ON)
@@ -780,3 +781,33 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${ARCH_SUFFIX}")
 
 include(CPack)
+
+if(BUILD_ADDON_EXAMPLES)
+    if(NOT BUILD_SERVER)
+        message(FATAL_ERROR "Addon examples require BUILD_SERVER=ON")
+    endif()
+
+    set(ADDON_EXAMPLES_OUTPUT_DIR "${CMAKE_BINARY_DIR}/addons")
+
+    function(add_addon_example NAME SOURCE)
+        add_library(${NAME} MODULE "${SOURCE}")
+
+        target_include_directories(${NAME} PRIVATE
+                "${PROJECT_SOURCE_DIR}/include"
+        )
+
+        set_target_properties(${NAME} PROPERTIES
+                PREFIX ""
+                LIBRARY_OUTPUT_DIRECTORY "${ADDON_EXAMPLES_OUTPUT_DIR}"
+                RUNTIME_OUTPUT_DIRECTORY "${ADDON_EXAMPLES_OUTPUT_DIR}"
+        )
+    endfunction()
+
+    add_addon_example(keyed_doors
+            addon_examples/keyed_doors_example.c
+    )
+
+    add_addon_example(command_example
+            addon_examples/command_example.c
+    )
+endif()

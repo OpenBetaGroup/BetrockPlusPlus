@@ -15,7 +15,7 @@
 #include <sstream>
 
 namespace {
-std::string ListAddons(const strategos::CmdNode&, void* _userData) {
+void ListAddons(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto& addons = ctx.server->GetAddonManager().GetAddons();
 	std::vector<std::string> addonLabels;
@@ -26,7 +26,6 @@ std::string ListAddons(const strategos::CmdNode&, void* _userData) {
 		addonLabels.push_back(std::format("{} ({}, {})", addon->info.name, addon->info.id, addon->info.version));
 	}
 	SendChunkedList(ctx, std::format("§7-- {} Active Addon(s) --", addons.size()), addonLabels);
-	return "";
 }
 
 // TODO: Add reload addon

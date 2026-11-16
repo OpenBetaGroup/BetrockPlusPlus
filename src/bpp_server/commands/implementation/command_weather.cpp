@@ -52,7 +52,7 @@ void ApplyWeather(WorldManager& _world, Weather _target) {
 	weather.thunderStrength = weather.prevThunderStrength = thunder ? 1.0f : 0.0f;
 }
 
-std::string GetWeather(const strategos::CmdNode&, void* _userData) {
+void GetWeather(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto& weather = Overworld(ctx).weatherSystem;
 
@@ -61,10 +61,9 @@ std::string GetWeather(const strategos::CmdNode&, void* _userData) {
 	                              FormatTicks(weather.rainTimer)));
 	SendFeedback(ctx, std::format("§eThunder {} in {}", weather.isThundering ? "stops" : "starts",
 	                              FormatTicks(weather.thunderTimer)));
-	return "";
 }
 
-std::string SetWeather(void* _userData, Weather _target) {
+void SetWeather(void* _userData, Weather _target) {
 	auto& ctx = CmdCtx(_userData);
 	auto& world = Overworld(ctx);
 	ApplyWeather(world, _target);
@@ -73,19 +72,18 @@ std::string SetWeather(void* _userData, Weather _target) {
 	int32_t duration = _target == Weather::Thundering ? std::min(weather.rainTimer, weather.thunderTimer)
 	                                                  : weather.rainTimer;
 	SendFeedback(ctx, std::format("§eSet weather to {} for {}", WeatherName(_target), FormatTicks(duration)));
-	return "";
 }
 
-std::string SetClear(const strategos::CmdNode&, void* _userData) {
-	return SetWeather(_userData, Weather::Clear);
+void SetClear(const strategos::CmdNode&, void* _userData) {
+	SetWeather(_userData, Weather::Clear);
 }
 
-std::string SetRain(const strategos::CmdNode&, void* _userData) {
-	return SetWeather(_userData, Weather::Raining);
+void SetRain(const strategos::CmdNode&, void* _userData) {
+	SetWeather(_userData, Weather::Raining);
 }
 
-std::string SetThunder(const strategos::CmdNode&, void* _userData) {
-	return SetWeather(_userData, Weather::Thundering);
+void SetThunder(const strategos::CmdNode&, void* _userData) {
+	SetWeather(_userData, Weather::Thundering);
 }
 
 } // namespace

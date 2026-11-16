@@ -13,41 +13,47 @@
 
 namespace {
 
-std::string SetGamerule(const strategos::CmdNode& _cmd, void* _userData) {
+void SetGamerule(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto gameruleName = _cmd.get_arg<std::string>("name");
 	auto valueText = _cmd.get_arg<std::string>("value");
-	if (!gameruleName || Gamerule::ToId(*gameruleName) == Gamerule::Id::Invalid)
-		return "Gamerule doesn't exist!";
-	if (!valueText)
-		return "Missing value!";
+	if (!gameruleName || Gamerule::ToId(*gameruleName) == Gamerule::Id::Invalid) {
+		SendErrorFeedback(ctx, "Gamerule doesn't exist!");
+		return;
+	}
+	if (!valueText) {
+		SendErrorFeedback(ctx, "Missing value!");
+		return;
+	}
 
 	const auto parsed = Gamerule::ParseLike(Gamerule::GetRaw(*gameruleName), *valueText);
-	if (!parsed || !Gamerule::SetRaw(*gameruleName, *parsed))
-		return "Invalid value for this gamerule!";
+	if (!parsed || !Gamerule::SetRaw(*gameruleName, *parsed)) {
+		SendErrorFeedback(ctx, "Invalid value for this gamerule!");
+		return;
+	}
 
 	SendFeedback(ctx, std::format("Gamerule {} is now: {}", *gameruleName, Gamerule::ValueToString(*parsed)));
 	if (ctx.server && !ctx.server->PersistGamerule(*gameruleName))
-		return "Gamerule changed, but saving it to gamerules.txt failed!";
-	return "";
+		SendErrorFeedback(ctx, "Gamerule changed, but saving it to gamerules.txt failed!");
 }
 
-std::string GetGamerule(const strategos::CmdNode& _cmd, void* _userData) {
+void GetGamerule(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto gameruleName = _cmd.get_arg<std::string>("name");
 	if (!gameruleName || Gamerule::ToId(*gameruleName) == Gamerule::Id::Invalid) {
-		return "Gamerule doesn't exist!";
+		SendErrorFeedback(ctx, "Gamerule doesn't exist!");
+		return;
 	}
 	const auto entry = Gamerule::GetEntry(*gameruleName);
 	if (!entry) {
-		return "Gamerule doesn't exist!";
+		SendErrorFeedback(ctx, "Gamerule doesn't exist!");
+		return;
 	}
 	SendFeedback(ctx, std::format("Gamerule {} is: {}", *gameruleName, Gamerule::ValueToString(entry->value)));
 	SendFeedback(ctx, std::format("§7{}", entry->description));
-	return "";
 }
 
-std::string ListGamerules(const strategos::CmdNode& /*_cmd*/, void* _userData) {
+void ListGamerules(const strategos::CmdNode& /*_cmd*/, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const auto gamerules = Gamerule::GetAllNames();
 	SendFeedback(ctx, std::format("§7-- {} Gamerule(s) --", gamerules.size()));
@@ -62,7 +68,6 @@ std::string ListGamerules(const strategos::CmdNode& /*_cmd*/, void* _userData) {
 		index++;
 	}
 	SendFeedback(ctx, line);
-	return "";
 }
 
 // LLM disclosure

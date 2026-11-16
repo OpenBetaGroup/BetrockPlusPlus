@@ -12,34 +12,42 @@
 
 namespace {
 // TODO: Still needs to have chat formatting + who sent it!!!!!
-std::string SayMessage(const strategos::CmdNode& _cmd, void* _userData) {
+void SayMessage(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto message = _cmd.get_arg<std::string>("message");
-	if (!message)
-		return "Empty message!";
+	if (!message) {
+		SendErrorFeedback(ctx, "Empty message!");
+		return;
+	}
 	ctx.server->SendGlobalChatMessage(*message);
-	return "";
 }
 
 // TODO: Still needs to have chat formatting + who sent it!!!!!
-std::string TellMessage(const strategos::CmdNode& _cmd, void* _userData) {
+void TellMessage(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
-	if (!targetName)
-		return ERROR_PLAYER_NAME_REQUIRED;
+	if (!targetName) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_NAME_REQUIRED);
+		return;
+	}
 	std::string name = *targetName;
-	if (!IsValidUsername(name))
-		return "Invalid username!";
+	if (!IsValidUsername(name)) {
+		SendErrorFeedback(ctx, "Invalid username!");
+		return;
+	}
 	auto session = ctx.server->GetSessionByUsername(name);
-	if (!session)
-		return "Target not found!";
+	if (!session) {
+		SendErrorFeedback(ctx, "Target not found!");
+		return;
+	}
 
 	auto message = _cmd.get_arg<std::string>("message");
-	if (!message)
-		return "Empty message!";
+	if (!message) {
+		SendErrorFeedback(ctx, "Empty message!");
+		return;
+	}
 	SendFeedback(ctx, *message);
 	SendCommandFeedback(session.get(), *message);
-	return "";
 }
 
 } // namespace

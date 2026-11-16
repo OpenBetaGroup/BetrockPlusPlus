@@ -15,33 +15,40 @@
 
 namespace {
 
-std::string KickPlayer(const strategos::CmdNode& _cmd, void* _userData) {
+void KickPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
-	if (!targetName)
-		return ERROR_PLAYER_NAME_REQUIRED;
+	if (!targetName) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_NAME_REQUIRED);
+		return;
+	}
 	std::string name = *targetName;
 	if (!name.empty() && name.front() == '@') {
 		auto targets = ResolveCmdPlayerTargets(name, ctx, "Kick");
-		if (!targets)
-			return targets.error();
+		if (!targets) {
+			SendErrorFeedback(ctx, targets.error());
+			return;
+		}
 		for (const CommandTarget& resolved : *targets) {
 			auto* target = resolved.session;
 			ctx.server->DisconnectPlayer("Kicked by an operator", *target);
 			if (target != ctx.sender)
 				SendFeedback(ctx, std::format("{} has been kicked!", target->username));
 		}
-		return "";
+		return;
 	}
-	if (!IsValidUsername(name))
-		return "Invalid username!";
+	if (!IsValidUsername(name)) {
+		SendErrorFeedback(ctx, "Invalid username!");
+		return;
+	}
 	auto target = ctx.server->GetSessionByUsername(name);
-	if (!target)
-		return std::format("{} is not connected!", name);
+	if (!target) {
+		SendErrorFeedback(ctx, std::format("{} is not connected!", name));
+		return;
+	}
 	ctx.server->DisconnectPlayer("Kicked by an operator", *target);
 	if (target.get() != ctx.sender)
 		SendFeedback(ctx, std::format("{} has been kicked!", name));
-	return "";
 }
 
 } // namespace

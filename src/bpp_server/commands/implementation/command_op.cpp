@@ -15,15 +15,19 @@
 
 namespace {
 
-std::string OpPlayer(const strategos::CmdNode& _cmd, void* _userData) {
+void OpPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
-	if (!targetName)
-		return ERROR_PLAYER_NAME_REQUIRED;
+	if (!targetName) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_NAME_REQUIRED);
+		return;
+	}
 	if (!targetName->empty() && targetName->front() == '@') {
 		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Op");
-		if (!targets)
-			return targets.error();
+		if (!targets) {
+			SendErrorFeedback(ctx, targets.error());
+			return;
+		}
 		for (const CommandTarget& target : *targets) {
 			const auto& name = target.session->username;
 			if (std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name) !=
@@ -33,34 +37,45 @@ std::string OpPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 			}
 
 			ctx.server->operatorUsernames.push_back(name);
-			if (!ctx.server->SaveOperators())
-				return "Failed to save ops!";
+			if (!ctx.server->SaveOperators()) {
+				SendErrorFeedback(ctx, "Failed to save ops!");
+				return;
+			}
 			SendFeedback(ctx, std::format("{} has been opped!", name));
 		}
-		return "";
+		return;
 	}
 	std::string name = *targetName;
-	if (!IsValidUsername(name))
-		return "Invalid username!";
+	if (!IsValidUsername(name)) {
+		SendErrorFeedback(ctx, "Invalid username!");
+		return;
+	}
 	auto it = std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name);
-	if (it != ctx.server->operatorUsernames.end())
-		return "User is already an operator!";
+	if (it != ctx.server->operatorUsernames.end()) {
+		SendErrorFeedback(ctx, "User is already an operator!");
+		return;
+	}
 	ctx.server->operatorUsernames.push_back(name);
-	if (!ctx.server->SaveOperators())
-		return "Failed to save ops!";
+	if (!ctx.server->SaveOperators()) {
+		SendErrorFeedback(ctx, "Failed to save ops!");
+		return;
+	}
 	SendFeedback(ctx, std::format("{} has been opped!", name));
-	return "";
 }
 
-std::string DeopPlayer(const strategos::CmdNode& _cmd, void* _userData) {
+void DeopPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto targetName = ResolveCmdTargetName(_cmd, ctx);
-	if (!targetName)
-		return ERROR_PLAYER_NAME_REQUIRED;
+	if (!targetName) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_NAME_REQUIRED);
+		return;
+	}
 	if (!targetName->empty() && targetName->front() == '@') {
 		auto targets = ResolveCmdPlayerTargets(*targetName, ctx, "Deop");
-		if (!targets)
-			return targets.error();
+		if (!targets) {
+			SendErrorFeedback(ctx, targets.error());
+			return;
+		}
 		for (const CommandTarget& target : *targets) {
 			const auto& name = target.session->username;
 			auto it = std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name);
@@ -70,21 +85,26 @@ std::string DeopPlayer(const strategos::CmdNode& _cmd, void* _userData) {
 			}
 
 			ctx.server->operatorUsernames.erase(it);
-			if (!ctx.server->SaveOperators())
-				return "Failed to save ops!";
+			if (!ctx.server->SaveOperators()) {
+				SendErrorFeedback(ctx, "Failed to save ops!");
+				return;
+			}
 			SendFeedback(ctx, std::format("{} has been deopped!", name));
 		}
-		return "";
+		return;
 	}
 	std::string name = *targetName;
 	auto it = std::find(ctx.server->operatorUsernames.begin(), ctx.server->operatorUsernames.end(), name);
-	if (it == ctx.server->operatorUsernames.end())
-		return "User is not an operator!";
+	if (it == ctx.server->operatorUsernames.end()) {
+		SendErrorFeedback(ctx, "User is not an operator!");
+		return;
+	}
 	ctx.server->operatorUsernames.erase(it);
-	if (!ctx.server->SaveOperators())
-		return "Failed to save ops!";
+	if (!ctx.server->SaveOperators()) {
+		SendErrorFeedback(ctx, "Failed to save ops!");
+		return;
+	}
 	SendFeedback(ctx, std::format("{} has been deopped!", name));
-	return "";
 }
 
 } // namespace

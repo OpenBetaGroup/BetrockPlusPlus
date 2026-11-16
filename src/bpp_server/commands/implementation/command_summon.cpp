@@ -92,29 +92,38 @@ std::optional<Tag> ParseSummonNbt(const strategos::CmdNode& _cmd) {
 	}
 }
 
-std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
+void SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto entityType = _cmd.get_arg<std::string>("entityType");
-	if (!entityType)
-		return ERROR_REASON_PARAMETERS;
-	if (!ctx.executionEntity)
-		return ERROR_PLAYER_REQUIRED;
+	if (!entityType) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
+	if (!ctx.executionEntity) {
+		SendErrorFeedback(ctx, ERROR_PLAYER_REQUIRED);
+		return;
+	}
 
 	Vec3 spawnPos = ctx.executionEntity->position;
 	spawnPos.y += 1.0; // Spawn above the executor, who is one of my favorite pokemon.
 
 	auto eTypeEnum = GetEntityTypeFromString(*entityType);
-	if (eTypeEnum == EntityType::NONE)
-		return "Unknown entity: " + *entityType;
+	if (eTypeEnum == EntityType::NONE) {
+		SendErrorFeedback(ctx, "Unknown entity: " + *entityType);
+		return;
+	}
 	auto entity = GetEntityShared(eTypeEnum);
-	if (!entity)
-		return "Failed to create entity: " + *entityType;
+	if (!entity) {
+		SendErrorFeedback(ctx, "Failed to create entity: " + *entityType);
+		return;
+	}
 
 	try {
 		if (auto nbt = ParseSummonNbt(_cmd))
 			entity->LoadFromNbt(*nbt);
 	} catch (const std::exception& exception) {
-		return exception.what();
+		SendErrorFeedback(ctx, exception.what());
+		return;
 	}
 
 	entity->Teleport(spawnPos);
@@ -122,32 +131,40 @@ std::string SummonEntity(const strategos::CmdNode& _cmd, void* _userData) {
 	ctx.world->entityManager.AddEntity(entity);
 
 	SendFeedback(ctx, std::format("§eSpawned entity at {}!", spawnPos.Str()));
-	return "";
 }
 
-std::string SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
+void SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto entityType = _cmd.get_arg<std::string>("entityType");
 	auto pos = _cmd.get_arg<strategos::Vec3>("pos");
-	if (!entityType || !pos)
-		return ERROR_REASON_PARAMETERS;
+	if (!entityType || !pos) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
 	auto position = ResolveCmdPos(ctx, *pos);
-	if (!position)
-		return position.error();
+	if (!position) {
+		SendErrorFeedback(ctx, position.error());
+		return;
+	}
 	Vec3 ePos = *position;
 	auto eTypeEnum = GetEntityTypeFromString(*entityType);
-	if (eTypeEnum == EntityType::NONE)
-		return "Unknown entity: " + *entityType;
+	if (eTypeEnum == EntityType::NONE) {
+		SendErrorFeedback(ctx, "Unknown entity: " + *entityType);
+		return;
+	}
 	auto entity = GetEntityShared(eTypeEnum);
-	if (!entity)
-		return "Failed to create entity: " + *entityType;
+	if (!entity) {
+		SendErrorFeedback(ctx, "Failed to create entity: " + *entityType);
+		return;
+	}
 
 	try {
 		if (auto nbt = ParseSummonNbt(_cmd))
 			entity->LoadFromNbt(*nbt);
 	} catch (const std::exception& exception) {
-		return exception.what();
+		SendErrorFeedback(ctx, exception.what());
+		return;
 	}
 
 	entity->Teleport(ePos);
@@ -155,7 +172,6 @@ std::string SummonEntityAtPos(const strategos::CmdNode& _cmd, void* _userData) {
 	ctx.world->entityManager.AddEntity(entity);
 
 	SendFeedback(ctx, std::format("§eSpawned entity at {}!", ePos.Str()));
-	return "";
 }
 
 } // namespace

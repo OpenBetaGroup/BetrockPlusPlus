@@ -145,7 +145,7 @@ void OnPlayerChat(const bp_api* api, bp_player_chat_event* ev) {
 	}
 	if (strstr(ev->message, "players") != NULL) {
 		ev->cancel = true;
-		(void)api->commands.execute(api, ev->player, "list");
+		(void)api->cmd.execute(api, ev->player, "list");
 	}
 }
 

@@ -50,6 +50,7 @@ bool IsOperator(PlayerSession& _session, Server& _server);
 bool IsOperator(const CommandContext& _ctx);
 void SendCommandFeedback(PlayerSession* _recipient, const std::string& _message);
 void SendFeedback(const CommandContext& _ctx, const std::string& _message);
+void SendErrorFeedback(const CommandContext& _ctx, const std::string& _message);
 ItemStack ParseItemStack(const std::string& _itemArg, std::optional<int> _count = std::nullopt);
 void SendChunkedList(const CommandContext& _ctx, const std::string& _header, const std::vector<std::string>& _entries);
 std::optional<std::string> ResolveCmdTargetName(const strategos::CmdNode& _cmd, const CommandContext& _ctx);

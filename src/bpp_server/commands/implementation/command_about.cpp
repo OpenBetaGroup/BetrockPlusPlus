@@ -13,14 +13,13 @@
 
 namespace {
 
-std::string ShowAbout(const strategos::CmdNode&, void* _userData) {
+void ShowAbout(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	SendFeedback(ctx, std::format("§e----- [   {} v{}   ] -----", PROJECT_NAME, PROJECT_VERSION_FULL_STRING));
 	SendFeedback(ctx, std::string{ "Open-source Beta 1.7.3 server written in C++23" });
 	SendFeedback(ctx, std::string{ "https://github.com/OpenBetaGroup/BetrockPlusPlus" });
 	SendFeedback(ctx, std::string{ "§7Licensed under the GNU AGPL v3.0 (AGPL-3.0-only)" });
 	SendFeedback(ctx, std::format("§7Compiled for {} ({}) in {} mode", PLATFORM_NAME, ARCH_NAME, BUILD_MODE));
-	return "";
 }
 
 } // namespace

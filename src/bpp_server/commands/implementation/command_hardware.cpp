@@ -36,7 +36,7 @@ std::string FormatCpu(const HardwareInfo& _info) {
 	return line;
 }
 
-std::string ShowHardware(const strategos::CmdNode&, void* _userData) {
+void ShowHardware(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	const HardwareInfo info = QueryHardwareInfo();
 	SendFeedback(ctx, std::format("§6OS: §f{}", info.os.empty() ? "Unknown" : info.os));
@@ -45,7 +45,6 @@ std::string ShowHardware(const strategos::CmdNode&, void* _userData) {
 	SendFeedback(ctx,
 	             std::format("§6Memory: §f{}", info.memoryTotalBytes ? FormatBytes(info.memoryTotalBytes) : "Unknown"));
 	SendFeedback(ctx, std::format("§6Swap: §f{}", info.swapTotalBytes ? FormatBytes(info.swapTotalBytes) : "None"));
-	return "";
 }
 
 } // namespace

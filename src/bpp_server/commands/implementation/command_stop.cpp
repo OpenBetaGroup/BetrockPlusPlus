@@ -13,34 +13,35 @@
 
 namespace {
 
-std::string StopNow(const strategos::CmdNode&, void* _userData) {
+void StopNow(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	ctx.server->SendGlobalChatMessage(std::format("§eStopping..."));
 	shutdownRequested.store(true);
-	return "";
 }
 
-std::string CancelStop(const strategos::CmdNode&, void* _userData) {
+void CancelStop(const strategos::CmdNode&, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	ctx.server->ResetTimeout();
 	ctx.server->SendGlobalChatMessage(std::format("§eCancelled stop!"));
-	return "";
 }
 
-std::string StopInSeconds(const strategos::CmdNode& _cmd, void* _userData) {
+void StopInSeconds(const strategos::CmdNode& _cmd, void* _userData) {
 	auto& ctx = CmdCtx(_userData);
 	auto seconds = _cmd.get_arg<float>("seconds");
-	if (!seconds)
-		return ERROR_REASON_PARAMETERS;
+	if (!seconds) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
 
 	float timeout = *seconds;
 	static const float MAX_TIMEOUT = float(UINT16_MAX) / float(ctx.server->GetTickRate());
-	if (timeout > MAX_TIMEOUT)
-		return std::format("Exceeds max timeout! ({} seconds)", MAX_TIMEOUT);
+	if (timeout > MAX_TIMEOUT) {
+		SendErrorFeedback(ctx, std::format("Exceeds max timeout! ({} seconds)", MAX_TIMEOUT));
+		return;
+	}
 
 	ctx.server->SendGlobalChatMessage(std::format("§eStopping in {:.1f} seconds...", timeout));
 	ctx.server->StopTimeout(timeout);
-	return "";
 }
 
 } // namespace

@@ -60,31 +60,27 @@ bool CommandManager::Parse(std::string_view _line, CommandContext& _ctx) {
 		_line.remove_prefix(1);
 	try {
 		if (_line.empty()) {
-			SendFeedback(_ctx, "§c" ERROR_REASON_NO_CMD);
+			SendErrorFeedback(_ctx, "Parse Error: " ERROR_REASON_NO_CMD);
 			return false;
 		}
-		auto result = dispatcher.execute(_line, &_ctx, [](void* _userData) { return IsOperator(CmdCtx(_userData)); });
-		if (!result) {
-			const auto& err = result.error();
-			std::string message = err.message;
-			if (err.error == strategos::ParseError::NoPermission)
+		auto error = dispatcher.execute(_line, &_ctx, [](void* _userData) { return IsOperator(CmdCtx(_userData)); });
+		if (error) {
+			std::string message = error->message;
+			if (error->type == strategos::ParseErrorType::NoPermission)
 				message = ERROR_OPERATOR;
-			else if (err.error == strategos::ParseError::UnknownCommand && err.position == 0)
+			else if (error->type == strategos::ParseErrorType::UnknownCommand && error->position == 0)
 				message = ERROR_REASON_NO_EXIST;
-			SendFeedback(_ctx, "§c" + message);
-			return false;
-		}
-		if (!result->empty()) {
-			SendFeedback(_ctx, "§c" + *result);
+			if (!message.empty())
+				SendErrorFeedback(_ctx, "Parse Error: " + message);
 			return false;
 		}
 		return _ctx.executionSucceeded;
 	} catch (const std::exception& e) {
 		Logger::Info << e.what() << " on /" << std::string(_line) << "\n";
-		SendFeedback(_ctx, "§c" ERROR_REASON_ERROR);
+		SendErrorFeedback(_ctx, "Parse Exception: " ERROR_REASON_ERROR);
 	} catch (...) {
 		Logger::Error << "Non-standard exception on /" << std::string(_line) << "\n";
-		SendFeedback(_ctx, "§c" ERROR_REASON_ERROR);
+		SendErrorFeedback(_ctx, "Parse Exception: " ERROR_REASON_ERROR);
 	}
 	return false;
 }

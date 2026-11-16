@@ -11,6 +11,7 @@
 #include "addon.h"
 #include "base_structs.h"
 #include "blocks.h"
+#include "commands/command.h"
 #include "logger.h"
 #include "server.h"
 #include "version.h"
@@ -124,6 +125,15 @@ bp_world* EntityGetWorld(bp_entity* _entity) {
 	return reinterpret_cast<bp_world*>(entity->world);
 }
 
+bp_player* EntityToPlayer(bp_entity* _entity) {
+	// This code is just perfect
+	auto entity = reinterpret_cast<Entity*>(_entity);
+	if (auto player = dynamic_cast<EntityMPPlayer*>(entity)) {
+		return reinterpret_cast<bp_player*>(player);
+	}
+	return nullptr;
+}
+
 bp_block GetBlock(bp_world* _world, bp_block_pos _pos) {
 	auto world = reinterpret_cast<WorldManager*>(_world);
 	Int3 blockPos{ _pos.x, _pos.y, _pos.z };
@@ -146,14 +156,13 @@ void SendBlockUpdate(bp_world* _world, bp_block_pos _pos, bp_block _block) {
 	if (!chunk)
 		return;
 	Int3 local{ _pos.x & 15, _pos.y, _pos.z & 15 };
-	world->onBlockUpdate(PendingBlock{ .block{ .type = static_cast<BlockType>(_block.id),
-	                                                     .data = _block.meta },
-	                                             .blockPos{ _pos.x, _pos.y, _pos.z },
-	                                             .light{ chunk->GetBlockLight(local), chunk->GetSkyLight(local) } },
-	                               chunk->cpos);
+	world->onBlockUpdate(PendingBlock{ .block{ .type = static_cast<BlockType>(_block.id), .data = _block.meta },
+	                                   .blockPos{ _pos.x, _pos.y, _pos.z },
+	                                   .light{ chunk->GetBlockLight(local), chunk->GetSkyLight(local) } },
+	                     chunk->cpos);
 }
 
-bool ExecuteAddonCommand(const bp_api* _api, bp_player* _sender, const char* _command) noexcept {
+bool ExecuteCommand(const bp_api* _api, bp_player* _sender, const char* _command) noexcept {
 	try {
 		if (!_api || !_api->internal || !_command)
 			return false;
@@ -172,6 +181,127 @@ bool ExecuteAddonCommand(const bp_api* _api, bp_player* _sender, const char* _co
 	}
 }
 
+bp_cmd_node* MakeCommandNode(const char* _name, bp_cmd_node_type _type) {
+	auto node = new bp_cmd_node();
+	node->name = _name;
+	// The ordering matches, we can cast directly
+	node->type = static_cast<strategos::NodeType>(_type);
+	return node;
+}
+
+bp_cmd_node* MakeIntegerCmdNode(const char* _name, int _min, int _max) {
+	auto node = MakeCommandNode(_name, BP_CMD_INTEGER);
+	node->settings = strategos::IntSettings{ _min, _max };
+	return node;
+}
+
+bp_cmd_node* MakeFloatCmdNode(const char* _name, float _min, float _max) {
+	auto node = MakeCommandNode(_name, BP_CMD_FLOAT);
+	node->settings = strategos::FloatSettings{ _min, _max };
+	return node;
+}
+
+bp_cmd_node* MakeEnumCmdNode(const char* _name, const char* _values[]) {
+	auto node = MakeCommandNode(_name, BP_CMD_ENUM);
+	std::vector<std::string> valuesVec;
+	if (_values != nullptr) {
+		for (size_t i = 0; _values[i] != nullptr; ++i) {
+			valuesVec.emplace_back(_values[i]);
+		}
+	}
+	node->settings = strategos::EnumSettings{ std::move(valuesVec) };
+	return node;
+}
+
+void AddCmdNodeChild(bp_cmd_node* _parent, bp_cmd_node* _child) {
+	_parent->children.push_back(_child);
+}
+
+void SetCmdNodeAction(const bp_api* _api, bp_cmd_node* _node, bp_cmd_action_fn _action) {
+	_node->action = [_action, _api](const strategos::CmdNode& _cmdNode, void* _userData) {
+		const bp_cmd_action_ctx context{ _cmdNode, CmdCtx(_userData) };
+		_action(_api, &context);
+	};
+}
+
+void SendCmdActionFeedback(const bp_cmd_action_ctx* _ctx, const char* _message) {
+	SendFeedback(_ctx->cmdCtx, _message);
+}
+
+bp_entity* GetCmdActionExecutor(const bp_cmd_action_ctx* _ctx) {
+	return reinterpret_cast<bp_entity*>(_ctx->cmdCtx.executionEntity);
+}
+
+bool GetCmdStringArg(const bp_cmd_action_ctx* _ctx, const char* _name, const char** _out) {
+	if (auto value = _ctx->cmdNode.get_arg<std::string>(_name)) {
+		*_out = value->c_str();
+		return true;
+	}
+	return false;
+}
+
+bool GetCmdIntegerArg(const bp_cmd_action_ctx* _ctx, const char* _name, int* _out) {
+	if (auto value = _ctx->cmdNode.get_arg<int>(_name)) {
+		*_out = *value;
+		return true;
+	}
+	return false;
+}
+
+bool GetCmdFloatArg(const bp_cmd_action_ctx* _ctx, const char* _name, float* _out) {
+	if (auto value = _ctx->cmdNode.get_arg<float>(_name)) {
+		*_out = *value;
+		return true;
+	}
+	return false;
+}
+
+bool GetCmdBooleanArg(const bp_cmd_action_ctx* _ctx, const char* _name, bool* _out) {
+	if (auto value = _ctx->cmdNode.get_arg<bool>(_name)) {
+		*_out = *value;
+		return true;
+	}
+	return false;
+}
+
+bool GetCmdEnumArg(const bp_cmd_action_ctx* _ctx, const char* _name, const char** _out) {
+	if (auto value = _ctx->cmdNode.get_arg<std::string>(_name)) {
+		*_out = value->c_str();
+		return true;
+	}
+	return false;
+}
+
+bool GetCmdVec3Arg(const bp_cmd_action_ctx* _ctx, const char* _name, bp_cmd_vec3* _out) {
+	if (auto value = _ctx->cmdNode.get_arg<strategos::Vec3>(_name)) {
+		_out->pos[0] = value->pos[0];
+		_out->pos[1] = value->pos[1];
+		_out->pos[2] = value->pos[2];
+		_out->relativeAxes = value->relative_axes;
+		return true;
+	}
+	return false;
+}
+
+strategos::Node TranslateCommandTree(const bp_cmd_node* _root) {
+	strategos::Node newRoot;
+	// Copy everything except the extra children vector
+	// NOLINTNEXTLINE(cppcoreguidelines-slicing) // Suppress object slicing warning
+	static_cast<strategos::AbstractNode&>(newRoot) = *_root;
+
+	for (auto* child : _root->children) {
+		newRoot.then(TranslateCommandTree(child));
+	}
+
+	delete _root;
+	return newRoot;
+}
+
+void RegisterCommand(const bp_api* _api, bp_cmd_node* _root) {
+	Addon* addon = InternalGetAddon(_api);
+	addon->server->GetCommandManager().Dispatcher().add_command(TranslateCommandTree(_root));
+}
+
 bp_api MakeAddonAPI() {
 	return bp_api{
 		.version = ADDON_API_VERSION,
@@ -179,8 +309,23 @@ bp_api MakeAddonAPI() {
 		.log = { .info = LogInfo, .warning = LogWarning, .error = LogError },
 		.server = { .getPlayerCount = GetPlayerCount, .getPlayerAt = GetPlayerAt, .stop = ServerStop, .getMsptAverage = ServerGetMsptAverage, .getTpsAverage = ServerGetTpsAverage, .getVersion = ServerGetVersion },
 		.player = { .sendMessage = PlayerSendMessage, .kick = PlayerKick, .getUsername = PlayerGetUsername, .getEntity = PlayerGetEntity, },
-		.entity = { .getPosition = EntityGetPosition, .setPosition = EntitySetPosition, .getWorld = EntityGetWorld },
+		.entity = { .getPosition = EntityGetPosition, .setPosition = EntitySetPosition, .getWorld = EntityGetWorld, .toPlayer = EntityToPlayer },
 		.world = { .setBlock = SetBlock, .getBlock = GetBlock, .sendBlockUpdate = SendBlockUpdate },
-		.commands = { .execute = ExecuteAddonCommand }
+		.cmd = { .makeNode = MakeCommandNode,
+			.makeIntegerEx = MakeIntegerCmdNode,
+			.makeFloatEx = MakeFloatCmdNode,
+			.makeEnum = MakeEnumCmdNode,
+			.addChild = AddCmdNodeChild,
+			.sendActionFeedback = SendCmdActionFeedback,
+			.getActionExecutor = GetCmdActionExecutor,
+			.getStringArg = GetCmdStringArg,
+			.getIntegerArg = GetCmdIntegerArg,
+			.getFloatArg = GetCmdFloatArg,
+			.getBooleanArg = GetCmdBooleanArg,
+			.getEnumArg = GetCmdEnumArg,
+			.getVec3Arg = GetCmdVec3Arg,
+			.setAction = SetCmdNodeAction,
+			.registerCommand = RegisterCommand,
+			.execute = ExecuteCommand }
 	};
 }

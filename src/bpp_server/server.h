@@ -150,6 +150,10 @@ public:
 		return addonManager;
 	}
 
+	CommandManager& GetCommandManager() noexcept {
+		return commandManager;
+	}
+
 	WorldManager* GetWorldForDimension(Dimension _dim) {
 		return gameRuntime.GetWorldForDimension(_dim);
 	}
