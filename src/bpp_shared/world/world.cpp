@@ -25,6 +25,36 @@
 
 #include "player/player_session.h"
 
+static const std::vector<Int2>& SpiralOffsets(int _radius) {
+	static std::unordered_map<int, std::vector<Int2>> cache;
+	auto it = cache.find(_radius);
+	if (it != cache.end())
+		return it->second;
+
+	static constexpr int dirs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+	std::vector<Int2> out;
+	out.reserve(size_t((_radius * 2 + 1) * (_radius * 2 + 1)));
+	out.push_back({ 0, 0 });
+	int x = 0, z = 0, d = 0;
+	for (int len = 1; len <= _radius * 2; ++len) {
+		for (int leg = 0; leg < 2; ++leg) {
+			const int* dir = dirs[d++ % 4];
+			for (int i = 0; i < len; ++i) {
+				x += dir[0];
+				z += dir[1];
+				out.push_back({ x, z });
+			}
+		}
+	}
+	d %= 4;
+	for (int i = 0; i < _radius * 2; ++i) {
+		x += dirs[d][0];
+		z += dirs[d][1];
+		out.push_back({ x, z });
+	}
+	return cache.emplace(_radius, std::move(out)).first->second;
+}
+
 Biome WorldManager::GetBiome(Int2 _wpos) {
 	auto chunk = GetChunkShared(Int32_2{ _wpos.x >> 4, _wpos.z >> 4 });
 	if (!chunk || chunk->state.load() < ChunkState::Generated)
@@ -817,54 +847,54 @@ void WorldManager::PumpPipeline(const std::vector<std::shared_ptr<PlayerSession>
 	const int playerCount = int(_players.size());
 	const int slicePerPlayer = 16;
 
-	std::vector<Int32_2> unloadedCandidates;
-	unloadedCandidates.reserve(chunks.size());
-	for (auto& [pos, chunk] : chunks) {
-		if (chunk->state.load(std::memory_order_acquire) == ChunkState::Unloaded)
-			unloadedCandidates.push_back(pos);
+	auto isUnloaded = [&](const Int32_2& _p) {
+		auto it = chunks.find(_p);
+		return it != chunks.end() && it->second->state.load(std::memory_order_acquire) == ChunkState::Unloaded;
+	};
+
+	// One candidate list per player, nearest-first in spiral order around THAT player.
+	std::vector<std::vector<Int32_2>> candidates(size_t(std::max(playerCount, 1)));
+
+	if (playerCount == 0) {
+		// Spawn preparation (no players yet). Vanilla loads this area x-outer / z-inner
+		for (auto& [pos, chunk] : chunks)
+			if (chunk->state.load(std::memory_order_acquire) == ChunkState::Unloaded)
+				candidates[0].push_back(pos);
+		std::sort(candidates[0].begin(), candidates[0].end(),
+		          [](const Int32_2& _a, const Int32_2& _b) { return _a.x != _b.x ? _a.x < _b.x : _a.z < _b.z; });
+	} else {
+		for (int i = 0; i < playerCount; ++i) {
+			const auto& pl = _players[size_t(i)];
+			const int cx = int(std::floor(pl->position.x)) >> 4;
+			const int cz = int(std::floor(pl->position.z)) >> 4;
+			const int r = pl->viewDistanceOverride ? pl->viewDistanceOverride : viewRadius;
+			for (const Int2& o : SpiralOffsets(r)) {
+				Int32_2 p{ cx + o.x, cz + o.z };
+				if (isUnloaded(p))
+					candidates[size_t(i)].push_back(p);
+			}
+		}
 	}
-	// Sort by load order that beta 1.7.3 seems to use
-	std::sort(unloadedCandidates.begin(), unloadedCandidates.end(), [](const Int32_2& _a, const Int32_2& _b) {
-		if (_a.x != _b.x)
-			return _a.x < _b.x;
-		return _a.z < _b.z;
-	});
 
 	std::unordered_set<Int32_2> startedThisTick;
 
 	auto startLoading = [&](const Int32_2& _pos) -> bool {
-		if (startedThisTick.contains(_pos))
+		if (startedThisTick.contains(_pos) || !isUnloaded(_pos))
 			return false;
-		auto it = chunks.find(_pos);
-		if (it == chunks.end())
-			return false;
-		if (it->second->state.load(std::memory_order_acquire) != ChunkState::Unloaded)
-			return false;
-		it->second->state.store(ChunkState::Loading, std::memory_order_release);
+		chunks.find(_pos)->second->state.store(ChunkState::Loading, std::memory_order_release);
 		regionManager->LoadChunk(_pos);
 		startedThisTick.insert(_pos);
+		requestOrder.push_back(_pos); // remember request order for CommitChunk
 		return true;
 	};
 
 	auto startGeneration = [&](const Int32_2& _pos) -> bool {
-		// Check if already started this Tick (can happen with multiple players), and if chunk is still Unloaded (can be changed by another thread).
-		if (startedThisTick.contains(_pos))
+		if (startedThisTick.contains(_pos) || !isUnloaded(_pos))
 			return false;
-		auto it = chunks.find(_pos);
-		if (it == chunks.end())
-			return false;
-		if (it->second->state.load(std::memory_order_acquire) != ChunkState::Unloaded)
-			return false;
-
-		// Actually generate this chunk
-		it->second->state.store(ChunkState::Generating, std::memory_order_release);
+		chunks.find(_pos)->second->state.store(ChunkState::Generating, std::memory_order_release);
 		pool.detach_task([_pos, this]() {
-			// We make a new chunk here instead of modifying the existing chunk because multithreading is a pain
-			// The placeholder chunk in the map will be replaced by this one when we push to genDoneQueue
 			auto chunk = std::make_shared<Chunk>();
 			chunk->cpos = _pos;
-			// The generators are cached per thread, so rebuild them if the world seed has changed since this
-			// thread last generated a chunk (e.g. switching worlds, or the chunk-gen benchmark cycling seeds).
 			const int64_t genSeed = this->seed;
 			thread_local std::unique_ptr<Generator> tlGen;
 			thread_local int64_t tlGenSeed = 0;
@@ -876,84 +906,61 @@ void WorldManager::PumpPipeline(const std::vector<std::shared_ptr<PlayerSession>
 			chunk->isModified = true;
 			chunk->GenerateSkylightMap(dimension->hasSky);
 			chunk->state.store(ChunkState::Generated, std::memory_order_release);
-
-			// This just posts the result so we can start lighting and check for population
 			this->PostGenResult(std::move(chunk));
 		});
 		startedThisTick.insert(_pos);
+		requestOrder.push_back(_pos); // remember request order for CommitChunk
 		return true;
 	};
 
-	if (playerCount == 0) {
-		int started = 0;
-		for (const Int32_2& pos : unloadedCandidates) {
-			if (started >= slicePerPlayer)
-				break;
-			if (regionManager->ChunkExists(pos)) {
-				if (startLoading(pos))
-					++started;
-				continue;
-			}
-			if (startGeneration(pos))
-				++started;
-		}
-	} else {
-		// Make sure everyone gets their share of the budget
-		std::vector<size_t> cursors(size_t(playerCount), 0);
-		int totalStarted = 0;
-		const int totalBudget = slicePerPlayer * playerCount;
-		bool anyProgress = true;
-		while (totalStarted < totalBudget && anyProgress) {
-			anyProgress = false;
-			for (int i = 0; i < playerCount && totalStarted < totalBudget; ++i) {
-				size_t& cur = cursors[size_t(i)];
-				int playerConsumed = 0;
-				while (playerConsumed < slicePerPlayer && cur < unloadedCandidates.size()) {
-					Int32_2 cpos = unloadedCandidates[cur];
-					++cur;
-					if (regionManager->ChunkExists(cpos)) {
-						if (startLoading(cpos)) {
-							++playerConsumed;
-							++totalStarted;
-							anyProgress = true;
-						}
-						continue;
-					}
-					if (startGeneration(cpos)) {
-						++playerConsumed;
-						++totalStarted;
-						anyProgress = true;
-					}
+	auto startOne = [&](const Int32_2& _pos) -> bool {
+		return regionManager->ChunkExists(_pos) ? startLoading(_pos) : startGeneration(_pos);
+	};
+
+	// Round-robin so every player gets their slice each tick; each walks their own spiral.
+	std::vector<size_t> cursors(candidates.size(), 0);
+	const int lists = int(candidates.size());
+	const int totalBudget = slicePerPlayer * lists;
+	int totalStarted = 0;
+	bool anyProgress = true;
+	while (totalStarted < totalBudget && anyProgress) {
+		anyProgress = false;
+		for (int i = 0; i < lists && totalStarted < totalBudget; ++i) {
+			auto& list = candidates[size_t(i)];
+			size_t& cur = cursors[size_t(i)];
+			int consumed = 0;
+			while (consumed < slicePerPlayer && cur < list.size()) {
+				if (startOne(list[cur++])) {
+					++consumed;
+					++totalStarted;
+					anyProgress = true;
 				}
 			}
 		}
 	}
 }
 
-void WorldManager::PopulateReady(int _maxPopulates) {
-	// Try and match beta's population order its finicky lol
-	std::vector<Int32_2> ordered;
-	ordered.reserve(chunks.size());
-	for (auto& [pos, chunk] : chunks) {
-		if (chunk->isTerrainPopulated)
-			continue;
-		// Only consider chunks that could possibly be ready
-		// This excludes border chunks on the positive X and Z axes since their population needs neighbors that can't exist
-		if (!chunks.contains({ pos.x + 1, pos.z }) || !chunks.contains({ pos.x, pos.z + 1 }) ||
-		    !chunks.contains({ pos.x + 1, pos.z + 1 }))
-			continue;
-		ordered.push_back(pos);
-	}
+void WorldManager::CommitChunk(Int32_2 _pos) {
+	committed.insert(_pos);
 
-	// Sort by population order that beta 1.7.3 seems to use
-	std::sort(ordered.begin(), ordered.end(), [](const Int32_2& _a, const Int32_2& _b) {
-		if (_a.x != _b.x)
-			return _a.x < _b.x;
-		return _a.z < _b.z;
-	});
+	auto tryPopulate = [&](int _x, int _z) {
+		Int32_2 p{ _x, _z };
+		if (!committed.contains(p) || !committed.contains({ _x + 1, _z }) || !committed.contains({ _x, _z + 1 }) ||
+		    !committed.contains({ _x + 1, _z + 1 }))
+			return;
+		if (!CanPopulateDirect(p)) // not already populated, and all four are at least Generated
+			return;
+		PopulateSingle(p);
+	};
 
-	// Reuse generators across chunks: PopulateChunk resets its RNG from the world seed,
-	// so perm tables only need rebuilding when the world seed changes.
+	tryPopulate(_pos.x, _pos.z);
+	tryPopulate(_pos.x - 1, _pos.z);
+	tryPopulate(_pos.x, _pos.z - 1);
+	tryPopulate(_pos.x - 1, _pos.z - 1);
+}
+
+void WorldManager::PopulateSingle(Int32_2 _pos) {
+	// Reuse generators across chunks (PopulateChunk resets its RNG from the world seed)
 	struct CachedPopulator {
 		int64_t seed = std::numeric_limits<int64_t>::min();
 		std::unique_ptr<Generator> gen;
@@ -965,34 +972,45 @@ void WorldManager::PopulateReady(int _maxPopulates) {
 		populator.seed = this->seed;
 	}
 
-	// Make sure we don't try to populate the same chunk multiple times in one Tick (can happen with the weird population order and multiple players)
-	// Also make sure we populate in the right order!
-	// We break if the target chunk isn't ready yet so population order is guaranteed
-	std::unordered_set<Int32_2> populatedThisTick;
-	int populatedCount = 0;
-	for (const Int32_2& pos : ordered) {
-		if (populatedCount >= _maxPopulates)
-			break;
-		if (!CanPopulateDirect(pos))
-			break;
-		if (populatedThisTick.contains(pos))
+	auto cit = chunks.find(_pos);
+	if (cit == chunks.end())
+		return;
+	cit->second->state.store(ChunkState::Populating, std::memory_order_release);
+	WorldWrapper wrapper(*this, _pos);
+	wrapper.centerChunkPos = _pos;
+	wrapper.GetChunkRegion();
+	populator.gen->PopulateChunk(*cit->second, wrapper);
+	cit->second->isTerrainPopulated = true;
+	cit->second->isModified = true;
+	cit->second->state.store(ChunkState::Populated, std::memory_order_release);
+	++populatedCounter;
+	wrapper.FreeChunkRegion();
+	FlushBleedWrites();
+}
+
+void WorldManager::PopulateReady(int _maxPopulates) {
+	int budget = _maxPopulates;
+	while (!requestOrder.empty() && budget > 0) {
+		const Int32_2 pos = requestOrder.front();
+		auto it = chunks.find(pos);
+
+		// Unloaded before it finished, or a failed load that fell back to Unloaded
+		if (it == chunks.end() || it->second->state.load(std::memory_order_acquire) == ChunkState::Unloaded) {
+			requestOrder.pop_front();
 			continue;
-		auto cit = chunks.find(pos);
-		if (cit == chunks.end())
+		}
+
+		// Still generating/loading: wait. Later chunks must not jump ahead of it.
+		if (it->second->state.load(std::memory_order_acquire) < ChunkState::Generated)
 			break;
-		cit->second->state.store(ChunkState::Populating, std::memory_order_release);
-		WorldWrapper wrapper(*this, pos);
-		wrapper.centerChunkPos = pos;
-		wrapper.GetChunkRegion();
-		populator.gen->PopulateChunk(*cit->second, wrapper);
-		auto& chunk = cit->second;
-		chunk->isTerrainPopulated = true;
-		chunk->isModified = true;
-		chunk->state.store(ChunkState::Populated, std::memory_order_release);
-		populatedThisTick.insert(pos);
-		++populatedCount;
-		wrapper.FreeChunkRegion();
-		FlushBleedWrites();
+
+		requestOrder.pop_front();
+
+		// Chunks loaded from disk that were already populated need no work,
+		// but they still count as "added" for their neighbours.
+		const size_t before = populatedCounter;
+		CommitChunk(pos);
+		budget -= int(populatedCounter - before) > 0 ? int(populatedCounter - before) : 1;
 	}
 }
 

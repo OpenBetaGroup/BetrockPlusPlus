@@ -317,6 +317,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Serve
 		_session.pendingTeleport = _session.position;
 		_session.pendingPortalPlacement = false;
 		_session.portalAreaLoaded = true;
+		_server.ResetDimensionState(_session, _session.dimension);
 	}
 
 	// Spawn chunk radius; 3 chunks in each direction

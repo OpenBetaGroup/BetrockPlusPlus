@@ -429,6 +429,12 @@ private:
 	int simulationRadius = 9;
 	uint32_t distHashCounter = 0;
 
+	std::deque<Int32_2> requestOrder;
+	std::unordered_set<Int32_2> committed;       
+	size_t populatedCounter = 0;
+	void PopulateSingle(Int32_2 _pos);           
+	void CommitChunk(Int32_2 _pos);     
+
 	std::shared_ptr<Chunk>* FindChunkSlot(Int32_2 _pos) {
 		if (lastChunkSlot && _pos == lastChunkPos)
 			return lastChunkSlot;
