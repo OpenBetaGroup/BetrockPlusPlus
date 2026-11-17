@@ -42,4 +42,7 @@ struct FallingBlockEntity : public Entity {
 		Entity::LoadFromNbt(_nbt);
 		this->block = BlockType(_nbt.compound["Tile"].GetByte() & 255);
 	}
+	bool CanBeCollidedWith() override {
+		return !isDead;
+	}
 };
