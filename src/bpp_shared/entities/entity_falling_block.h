@@ -27,6 +27,7 @@ struct FallingBlockEntity : public Entity {
 	}
 
 	void Tick() override;
+
 	std::optional<Tag> SerializeToNbt() override {
 		auto root = Entity::SerializeToNbt();
 		if (!root || this->block == BLOCK_AIR)
@@ -38,10 +39,12 @@ struct FallingBlockEntity : public Entity {
 		root->compound["Tile"] = tile;
 		return root;
 	}
+
 	void LoadFromNbt(Tag& _nbt) override {
 		Entity::LoadFromNbt(_nbt);
 		this->block = BlockType(_nbt.compound["Tile"].GetByte() & 255);
 	}
+
 	bool CanBeCollidedWith() override {
 		return !isDead;
 	}

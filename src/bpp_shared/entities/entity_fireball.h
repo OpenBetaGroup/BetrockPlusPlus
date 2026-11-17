@@ -85,12 +85,11 @@ private:
 	}
 
 	bool AttackEntityFrom(Entity* _entity, int /*_damage*/, DamageType /*_type*/) override {
-		this->forceVelocityUpdate = true;
-
 		if (_entity) {
 			auto lookVec = _entity->GetLookVector(_entity->rotationYaw, _entity->rotationPitch);
 			this->velocity = lookVec;
 			this->acceleration = velocity * 0.1;
+			this->forceVelocityUpdate = true;
 			return true;
 		}
 		return false;
