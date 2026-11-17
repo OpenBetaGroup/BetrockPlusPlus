@@ -47,14 +47,6 @@ class Server {
 public:
 	Server();
 	~Server();
-	void Run();
-	void Stop();
-	void StopTimeout(float _secondsUntilShutdown);
-	void ResetTimeout();
-	void ProcessIncoming(PlayerSessionMP& _session);
-
-	Config config;
-	Config gamerulesConfig;
 
 private:
 	int serverViewRadius = BPP_DEFAULT_VIEW_DISTANCE;
@@ -69,9 +61,34 @@ public:
 	BetacraftHeartbeat betacraftHeartbeat;
 	std::chrono::steady_clock::time_point nextHeartbeatSnapshot{};
 #endif
+	Config config;
+	Config gamerulesConfig;
 	Runtime gameRuntime;
 	ChunkSender chunkSender;
+
+	// Performance metric
+	std::atomic<double> averageTickMs{ 0.0 };
+	std::atomic<double> averageTickPerSecond{ 0.0 };
+
+	// Whitelist and Operator storage
+	bool useWhitelist = false;
+	std::vector<std::string> whitelistedUsernames = {};
+	std::vector<std::string> operatorUsernames = {};
+	std::vector<std::string> bannedUsernames = {};
+	std::vector<std::string> bannedIps = {};
 	int flushChunkCount = 10;
+
+	// Entity trackers per dimension
+	std::unordered_map<Dimension, std::unique_ptr<EntityTracker>> entityTrackers;
+
+	// Apply a function to a tracker with the tracker being the first paramater of the function
+	void RunFunctionOnAllTrackers(const std::function<void(EntityTracker*)>& _func);
+
+	void TickEntityTrackers() {
+		for (auto& tracker : entityTrackers) {
+			tracker.second->Tick();
+		}
+	}
 
 	void SavePlayer(PlayerSessionMP& _session) {
 		if (!_session.entity) {
@@ -178,7 +195,10 @@ public:
 	bool ExecuteCommand(std::string_view _command, PlayerSessionMP* _sender = nullptr) noexcept;
 
 	EntityTracker* GetEntityTrackerForDimension(Dimension _dim) {
-		return _dim == Dimension::Nether ? &this->hellEntityTracker : &this->overworldEntityTracker;
+		auto it = entityTrackers.find(_dim);
+		if (it == entityTrackers.end())
+			return nullptr;
+		return entityTrackers.at(_dim).get();
 	}
 
 	bool TryForceBreak(PlayerSessionMP& _session, WorldManager& _world);
@@ -201,22 +221,6 @@ public:
 	void SendEntityToDimension(Dimension _dim, std::shared_ptr<Entity> _entity);
 	void SendPlayerToDimension(Dimension _dim, PlayerSessionMP& _session,
 	                           std::optional<Vec3> _destOverride = std::nullopt);
-
-	// Entity trackers are so we can send entity updates to players and vice versa.
-	EntityTracker overworldEntityTracker;
-	EntityTracker hellEntityTracker;
-	// Performance metric
-	std::atomic<double> averageTickMs{ 0.0 };
-	std::atomic<double> averageTickPerSecond{ 0.0 };
-	// Whitelist and Operator storage
-	bool useWhitelist = false;
-	std::vector<std::string> whitelistedUsernames = {};
-	std::vector<std::string> operatorUsernames = {};
-	// Ban storage. Usernames and IPs are kept in separate lists, mirroring vanilla's
-	// banned-players.txt/banned-ips.txt split.
-	std::vector<std::string> bannedUsernames = {};
-	std::vector<std::string> bannedIps = {};
-
 	void SetWhitelistEnabled(bool _enabled, bool _persist = true);
 	void LoadWhitelist();
 	void UnloadWhitelist();
@@ -226,8 +230,12 @@ public:
 	bool SaveBannedIps();
 	void ReloadWhitelist();
 	void SaveLevelFile();
-
 	bool PersistGamerule(const std::string& _name);
+	void Run();
+	void Stop();
+	void StopTimeout(float _secondsUntilShutdown);
+	void ResetTimeout();
+	void ProcessIncoming(PlayerSessionMP& _session);
 
 private:
 	bool whitelistLoaded = false;

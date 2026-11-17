@@ -26,8 +26,7 @@ bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSessionMP& _session, W
 	if (_session.connState != ConnectionState::Playing || !_session.stream.IsConnected())
 		return true;
 
-	auto& tracker = _session.dimension == Dimension::Overworld ? _server.overworldEntityTracker
-	                                                           : _server.hellEntityTracker;
+	auto& tracker = *_session.entityTracker;
 
 	switch (_packetId) {
 	case PacketId::KeepAlive:

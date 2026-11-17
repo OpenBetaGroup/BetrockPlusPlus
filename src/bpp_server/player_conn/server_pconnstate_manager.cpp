@@ -394,8 +394,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Serve
 		sessionWorld.entityManager.AddEntity(_session.entity, _session.entity->id);
 
 	// Give our player session a pointer to the entity tracker
-	_session.entityTracker = _session.dimension == Dimension::Overworld ? &_server.overworldEntityTracker
-	                                                                    : &_server.hellEntityTracker;
+	_session.entityTracker = _server.GetEntityTrackerForDimension(_session.dimension);
 
 	// Welcome message
 	if (!_session.entityRegistered) {

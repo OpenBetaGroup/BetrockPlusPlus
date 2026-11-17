@@ -128,7 +128,7 @@ void Server::ResetDimensionState(PlayerSessionMP& _session, Dimension _dim) {
 	_session.pendingBlockChanges.clear();
 	_session.newlyFlushed.clear();
 	_session.newlyUnloaded.clear();
-	_session.entityTracker = _dim == Dimension::Overworld ? &overworldEntityTracker : &hellEntityTracker;
+	_session.entityTracker = GetEntityTrackerForDimension(_dim);
 	chunkSender.inFlight.erase(&_session);
 	chunkSender.subRegionFlight.erase(&_session);
 }
@@ -446,13 +446,32 @@ void Server::Startup() {
 		};
 	});
 
-	// TEMPORARY!! vv
-	// Entity tracking and spawn chunks need to be dynamic
-	auto overworld = gameRuntime.GetWorldForDimension(Dimension::Overworld);
-	auto nether = gameRuntime.GetWorldForDimension(Dimension::Nether);
+	// Entity trackers
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { 
+		this->entityTrackers[_world->dimension->id] = std::make_unique<EntityTracker>();
 
-	registerEntityTrackerCallbacks(overworldEntityTracker, overworld->entityManager);
-	registerEntityTrackerCallbacks(hellEntityTracker, nether->entityManager);
+		auto entityTracker = GetEntityTrackerForDimension(_world->dimension->id);
+
+		// Hook it all up
+		_world->entityManager.onEntitySpawn = [entityTracker](std::shared_ptr<Entity> _entity) {
+			if (_entity->type == EntityType::PLAYER) {
+				entityTracker->AddPlayer(_entity.get());
+				return;
+			}
+			entityTracker->TrackEntity(_entity.get());
+		};
+		_world->entityManager.onEntityDespawn = [entityTracker](std::shared_ptr<Entity> _entity) {
+			if (_entity->type == EntityType::PLAYER) {
+				entityTracker->RemovePlayer(_entity.get());
+				return;
+			}
+			entityTracker->UntrackEntity(_entity.get());
+		};
+		entityTracker->server = this;
+	});
+
+	// Setup spawn chunks
+	auto overworld = gameRuntime.GetWorldForDimension(Dimension::Overworld);
 
 	// Get spawn ready
 	int spawnChunkDistance = this->spawnChunkRadius;
@@ -472,20 +491,16 @@ void Server::Startup() {
 		}
 
 		// Actually request chunks
-		for (auto pos : wanted) {
-			if (!overworld->chunks.contains(pos)) {
-				auto c = std::make_shared<Chunk>();
-				c->spawnChunk = true;
-				c->cpos = pos;
-				overworld->chunks.emplace(pos, std::move(c));
+		gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+			for (auto pos : wanted) {
+				if (!_world->chunks.contains(pos)) {
+					auto c = std::make_shared<Chunk>();
+					c->spawnChunk = true;
+					c->cpos = pos;
+					_world->chunks.emplace(pos, std::move(c));
+				}
 			}
-			if (!nether->chunks.contains(pos)) {
-				auto c = std::make_shared<Chunk>();
-				c->spawnChunk = true;
-				c->cpos = pos;
-				nether->chunks.emplace(pos, std::move(c));
-			}
-		}
+		});
 
 		// Chunks are ready to load at this point.
 		auto loadSpawnChunks = [totalSpawnChunks, spawnChunkDistance](WorldManager& _world) {
@@ -525,23 +540,11 @@ void Server::Startup() {
 			Logger::Info << "Loading spawn.. 100%\n";
 		};
 
-		// Benchmark gen speed
-		//ChunkBenchmark::PerformChunkGenSpeedTest(gameRuntime.world);
-
-		Logger::Info << "Loading spawn chunks for Overworld: (" << totalSpawnChunks << ")\n";
-		loadSpawnChunks(*overworld);
-
-		/*
-		std::vector<Chunk*> chunks;
-		for (auto& c : gameRuntime.world.chunks) {
-			chunks.push_back(c.second.get());
-		}
-		auto result = ChunkBenchmark::Benchmark(chunks, 100);
-		ChunkBenchmark::Print(result);
-		*/
-
-		Logger::Info << "Loading spawn chunks for Hell: (" << totalSpawnChunks << ")\n";
-		loadSpawnChunks(*nether);
+		gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+			Logger::Info << "Loading spawn chunks for "
+			             << int(_world->dimension->id) << ": (" << totalSpawnChunks << ")\n";
+			loadSpawnChunks(*_world);
+		});
 	}
 
 	float startupSeconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - startupStart).count();
@@ -773,6 +776,13 @@ bool Server::BeginTickSample(SampleMode _mode, int _ticks, PlayerSessionMP* _req
 	samplingStartsNextTick = true;
 	return true;
 }
+
+void Server::RunFunctionOnAllTrackers(const std::function<void(EntityTracker*)>& _func) {
+	for (auto& it : entityTrackers) {
+		_func(it.second.get());
+	}
+}
+
 void Server::Tick() {
 	// Wait for the previous tick's write flushes to finish
 	using Clock = std::chrono::steady_clock;
@@ -881,8 +891,7 @@ void Server::Tick() {
 	auto networkOutputStart = Clock::now();
 
 	// Entity trackers
-	overworldEntityTracker.Tick();
-	hellEntityTracker.Tick();
+	TickEntityTrackers();
 
 	// Send weather updates
 	bool raining = overworld->weatherSystem.IsRaining();
@@ -890,7 +899,9 @@ void Server::Tick() {
 		lastSentRaining = raining;
 		Packet::GameEvent pkt;
 		pkt.eventId = raining ? PacketData::GameEvent::START_RAINING : PacketData::GameEvent::STOP_RAINING;
-		overworldEntityTracker.SendPacketToAllPlayers(pkt);
+		RunFunctionOnAllTrackers([&](EntityTracker* _tracker) -> void {
+			_tracker->SendPacketToAllPlayers(pkt);
+		});
 	}
 
 	// Disconnect timed-out clients; the removed sessions are returned so we

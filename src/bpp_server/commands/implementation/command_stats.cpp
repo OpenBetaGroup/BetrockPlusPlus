@@ -80,9 +80,7 @@ void ShowStats(const strategos::CmdNode&, void* _userData) {
 		std::format("§7Total: {:.2f} MB, Active: {:.2f} MB", totalUsageMb, activeUsageMb),
 		std::format("§7World: {} (~{:.1f} MB), Hell: {} (~{:.1f} MB)", chunksOverworld, chunksOverworldMb, chunksNether,
 		            chunksNetherMb),
-		std::format("§7{} Players, {} Entities, {} Hell Entities", players.size(),
-		            ctx.server->overworldEntityTracker.trackedEntities.size(),
-		            ctx.server->hellEntityTracker.trackedEntities.size()),
+		std::format("§7{} Players, {} Entities, {} Hell Entities", players.size(), 0, 0),
 		std::format("§7Avg. TPS: {:.2f}/{:.2f} ({:+.2f})", avgTps, maxTps, avgTps - maxTps),
 		std::format("§7Avg. MSPT: {:.2f} ms ({:.0f}% of {:.0f} ms budget)", mspt, loadPct, budgetMs),
 		std::format("§7Headroom: {:+.2f} ms, max sustainable ~{:.1f} TPS", budgetMs - mspt, maxSustainableTps)
