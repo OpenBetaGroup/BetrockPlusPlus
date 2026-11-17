@@ -119,9 +119,14 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSessionMP& _session,
 }
 
 void PlayerMovement(Packet::PlayerMovement& _pkt, PlayerSessionMP& _session) {
-	// On ground flag from client
-	if (_session.entity) {
-		_session.entity->onGround = _pkt.onGround;
+	if (!_session.entity)
+		return;
+	_session.entity->onGround = _pkt.onGround;
+	if (_pkt.onGround) {
+		if (_session.entity->fallDistance > FALL_DAMAGE_FLOOR && Gamerule::Get<bool>(Gamerule::Id::FallDamage))
+			_session.entity->AttackEntityFrom(nullptr, int(std::ceil(_session.entity->fallDistance - FALL_DAMAGE_FLOOR)),
+			                                  DamageType::Fall);
+		_session.entity->fallDistance = 0;
 	}
 }
 

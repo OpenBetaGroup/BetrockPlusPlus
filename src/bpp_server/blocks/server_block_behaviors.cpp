@@ -165,7 +165,7 @@ void ServerBlock::Initialize() {
 	                                                    Runtime& /*_gameRuntime*/) -> bool {
 		auto jukebox = _world.GetTileEntityAs<TileEntityJukebox>(_position);
 		if (!jukebox)
-			return false;
+			return true;
 		
 		// Update the chunk the jukebox is in
 		auto updateChunk = [&]() {
@@ -188,7 +188,7 @@ void ServerBlock::Initialize() {
 
 		ItemStack* heldItem = _session.inventory.GetHeldItem();
 		if (!heldItem || !Items::IsRecord(heldItem->id))
-			return false;
+			return true;
 
 		jukebox->recordItemId = heldItem->id;
 		heldItem->DecrementCount(1);

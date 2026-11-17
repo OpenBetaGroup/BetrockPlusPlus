@@ -264,12 +264,12 @@ void RegisterRedstoneBehaviors() {
 	blockBehaviors[BlockType::BLOCK_REDSTONE_REPEATER_OFF] = {
 		.getSelectionBox = RepeaterAabb,
 		.getRayBounds = RepeaterAabb,
-		.getCollider = EmptyCollider,
+		.getCollider = RepeaterCollider,
 	};
 	blockBehaviors[BlockType::BLOCK_REDSTONE_REPEATER_ON] = {
 		.getSelectionBox = RepeaterAabb,
 		.getRayBounds = RepeaterAabb,
-		.getCollider = EmptyCollider,
+		.getCollider = RepeaterCollider,
 	};
 
 	blockBehaviors[BlockType::BLOCK_BUTTON_STONE] = {
@@ -298,15 +298,14 @@ void RegisterRedstoneBehaviors() {
 		    blockBehaviors[BLOCK_BUTTON_STONE].onBlockClicked(_world, _pos, _triggeringSession);
 		    return false;
 		},
-		.onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& /*_placer*/, Cardinal::Value _face,
-		                    BlockType _blockId, uint8_t /*_meta*/) -> bool {
-		    // Buttons can only be placed against the sides of blocks
-		    if (_face == Cardinal::Value::Up || _face == Cardinal::Value::Down)
+		.onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer, Cardinal::Value _face, BlockType _blockId,
+		                    uint8_t /*_meta*/) -> bool {
+		    const Int3 clicked = _pos.WithOffset(Cardinal::Opposite(_face));
+		    if (_world.GetBlockId(clicked) == BLOCK_SNOW_LAYER)
 			    return false;
-		    if (!IsReplaceable(_world, _pos))
+		    if (!Cardinal::IsHorizontal(_face) || !_world.IsBlockNormalCube(clicked))
 			    return false;
-		    _world.SetBlock(_pos, _blockId, GetMetaFromDirection(BLOCK_BUTTON_STONE, _face));
-		    return true;
+		    return GenericPlace(_world, _pos, _placer, _face, _blockId, GetMetaFromDirection(BLOCK_BUTTON_STONE, _face));
 		},
 	};
 
@@ -450,13 +449,15 @@ void RegisterRedstoneBehaviors() {
 	                                                               Cardinal::Value _face, BlockType _blockId,
 	                                                               uint8_t /*_meta*/) -> bool {
 		const auto dir = Cardinal::FromAngle(_placer.rotationYaw);
-		auto meta = GetMetaFromDirection(BLOCK_REDSTONE_REPEATER_OFF, dir);
-		if (!CanRedstoneComponentStay(_world, _pos) || !GenericPlace(_world, _pos, _placer, _face, _blockId, meta))
+		const uint8_t meta = GetMetaFromDirection(BLOCK_REDSTONE_REPEATER_OFF, dir);
+		const Int3 target = CanPlace(_world, _pos, _placer, _face, _blockId, meta);
+		if (target == Int3{ -1, -1, -1 })
 			return false;
-		// Turn on if we are being powered!
-		if (RedstoneManager::IsRepeaterInputPowered(_world, _pos, meta)) {
-			_world.tickScheduler.ScheduleUpdateTick(_pos, _blockId, 1);
-		}
+		if (!CanRedstoneComponentStay(_world, target))
+			return false;
+		_world.SetBlock(target, _blockId, meta);
+		if (RedstoneManager::IsRepeaterInputPowered(_world, target, meta))
+			_world.tickScheduler.ScheduleUpdateTick(target, _blockId, 1);
 		return true;
 	};
 

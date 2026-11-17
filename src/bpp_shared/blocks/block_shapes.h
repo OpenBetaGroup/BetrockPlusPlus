@@ -237,6 +237,11 @@ inline CollisionShape CakeCollider(uint8_t _meta) {
 inline AABB RepeaterAabb(uint8_t) {
 	return { 0.0, 0.0, 0.0, 1.0, 0.125, 1.0 };
 }
+inline CollisionShape RepeaterCollider(uint8_t) {
+	CollisionShape s;
+	s.Add({ 0.0, 0.0, 0.0, 1.0, 0.125, 1.0 });
+	return s;
+}
 inline CollisionShape EmptyCollider(uint8_t) {
 	return {};
 }

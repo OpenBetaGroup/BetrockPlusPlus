@@ -231,10 +231,15 @@ void RegisterAll() {
 
 	itemBehavior[SUGARCANE].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& /*_user*/,
 	                                        Cardinal::Value _face) {
-		Int3 placePos = _pos.WithOffset(_face);
-		if (!Blocks::CanSugarcaneSurviveAt(_world, placePos))
+		const Int3 placePos = _world.GetBlockId(_pos) == BLOCK_SNOW_LAYER ? _pos : _pos.WithOffset(_face);
+		if (!_world.InBounds(placePos.y))
 			return;
-
+		const BlockType existing = _world.GetBlockId(placePos);
+		const bool replaceable = existing == BLOCK_AIR || existing == BLOCK_WATER_FLOWING ||
+		                         existing == BLOCK_WATER_STILL || existing == BLOCK_LAVA_FLOWING ||
+		                         existing == BLOCK_LAVA_STILL || existing == BLOCK_FIRE || existing == BLOCK_SNOW_LAYER;
+		if (!replaceable || !Blocks::CanSugarcaneSurviveAt(_world, placePos))
+			return;
 		_world.SetBlock(placePos, BLOCK_SUGARCANE);
 		_stack->DecrementCount(1);
 	};
@@ -242,16 +247,17 @@ void RegisterAll() {
 	// Happy 23rd Birthday to me! (Pixel Brush)
 	itemBehavior[CAKE].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& _user,
 	                                   Cardinal::Value _face) {
-		if (Blocks::blockBehaviors[BLOCK_CAKE].onBlockPlaced(_world, _pos, _user, _face, BLOCK_CAKE, 0))
+		if (Blocks::blockBehaviors[BLOCK_CAKE].onBlockPlaced(_world, _pos.WithOffset(_face), _user, _face, BLOCK_CAKE, 0))
 			_stack->DecrementCount(1);
 	};
 
 	itemBehavior[SEEDS_WHEAT].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& /*_user*/,
 	                                          Cardinal::Value _face) {
-		Int3 placePos = _pos.WithOffset(_face);
-		if (!Blocks::CanCropsSurviveAt(_world, placePos))
+		if (_face != Cardinal::Value::Up || _world.GetBlockId(_pos) != BLOCK_FARMLAND)
 			return;
-
+		const Int3 placePos = _pos.WithOffset(Cardinal::Value::Up);
+		if (_world.GetBlockId(placePos) != BLOCK_AIR)
+			return;
 		_world.SetBlock(placePos, BLOCK_CROP_WHEAT);
 		_stack->DecrementCount(1);
 	};
