@@ -13,7 +13,7 @@
 #include <unordered_set>
 
 class Server;
-struct PlayerSession;
+struct PlayerSessionMP;
 
 // Sends World Event packets (button clicks, door toggles, etc) to whichever
 // player sessions are close enough to notice, per the same "nearby and
@@ -23,7 +23,7 @@ namespace WorldEventBroadcaster {
 constexpr double kDefaultRangeSq = 64.0 * 64.0;
 
 void BroadcastWorldEvent(Server& _server, PacketData::WorldEvent _eventType, Int3 _position, int32_t _data,
-                         Dimension _dimension, PlayerSession* _triggeringSession = nullptr,
+                         Dimension _dimension, PlayerSessionMP* _triggeringSession = nullptr,
                          double _rangeSq = kDefaultRangeSq);
 void BroadcastNoteEvent(Server& _server, Int3 _position, int _instrumentState, int _instrumentDirection,
                         Dimension _dimension, double _rangeSq = kDefaultRangeSq);

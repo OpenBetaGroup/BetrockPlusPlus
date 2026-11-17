@@ -12,7 +12,7 @@
 #include "username.h"
 #include "version.h"
 
-void PlayerConnStateManager::HandleConnectionState(PlayerSession& _session, Server& _server) {
+void PlayerConnStateManager::HandleConnectionState(PlayerSessionMP& _session, Server& _server) {
 	switch (_session.connState) {
 	case ConnectionState::Handshaking:
 		HandleHandshake(_session, _server);
@@ -41,7 +41,7 @@ void PlayerConnStateManager::HandleConnectionState(PlayerSession& _session, Serv
 	}
 }
 
-void PlayerConnStateManager::HandleHandshake(PlayerSession& _session, Server& _server) {
+void PlayerConnStateManager::HandleHandshake(PlayerSessionMP& _session, Server& _server) {
 	if (!_session.stream.HasData())
 		return;
 	PacketId packetId = _session.stream.Read<PacketId>();
@@ -77,7 +77,7 @@ void PlayerConnStateManager::HandleHandshake(PlayerSession& _session, Server& _s
 	_session.connState = ConnectionState::LoggingIn;
 }
 
-void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _server) {
+void PlayerConnStateManager::HandleLogin(PlayerSessionMP& _session, Server& _server) {
 	if (!_session.stream.HasData())
 		return;
 
@@ -148,7 +148,7 @@ void PlayerConnStateManager::HandleLogin(PlayerSession& _session, Server& _serve
 	FinishLogin(_session, _server);
 }
 
-void PlayerConnStateManager::HandleVerifyingUsername(PlayerSession& _session, Server& _server) {
+void PlayerConnStateManager::HandleVerifyingUsername(PlayerSessionMP& _session, Server& _server) {
 #ifdef ONLINE_MODE_AUTHENTICATION
 	using namespace std::chrono_literals;
 	constexpr auto K_AUTH_TIMEOUT = 20s;
@@ -173,7 +173,7 @@ void PlayerConnStateManager::HandleVerifyingUsername(PlayerSession& _session, Se
 	FinishLogin(_session, _server);
 }
 
-void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _server) {
+void PlayerConnStateManager::FinishLogin(PlayerSessionMP& _session, Server& _server) {
 	// Initialize our entity first as the player session depends on it
 	if (!_session.entity)
 		_session.entity = std::make_shared<EntityMPPlayer>(
@@ -192,7 +192,7 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	}
 	_session.dimension = sessionWorld->dimension->id;
 
-	_session.entity->session = &_session;
+	_session.GetEntityAsMPEntity()->session = &_session;
 	_session.entity->id = sessionWorld->entityManager.GetNextEntityId();
 	_session.entity->dim = _session.dimension == Dimension::Nether ? Dimension::Nether : Dimension::Overworld;
 
@@ -253,7 +253,7 @@ void PlayerConnStateManager::FinishLogin(PlayerSession& _session, Server& _serve
 	_session.connState = ConnectionState::WaitingForSpawnChunks;
 }
 
-void PlayerConnStateManager::DisconnectPlayer(PlayerSession& _session, const std::string& _reason, Server& _server,
+void PlayerConnStateManager::DisconnectPlayer(PlayerSessionMP& _session, const std::string& _reason, Server& _server,
                                               bool _doSave) {
 	// Force close inventory
 	if (_session.entity)
@@ -301,7 +301,7 @@ static bool PortalAreaReady(WorldManager& _world, const Vec3& _pos) {
 	return true;
 }
 
-void PlayerConnStateManager::WaitForSpawnChunks(PlayerSession& _session, Server& _server) {
+void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Server& _server) {
 	WorldManager& sessionWorld = *_server.GetWorldForDimension(_session.dimension);
 	_session.viewDistanceOverride = _session.pendingPortalPlacement ? PORTAL_SEARCH_CHUNK_RADIUS + 1
 	                                                                         : (_session.portalAreaLoaded ? 0 : 3);

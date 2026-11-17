@@ -21,6 +21,7 @@
 #include "logger.h"
 #include "networking/packets.h"
 #include "packet_data.h"
+#include "player_conn/player_session_mp.h"
 #include <algorithm>
 #include <cstdint>
 
@@ -31,7 +32,7 @@ double DistanceBetweenPlayerAndEntity(Entity* _entity, Entity* _player) {
 }
 
 void EntityTracker::SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType,
-                             std::shared_ptr<PlayerSession> _session) {
+                             std::shared_ptr<PlayerSessionMP> _session) {
 	if (!_entityEntry.entity)
 		return;
 	Packet::SpawnMob pkt;
@@ -528,7 +529,7 @@ void EntityTracker::SendPacketToViewers(Packet::BasePacket& _pkt, EntityId _id) 
 	SendPacketToPlayersInTrackedEntry(_pkt, *entry);
 }
 
-void EntityTracker::SendMetadataState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession) {
+void EntityTracker::SendMetadataState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSessionMP> _targetSession) {
 	Packet::EntityMetadata pkt;
 	pkt.entityId = _trackedEntry.entity->id;
 	_trackedEntry.entity->EncodeMetadata(pkt.metadata);
@@ -552,7 +553,7 @@ void EntityTracker::UpdateMetadataState(TrackedEntry& _trackedEntry) {
 }
 
 // Used when we first spawn an entity for a specific player
-void EntityTracker::SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession) {
+void EntityTracker::SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSessionMP> _targetSession) {
 	auto updateEquipmentSlot = [&](int _slot, ItemStack* _stack) -> void {
 		if (!_stack || !_targetSession)
 			return;

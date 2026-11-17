@@ -6,7 +6,7 @@
  *
 */
 #include "entity_mp_player.h"
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "entities/entity_item.h"
 #include "entities/entity_player.h"
 #include "inventory/item_stack.h"

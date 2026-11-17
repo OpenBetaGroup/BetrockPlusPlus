@@ -23,7 +23,7 @@
 #include <memory>
 #include <unordered_set>
 
-#include "player_conn/player_session.h"
+#include "player/player_session.h"
 
 Biome WorldManager::GetBiome(Int2 _wpos) {
 	auto chunk = GetChunkShared(Int32_2{ _wpos.x >> 4, _wpos.z >> 4 });

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "constants.h"
 #include "inventory/item_stack.h"
 #include "networking/packets.h"
@@ -43,12 +43,12 @@ struct CommandContext;
 
 struct CommandTarget {
 	Entity* entity = nullptr;
-	PlayerSession* session = nullptr;
+	PlayerSessionMP* session = nullptr;
 };
 
-bool IsOperator(PlayerSession& _session, Server& _server);
+bool IsOperator(PlayerSessionMP& _session, Server& _server);
 bool IsOperator(const CommandContext& _ctx);
-void SendCommandFeedback(PlayerSession* _recipient, const std::string& _message);
+void SendCommandFeedback(PlayerSessionMP* _recipient, const std::string& _message);
 void SendFeedback(const CommandContext& _ctx, const std::string& _message);
 void SendErrorFeedback(const CommandContext& _ctx, const std::string& _message);
 ItemStack ParseItemStack(const std::string& _itemArg, std::optional<int> _count = std::nullopt);
@@ -62,7 +62,7 @@ std::expected<std::vector<CommandTarget>, std::string> ResolveCmdPlayerTargets(s
 EntityType GetEntityTypeFromString(std::string_view _name);
 std::expected<Vec3, std::string> ResolveCmdPos(const CommandContext& _ctx, const strategos::Vec3& _position);
 
-inline void SendChat(PlayerSession& _session, const std::string& _message) {
+inline void SendChat(PlayerSessionMP& _session, const std::string& _message) {
 	std::u16string ucs2 = ToUCS2(_message);
 	std::u16string colorPrefix;
 	if (ucs2.size() >= 2 && ucs2[0] == u'\u00A7')
@@ -98,7 +98,7 @@ inline Vec3 ResolveCmdVec3(const strategos::Vec3& _cmd, const Vec3& _origin) {
 	return out;
 }
 
-inline void SendTeleport(PlayerSession& _target, Vec3 _position, float _yaw = 0.0f, float _pitch = 0.0f) {
+inline void SendTeleport(PlayerSessionMP& _target, Vec3 _position, float _yaw = 0.0f, float _pitch = 0.0f) {
 	_target.entity->Teleport(_position, { _yaw, _pitch });
 
 	_target.pendingTeleport = _position;
@@ -116,7 +116,7 @@ inline void SendTeleport(PlayerSession& _target, Vec3 _position, float _yaw = 0.
 	pkt.Serialize(_target.stream);
 }
 
-inline void SendTeleport2d(PlayerSession& _target, Vec2 _position, float _yaw = 0.0f, float _pitch = 0.0f) {
+inline void SendTeleport2d(PlayerSessionMP& _target, Vec2 _position, float _yaw = 0.0f, float _pitch = 0.0f) {
 	// We teleport super high up so we are clear of land, then we mark the session for a 2D TP;
 	// The TP branch of the mp_player_entity will handle the rest
 	Vec3 transformedPosition = { _position.x, CHUNK_HEIGHT * 4, _position.z };

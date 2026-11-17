@@ -5,7 +5,7 @@
  *
 */
 #include "entity_dummy_player.h"
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "entities/entity.h"
 #include "entities/entity_item.h"
 #include "items.h"

@@ -23,7 +23,7 @@
 #include "entities/entity_zombie_pig.h"
 #include "world.h"
 
-#include "player_conn/player_session.h"
+#include "player/player_session.h"
 
 EntitySpawner::EntitySpawner() {
 	// Water

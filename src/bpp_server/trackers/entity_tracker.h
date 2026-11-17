@@ -53,7 +53,7 @@ struct TrackedEntry {
 
 class Server;
 struct MobileEntity;
-struct PlayerSession;
+struct PlayerSessionMP;
 struct EntityTracker {
 	static constexpr int32_t MINIMUM_POSITION_DELTA = 2; // 2 = 1/16th of a block (Vanilla value: 8 (1/4th of a block))
 	static constexpr int32_t MINIMUM_ROTATION_DELTA = 8; // 8 Quantized angles
@@ -100,11 +100,11 @@ struct EntityTracker {
 	void Update(TrackedEntry& _trackedEntry);
 	void FlushEventQueue(Entity& _entity);
 	void UpdateMetadataState(TrackedEntry& _trackedEntry);
-	void SendMetadataState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession);
+	void SendMetadataState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSessionMP> _targetSession);
 	void UpdateEquipmentState(TrackedEntry& _trackedEntry);
-	void SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSession> _targetSession);
+	void SendEquipmentState(TrackedEntry& _trackedEntry, std::shared_ptr<PlayerSessionMP> _targetSession);
 	void SpawnMob(TrackedEntry& _entityEntry, const PacketData::MobType _networkEntityType,
-	              std::shared_ptr<PlayerSession> _session);
+	              std::shared_ptr<PlayerSessionMP> _session);
 
 	// With my strict goal of keeping strict separation we cannot put this as a virtual in the actual entity class itself
 	TrackingProfile GetTrackingProfile(Entity& _entity) {

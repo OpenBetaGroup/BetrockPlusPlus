@@ -87,7 +87,7 @@ const char* ServerGetVersion() {
 }
 
 void PlayerSendMessage(bp_player* _player, const char* _message) {
-	auto player = reinterpret_cast<PlayerSession*>(_player);
+	auto player = reinterpret_cast<PlayerSessionMP*>(_player);
 
 	Packet::ChatMessage pak;
 	pak.message = std::string(_message);
@@ -95,7 +95,7 @@ void PlayerSendMessage(bp_player* _player, const char* _message) {
 }
 
 void PlayerKick(const bp_api* _api, bp_player* _player, const char* _reason) {
-	auto player = reinterpret_cast<PlayerSession*>(_player);
+	auto player = reinterpret_cast<PlayerSessionMP*>(_player);
 	Addon* addon = InternalGetAddon(_api);
 	addon->server->DisconnectPlayer(_reason, *player);
 }
@@ -174,7 +174,7 @@ bool ExecuteCommand(const bp_api* _api, bp_player* _sender, const char* _command
 		if (!server->CanExecuteCommands())
 			return false;
 
-		auto sender = reinterpret_cast<PlayerSession*>(_sender);
+		auto sender = reinterpret_cast<PlayerSessionMP*>(_sender);
 		return server->ExecuteCommand(_command, sender);
 	} catch (...) {
 		return false;

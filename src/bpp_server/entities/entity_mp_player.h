@@ -10,9 +10,9 @@
 #include "entities/entity_player.h"
 #include "inventory/item_stack.h"
 
-struct PlayerSession;
+struct PlayerSessionMP;
 struct EntityMPPlayer : public PlayerEntity {
-	PlayerSession* session = nullptr;
+	PlayerSessionMP* session = nullptr;
 	EntityHealth lastNotifiedHealth = health;
 	bool movedThisTick : 1 = false;
 	int ticksInAir = 0;

@@ -9,11 +9,11 @@
 #include <cstdint>
 
 enum class PacketId : uint8_t;
-struct PlayerSession;
+struct PlayerSessionMP;
 class WorldManager;
 class Server;
 
 // Dispatches a single already-identified incoming packet to its handler.
 namespace PacketDispatcher {
-bool Dispatch(PacketId _packetId, PlayerSession& _session, WorldManager& _sessionWorld, Server& _server);
+bool Dispatch(PacketId _packetId, PlayerSessionMP& _session, WorldManager& _sessionWorld, Server& _server);
 } // namespace PacketDispatcher

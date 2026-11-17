@@ -7,7 +7,7 @@
  *
 */
 #pragma once
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "BS_thread_pool.hpp"
 #include "chunk_serializer.h"
 #include "networking/packets.h"
@@ -37,11 +37,11 @@ struct ChunkSender {
 	};
 
 	// Per-session queue of in-flight full-chunk serialization jobs.
-	std::unordered_map<PlayerSession*, std::vector<PendingChunk>> inFlight;
+	std::unordered_map<PlayerSessionMP*, std::vector<PendingChunk>> inFlight;
 
 	// Per-session queue of in-flight sub-region compression jobs.
 	// Drained in-order by flush() after the full-chunk queue.
-	std::unordered_map<PlayerSession*, std::vector<PendingSubRegion>> subRegionFlight;
+	std::unordered_map<PlayerSessionMP*, std::vector<PendingSubRegion>> subRegionFlight;
 
 	BS::thread_pool<> pool{ 2 };
 
@@ -52,7 +52,7 @@ struct ChunkSender {
 		tickPackets.clear();
 	}
 
-	size_t Enqueue(PlayerSession& _session, WorldManager& _world, int _batchSize = -1) {
+	size_t Enqueue(PlayerSessionMP& _session, WorldManager& _world, int _batchSize = -1) {
 		// Make sure we can't send invalid lighting
 		_world.lightManager.ProcessLightQueue(_world);
 		if (_batchSize < 0)
@@ -139,7 +139,7 @@ struct ChunkSender {
 		return static_cast<size_t>(submitted);
 	}
 
-	void SendBlockUpdates(PlayerSession& _session, const Int32_2& _chunk, const std::vector<PendingBlock>& _changes,
+	void SendBlockUpdates(PlayerSessionMP& _session, const Int32_2& _chunk, const std::vector<PendingBlock>& _changes,
 	                      std::shared_ptr<const Chunk> _chunkRef = nullptr) {
 		if (_changes.empty())
 			return;
@@ -192,7 +192,7 @@ struct ChunkSender {
 	// Drains every job that is already done and writes the resulting
 	// SetChunkVisibility + ChunkData packets to the session stream.
 	// Jobs that aren't finished yet stay in the queue for the next Tick.
-	void Flush(PlayerSession& _session) {
+	void Flush(PlayerSessionMP& _session) {
 		auto it = inFlight.find(&_session);
 		if (it == inFlight.end())
 			return;
@@ -269,7 +269,7 @@ struct ChunkSender {
 	}
 
 	// Remove all in-flight state for a disconnected session.
-	void Remove(PlayerSession& _session) {
+	void Remove(PlayerSessionMP& _session) {
 		inFlight.erase(&_session);
 		subRegionFlight.erase(&_session);
 	}

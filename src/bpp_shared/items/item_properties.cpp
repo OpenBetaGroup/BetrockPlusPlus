@@ -57,6 +57,9 @@ ItemAmount GetMaxStack(const ItemId _id) {
 		break;
 	}
 
+	if (_id == BLOCK_PUMPKIN)
+		return 64;
+
 	// Tools, weapons, armor all set maxStackSize=1 in their constructors
 	if (IsTool(_id) || IsWeapon(_id) || IsArmor(_id))
 		return 1;

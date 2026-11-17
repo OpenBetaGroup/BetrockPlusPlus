@@ -7,7 +7,7 @@
 */
 
 #include "runtime.h"
-#include "player_conn/player_session.h"
+#include "player/player_session.h"
 
 #ifdef BUILD_SERVER
 Runtime::Runtime(Server* _server) : server(_server) {

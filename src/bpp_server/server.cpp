@@ -69,12 +69,12 @@ bool Server::CanExecuteCommands() const noexcept {
 	return !stopped && !shutdownRequested.load();
 }
 
-bool Server::ExecuteCommand(std::string_view _command, PlayerSession* _sender) noexcept {
+bool Server::ExecuteCommand(std::string_view _command, PlayerSessionMP* _sender) noexcept {
 	if (!CanExecuteCommands())
 		return false;
 
 	try {
-		std::shared_ptr<PlayerSession> owned;
+		std::shared_ptr<PlayerSessionMP> owned;
 		if (_sender) {
 			for (const auto& player : players) {
 				if (player.get() == _sender) {
@@ -120,7 +120,7 @@ void Server::SendEntityToDimension(Dimension _dim, std::shared_ptr<Entity> _enti
 	newWorld->entityManager.AddEntity(_entity, oldId);
 }
 
-void Server::ResetDimensionState(PlayerSession& _session, Dimension _dim) {
+void Server::ResetDimensionState(PlayerSessionMP& _session, Dimension _dim) {
 	IndexRemoveSession(_session);
 	_session.dimension = _dim;
 	_session.flushedChunks.clear();
@@ -133,7 +133,7 @@ void Server::ResetDimensionState(PlayerSession& _session, Dimension _dim) {
 	chunkSender.subRegionFlight.erase(&_session);
 }
 
-void Server::SendPlayerToDimension(Dimension _dim, PlayerSession& _session, std::optional<Vec3> _destOverride) {
+void Server::SendPlayerToDimension(Dimension _dim, PlayerSessionMP& _session, std::optional<Vec3> _destOverride) {
 	if (_dim == _session.dimension)
 		return;
 
@@ -172,7 +172,7 @@ void Server::SendPlayerToDimension(Dimension _dim, PlayerSession& _session, std:
 	_session.inventory.activeHotbarSlot = 0;
 }
 
-void Server::IndexAddChunk(PlayerSession& _session, const Int32_2& _pos) {
+void Server::IndexAddChunk(PlayerSessionMP& _session, const Int32_2& _pos) {
 	auto& vec = chunkSessions[ChunkKey(_pos, _session.dimension)];
 	// Avoid duplicates (should never happen, but be safe)
 	for (auto* p : vec)
@@ -181,7 +181,7 @@ void Server::IndexAddChunk(PlayerSession& _session, const Int32_2& _pos) {
 	vec.push_back(&_session);
 }
 
-void Server::IndexRemoveChunk(PlayerSession& _session, const Int32_2& _pos) {
+void Server::IndexRemoveChunk(PlayerSessionMP& _session, const Int32_2& _pos) {
 	auto it = chunkSessions.find(ChunkKey(_pos, _session.dimension));
 	if (it == chunkSessions.end())
 		return;
@@ -191,7 +191,7 @@ void Server::IndexRemoveChunk(PlayerSession& _session, const Int32_2& _pos) {
 		chunkSessions.erase(it);
 }
 
-void Server::IndexRemoveSession(PlayerSession& _session) {
+void Server::IndexRemoveSession(PlayerSessionMP& _session) {
 	for (const auto& pos : _session.flushedChunks)
 		IndexRemoveChunk(_session, pos);
 }
@@ -409,7 +409,8 @@ void Server::Startup() {
 	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
 		_world->canModifyBlock = [this, _world](Entity& _entity, Int3 _pos) {
 			auto* player = dynamic_cast<EntityMPPlayer*>(&_entity);
-			return !player || !player->session || IsValidActionInSpawnRadius(*player->session, *this, _pos, *_world);
+			return !player || !player->session ||
+			       IsValidActionInSpawnRadius(*dynamic_cast<PlayerSessionMP*>(player->session), *this, _pos, *_world);
 		};
 	});
 	
@@ -424,7 +425,7 @@ void Server::Startup() {
 		_world->onWorldEvent = [this, _world](PacketData::WorldEvent _eventType, Int3 _position, int32_t _data,
 		                              PlayerSession* _triggeringSession) {
 			WorldEventBroadcaster::BroadcastWorldEvent(*this, _eventType, _position, _data, _world->dimension->id,
-			                                           _triggeringSession);
+			                                           dynamic_cast<PlayerSessionMP*>(_triggeringSession));
 		};
 	});
 
@@ -681,7 +682,7 @@ void Server::AcceptNewPlayers() {
 
 	size_t pendingTotal = 0;
 	std::unordered_map<std::string, size_t> pendingPerIp;
-	auto isPending = [](const PlayerSession& _s) {
+	auto isPending = [](const PlayerSessionMP& _s) {
 		return _s.connState == ConnectionState::Handshaking || _s.connState == ConnectionState::LoggingIn;
 	};
 	for (const auto& player : players) {
@@ -696,7 +697,7 @@ void Server::AcceptNewPlayers() {
 		auto clientSocket = ServerSocketManager::CreateClientSocket(serverSocket, &clientIp);
 		if (clientSocket < 0)
 			return; // queue is empty
-		auto session = std::make_shared<PlayerSession>(clientSocket, gameRuntime);
+		auto session = std::make_shared<PlayerSessionMP>(clientSocket, gameRuntime);
 		if (pendingTotal >= K_MAX_PENDING_TOTAL || (!clientIp.empty() && pendingPerIp[clientIp] >= K_MAX_PENDING_PER_IP))
 			continue; // dropping the session closes the socket; don't spend a kick packet on a flooder
 		++pendingTotal;
@@ -749,7 +750,7 @@ void Server::QueueTickSteps(int _steps) {
 		pendingTickSteps += _steps;
 }
 
-bool Server::BeginTickSample(SampleMode _mode, int _ticks, PlayerSession* _requester) {
+bool Server::BeginTickSample(SampleMode _mode, int _ticks, PlayerSessionMP* _requester) {
 	if (pendingSampleMode != SampleMode::None || activeSampleMode != SampleMode::None)
 		return false;
 	sampleRequester.reset();
@@ -855,7 +856,8 @@ void Server::Tick() {
 		tickProfiler.Record(TickTask::OffTickTasks, Clock::now() - inventoryStart);
 
 	// This will tick all the worlds
-	gameRuntime.Tick(this->players, advanceSimulation, sampling ? &tickProfiler : nullptr);
+	auto base = GetPlayersBase();
+	gameRuntime.Tick(base, advanceSimulation, sampling ? &tickProfiler : nullptr);
 
 	if (advanceSimulation && pendingTickSteps > 0)
 		--pendingTickSteps;
@@ -893,13 +895,13 @@ void Server::Tick() {
 
 	// Disconnect timed-out clients; the removed sessions are returned so we
 	// can send their last packets (e.g. a disconnect reason) before they die
-	std::vector<std::shared_ptr<PlayerSession>> removedSessions = this->DisconnectClients();
+	std::vector<std::shared_ptr<PlayerSessionMP>> removedSessions = this->DisconnectClients();
 
 	// Flush pending outgoing data on the write thread so socket I/O never
 	// holds up the main tick thread
 	// One task for every session: no per-session promise/future allocations. The write
 	// pool has a single thread anyway, and Tick() waits for it before touching streams again.
-	std::vector<std::shared_ptr<PlayerSession>> toFlush;
+	std::vector<std::shared_ptr<PlayerSessionMP>> toFlush;
 	for (auto& session : players) {
 		if (!session->stream.GetRawWriteBuffer().empty())
 			toFlush.push_back(session);
@@ -1038,7 +1040,7 @@ void Server::Tick() {
 	Logger::Flush();
 }
 
-void Server::OnPlayerBlockBreak(PlayerSession& _session, WorldManager& _world) {
+void Server::OnPlayerBlockBreak(PlayerSessionMP& _session, WorldManager& _world) {
 	// Actually break this block
 	auto finishMiningWithTool = [&](ItemStack* _held, BlockType _block) {
 		if (!_held)
@@ -1076,7 +1078,7 @@ void Server::OnPlayerBlockBreak(PlayerSession& _session, WorldManager& _world) {
 	_session.entityTracker->SendPacketToViewers(pkt, _session.entity->id);
 }
 
-bool Server::TryForceBreak(PlayerSession& _session, WorldManager& _world) {
+bool Server::TryForceBreak(PlayerSessionMP& _session, WorldManager& _world) {
 	if (!_session.pendingBlockBreak.has_value())
 		return false;
 
@@ -1091,7 +1093,7 @@ bool Server::TryForceBreak(PlayerSession& _session, WorldManager& _world) {
 	return true;
 }
 
-void Server::UpdateBlockBreaking(PlayerSession& _session, WorldManager& _world) {
+void Server::UpdateBlockBreaking(PlayerSessionMP& _session, WorldManager& _world) {
 	if (!_session.pendingBlockBreak.has_value())
 		return;
 
@@ -1199,7 +1201,7 @@ void Server::ProcessSleeping(Dimension _dimension) {
 		session->entity->WakeUp(/*_confirmSpawn=*/true);
 }
 
-std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
+std::vector<std::shared_ptr<PlayerSessionMP>> Server::DisconnectClients() {
 	// Mark clients who have timed out for removal
 	auto now = std::chrono::steady_clock::now();
 	for (auto& session : players) {
@@ -1220,7 +1222,7 @@ std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
 	}
 
 	// Force disconnect players that quit
-	std::vector<std::shared_ptr<PlayerSession>> removed;
+	std::vector<std::shared_ptr<PlayerSessionMP>> removed;
 	players.erase(std::remove_if(players.begin(), players.end(),
 	                             [&removed](const auto& _session) {
 		                             if (_session->stream.IsConnected())
@@ -1248,7 +1250,7 @@ std::vector<std::shared_ptr<PlayerSession>> Server::DisconnectClients() {
 	return removed;
 };
 
-void Server::ProcessIncoming(PlayerSession& _session) {
+void Server::ProcessIncoming(PlayerSessionMP& _session) {
 	WorldManager& sessionWorld = *GetWorldForDimension(_session.dimension);
 
 	// Nothing the client sends before it is fully in-game is meaningful, drop it in O(1)

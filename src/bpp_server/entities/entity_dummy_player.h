@@ -11,9 +11,9 @@
 #include "runtime.h"
 #include "server.h"
 
-struct PlayerSession;
+struct PlayerSessionMP;
 struct DummyMPPlayer : public EntityMPPlayer {
-	PlayerSession dummySession;
+	PlayerSessionMP dummySession;
 	Server& server;
 	DummyMPPlayer(Runtime& _runtime, Server& _server) : EntityMPPlayer(), dummySession(-1, _runtime), server(_server) {
 		hasPhysics = true;

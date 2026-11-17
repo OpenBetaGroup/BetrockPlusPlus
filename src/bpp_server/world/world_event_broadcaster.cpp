@@ -16,7 +16,7 @@ void WorldEventBroadcaster::BroadcastNoteEvent(Server& _server, Int3 _position, 
 	pkt.pitchDirection = _instrumentDirection;
 
 	// Only players that are actually connected and in the right dimension can hear/see this
-	std::vector<PlayerSession*> inRange;
+	std::vector<PlayerSessionMP*> inRange;
 	for (auto& session : _server.GetPlayers()) {
 		if (session->connState != ConnectionState::Playing)
 			continue;
@@ -61,7 +61,7 @@ void WorldEventBroadcaster::BroadcastExplosion(Server& _server, Vec3 _position, 
 		pkt.destroyedBlocks.push_back(static_cast<int8_t>(pos.z - origin.z));
 	}
 
-	std::vector<PlayerSession*> inRange;
+	std::vector<PlayerSessionMP*> inRange;
 	for (auto& session : _server.GetPlayers()) {
 		if (session->connState != ConnectionState::Playing)
 			continue;
@@ -90,7 +90,8 @@ void WorldEventBroadcaster::BroadcastExplosion(Server& _server, Vec3 _position, 
 }
 
 void WorldEventBroadcaster::BroadcastWorldEvent(Server& _server, PacketData::WorldEvent _eventType, Int3 _position,
-                                                int32_t _data, Dimension _dimension, PlayerSession* _triggeringSession,
+                                                int32_t _data, Dimension _dimension,
+                                                PlayerSessionMP* _triggeringSession,
                                                 double _rangeSq) {
 	Packet::WorldEvent pkt;
 	pkt.eventType = _eventType;
@@ -99,7 +100,7 @@ void WorldEventBroadcaster::BroadcastWorldEvent(Server& _server, PacketData::Wor
 
 	// Only players that are actually connected and in the right dimension can hear/see this,
 	// same rule the wiki documents for sounds (e.g. music discs).
-	std::vector<PlayerSession*> inRange;
+	std::vector<PlayerSessionMP*> inRange;
 	for (auto& session : _server.players) {
 		if (session.get() == _triggeringSession)
 			continue;

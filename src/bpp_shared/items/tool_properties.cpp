@@ -417,8 +417,6 @@ void UseFishingRod(PlayerSession& _session, ItemStack* _stack, Entity& /*_target
 	if (duraCost > 0) {
 		ItemStack before = *_stack;
 		DamageItem(*_stack, duraCost);
-		if (*_stack != before)
-			PacketUtilities::SendSlot(_session, 0, _session.inventory.activeHotbarSlot + 36, _stack);
 	}
 }
 

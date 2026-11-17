@@ -6,13 +6,13 @@
  *
 */
 #pragma once
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "networking/packets.h"
 #include "packet_data.h"
 #include <vector>
 
 namespace PacketUtilities {
-inline void SendWeatherToPlayer(PlayerSession& _session, Weather _weather) {
+inline void SendWeatherToPlayer(PlayerSessionMP& _session, Weather _weather) {
 	Packet::GameEvent pkt;
 	pkt.eventId = PacketData::GameEvent::STOP_RAINING;
 	if (_weather == Weather::Raining || _weather == Weather::Thundering)
@@ -20,7 +20,7 @@ inline void SendWeatherToPlayer(PlayerSession& _session, Weather _weather) {
 	pkt.Serialize(_session.stream);
 }
 
-inline void SendInventory(PlayerSession& _session, WindowId _windowId, Inventory& _inventory) {
+inline void SendInventory(PlayerSessionMP& _session, WindowId _windowId, Inventory& _inventory) {
 	std::vector<ItemStack> items;
 	for (auto& item : _inventory.slots) {
 		items.emplace_back(item.id, item.count, item.data);
@@ -32,7 +32,7 @@ inline void SendInventory(PlayerSession& _session, WindowId _windowId, Inventory
 }
 
 // Sends a single slot update. windowId=-1 / slotId=-1 updates the cursor.
-inline void SendSlot(PlayerSession& _session, WindowId _windowId, NetworkSlotId _slotId, ItemStack* _stack) {
+inline void SendSlot(PlayerSessionMP& _session, WindowId _windowId, NetworkSlotId _slotId, ItemStack* _stack) {
 	Packet::SetSlot pkt;
 	pkt.windowId = _windowId;
 	pkt.slotId = _slotId;
@@ -40,7 +40,7 @@ inline void SendSlot(PlayerSession& _session, WindowId _windowId, NetworkSlotId 
 	pkt.Serialize(_session.stream);
 }
 
-inline void CloseContainer(PlayerSession& _session) {
+inline void CloseContainer(PlayerSessionMP& _session) {
 	// Get rid of our active interaction and reset the window id
 	Packet::CloseContainer cc;
 	cc.windowId = _session.openWindowId;

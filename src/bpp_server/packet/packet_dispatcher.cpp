@@ -13,7 +13,7 @@
 
 namespace {
 template <typename Pkt, typename Fn>
-void Handle(PlayerSession& _session, Fn&& _fn) {
+void Handle(PlayerSessionMP& _session, Fn&& _fn) {
 	Pkt pkt;
 	pkt.Deserialize(_session.stream);
 	if (!_session.stream.IsShortRead())
@@ -21,7 +21,7 @@ void Handle(PlayerSession& _session, Fn&& _fn) {
 }
 } // namespace
 
-bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, WorldManager& _sessionWorld,
+bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSessionMP& _session, WorldManager& _sessionWorld,
                                 Server& _server) {
 	if (_session.connState != ConnectionState::Playing || !_session.stream.IsConnected())
 		return true;
@@ -36,7 +36,8 @@ bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, Wor
 	case PacketId::ChatMessage:
 		Handle<Packet::ChatMessage>(_session, [&](auto& _pkt) {
 			HandlePacket::ChatMessage(
-			    _pkt, _session, _server.players, _sessionWorld, _server.commandManager, [](PlayerSession&) {}, _server);
+			    _pkt, _session, _server.players, _sessionWorld, _server.commandManager, [](PlayerSessionMP&) {},
+			    _server);
 		});
 		break;
 	case PacketId::SetTime: {

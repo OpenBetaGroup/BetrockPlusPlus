@@ -31,7 +31,7 @@
 #include "packet_data.h"
 #include "tile_entities/tile_entity.h"
 #include "world.h"
-#include "player_conn/player_session.h"
+#include "player/player_session.h"
 
 namespace Blocks {
 static void IgniteTnt(WorldManager& _world, Int3 _pos, int _fuse = 80) {
@@ -119,6 +119,19 @@ void RegisterMiscBehaviors() {
 
 	blockBehaviors[BLOCK_SOULSAND] = {
 		.getCollider = SoulSandCollider,
+	};
+
+	// Cake
+	blockBehaviors[BlockType::BLOCK_CAKE].onBlockPlaced = [](WorldManager& _world, Int3 _pos, Entity& _placer,
+	                                                         Cardinal::Value _face, BlockType _blockId,
+	                                                         uint8_t _meta) -> bool {
+		auto place = CanPlace(_world, _pos, _placer, _face, _blockId, _meta);
+		if (place == Int3{ -1, -1, -1 })
+			return false;
+		bool canPlace = CanCakeSurviveAt(_world, place);
+		if (canPlace)
+			_world.SetBlock(place, BLOCK_CAKE);
+		return canPlace;
 	};
 
 	// Cobweb

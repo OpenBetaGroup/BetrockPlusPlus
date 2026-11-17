@@ -27,7 +27,7 @@ extern std::atomic<bool> shutdownRequested;
 #include "networking/packets.h"
 #include "packet/handle_packet.h"
 #include "packet/packet_dispatcher.h"
-#include "player_conn/player_session.h"
+#include "player_conn/player_session_mp.h"
 #include "player_conn/server_pconnstate_manager.h"
 #include "runtime.h"
 #include "server_socket.h"
@@ -51,7 +51,7 @@ public:
 	void Stop();
 	void StopTimeout(float _secondsUntilShutdown);
 	void ResetTimeout();
-	void ProcessIncoming(PlayerSession& _session);
+	void ProcessIncoming(PlayerSessionMP& _session);
 
 	Config config;
 	Config gamerulesConfig;
@@ -73,7 +73,7 @@ public:
 	ChunkSender chunkSender;
 	int flushChunkCount = 10;
 
-	void SavePlayer(PlayerSession& _session) {
+	void SavePlayer(PlayerSessionMP& _session) {
 		if (!_session.entity) {
 			Logger::Error << "Failed to save player data for " << _session.username << ": no entity!\n";
 			return;
@@ -91,11 +91,11 @@ public:
 		SavePlayer(*session);
 	}
 
-	void DisconnectPlayer(const std::string& _reason, PlayerSession& _session) {
+	void DisconnectPlayer(const std::string& _reason, PlayerSessionMP& _session) {
 		this->connStateManager.DisconnectPlayer(_session, _reason, *this);
 	}
 
-	std::shared_ptr<PlayerSession> GetSessionById(EntityId _entityId) {
+	std::shared_ptr<PlayerSessionMP> GetSessionById(EntityId _entityId) {
 		for (const auto& player : players) {
 			if (player->entity && player->entity->id == _entityId) {
 				return player;
@@ -104,7 +104,7 @@ public:
 		return nullptr;
 	}
 
-	std::shared_ptr<PlayerSession> GetSessionByUsername(const std::string& _username) {
+	std::shared_ptr<PlayerSessionMP> GetSessionByUsername(const std::string& _username) {
 		for (const auto& player : players) {
 			if (UsernameEquals(player->username, _username))
 				return player;
@@ -112,7 +112,7 @@ public:
 		return nullptr;
 	}
 
-	std::shared_ptr<PlayerSession> GetSessionByIp(const std::string& _ip) {
+	std::shared_ptr<PlayerSessionMP> GetSessionByIp(const std::string& _ip) {
 		for (const auto& player : players) {
 			if (!_ip.empty() && player->ipAddress == _ip) {
 				return player;
@@ -142,8 +142,17 @@ public:
 		Logger::LogStyled(_message);
 	}
 
-	const std::vector<std::shared_ptr<PlayerSession>>& GetPlayers() noexcept {
+	std::vector<std::shared_ptr<PlayerSessionMP>>& GetPlayers() noexcept {
 		return players;
+	}
+
+	std::vector<std::shared_ptr<PlayerSession>> GetPlayersBase() noexcept {
+		std::vector<std::shared_ptr<PlayerSession>> result;
+		result.reserve(players.size());
+		for (auto& sPtr : players) {
+			result.push_back(std::dynamic_pointer_cast<PlayerSession>(sPtr));
+		}
+		return result;
 	}
 
 	const AddonManager& GetAddonManager() noexcept {
@@ -166,13 +175,13 @@ public:
 		return maximumPlayers;
 	}
 	bool CanExecuteCommands() const noexcept;
-	bool ExecuteCommand(std::string_view _command, PlayerSession* _sender = nullptr) noexcept;
+	bool ExecuteCommand(std::string_view _command, PlayerSessionMP* _sender = nullptr) noexcept;
 
 	EntityTracker* GetEntityTrackerForDimension(Dimension _dim) {
 		return _dim == Dimension::Nether ? &this->hellEntityTracker : &this->overworldEntityTracker;
 	}
 
-	bool TryForceBreak(PlayerSession& _session, WorldManager& _world);
+	bool TryForceBreak(PlayerSessionMP& _session, WorldManager& _world);
 	double GetTickRate() const noexcept {
 		return tickRate;
 	}
@@ -187,10 +196,10 @@ public:
 		Health,
 		Entities
 	};
-	bool BeginTickSample(SampleMode _mode, int _ticks, PlayerSession* _requester);
-	void ResetDimensionState(PlayerSession& _session, Dimension _dim);
+	bool BeginTickSample(SampleMode _mode, int _ticks, PlayerSessionMP* _requester);
+	void ResetDimensionState(PlayerSessionMP& _session, Dimension _dim);
 	void SendEntityToDimension(Dimension _dim, std::shared_ptr<Entity> _entity);
-	void SendPlayerToDimension(Dimension _dim, PlayerSession& _session,
+	void SendPlayerToDimension(Dimension _dim, PlayerSessionMP& _session,
 	                           std::optional<Vec3> _destOverride = std::nullopt);
 
 	// Entity trackers are so we can send entity updates to players and vice versa.
@@ -222,15 +231,15 @@ public:
 
 private:
 	bool whitelistLoaded = false;
-	friend bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSession& _session, WorldManager& _sessionWorld,
+	friend bool PacketDispatcher::Dispatch(PacketId _packetId, PlayerSessionMP& _session, WorldManager& _sessionWorld,
 	                                       Server& _server);
 	friend void ChunkBroadcaster::BroadcastBlockChanges(Server& _server,
 	                                                    std::unordered_map<Int32_2, std::vector<PendingBlock>>& _changes,
 	                                                    Dimension _dimension, WorldManager& _dimWorld);
 	friend void WorldEventBroadcaster::BroadcastWorldEvent(Server& _server, PacketData::WorldEvent _eventType,
 	                                                       Int3 _position, int32_t _data, Dimension _dimension,
-	                                                       PlayerSession* _triggeringSession, double _rangeSq);
-	std::vector<std::shared_ptr<PlayerSession>> DisconnectClients();
+	                                                       PlayerSessionMP* _triggeringSession, double _rangeSq);
+	std::vector<std::shared_ptr<PlayerSessionMP>> DisconnectClients();
 
 	void Tick();
 	void Startup();
@@ -240,19 +249,19 @@ private:
 	void ProcessSleeping(Dimension _dimension);
 
 	// When a player breaks a block
-	void OnPlayerBlockBreak(PlayerSession& _session, WorldManager& _world);
+	void OnPlayerBlockBreak(PlayerSessionMP& _session, WorldManager& _world);
 
 	// Config file stuff
 	void LoadConfig();
 	void LoadGamerules();
 
 	// Chunk-session index helpers
-	void IndexAddChunk(PlayerSession& _session, const Int32_2& _pos);
-	void IndexRemoveChunk(PlayerSession& _session, const Int32_2& _pos);
-	void IndexRemoveSession(PlayerSession& _session);
+	void IndexAddChunk(PlayerSessionMP& _session, const Int32_2& _pos);
+	void IndexRemoveChunk(PlayerSessionMP& _session, const Int32_2& _pos);
+	void IndexRemoveSession(PlayerSessionMP& _session);
 
 	// Update our block breaking state
-	void UpdateBlockBreaking(PlayerSession& _session, WorldManager& _world);
+	void UpdateBlockBreaking(PlayerSessionMP& _session, WorldManager& _world);
 
 	// Encodes chunk position + dimension into a single key for chunkSessions.
 	// x = chunk X, y = chunk Z, z = dimension id
@@ -264,13 +273,13 @@ private:
 	PlayerConnStateManager connStateManager;
 
 	// Global players and dimensional players
-	std::vector<std::shared_ptr<PlayerSession>> players;
+	std::vector<std::shared_ptr<PlayerSessionMP>> players;
 
 	// Block change tracking
 	std::unordered_map<Dimension, std::unordered_map<Int32_2, std::vector<PendingBlock>>> blockChangeMap;
 
 	// Which sessions currently have a given chunk loaded?
-	std::unordered_map<Int32_3, std::vector<PlayerSession*>> chunkSessions;
+	std::unordered_map<Int32_3, std::vector<PlayerSessionMP*>> chunkSessions;
 
 	bool lastSentRaining = false;
 
@@ -293,7 +302,7 @@ private:
 	SampleMode activeSampleMode = SampleMode::None;
 	int requestedSampleTicks = 0;
 	int collectedSampleTicks = 0;
-	std::weak_ptr<PlayerSession> sampleRequester;
+	std::weak_ptr<PlayerSessionMP> sampleRequester;
 	bool sampleToConsole = false;
 	bool samplingStartsNextTick = false;
 

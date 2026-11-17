@@ -7,8 +7,6 @@
 */
 
 #pragma once
-#include "../entities/entity_mp_player.h"
-#include "../trackers/entity_tracker.h"
 #include "dimensions.h"
 #include "inventory/interactions/player.h"
 #include "inventory/inventory_interaction.h"
@@ -41,11 +39,8 @@ struct PendingBlockBreak {
 	bool clientBreakMissed = false;
 };
 
-class Server;
 struct PlayerSession {
-	NetworkStream stream;
 	Vec3 position;
-	Server* server = nullptr;
 
 	// Override
 	int viewDistanceOverride = 0;
@@ -58,45 +53,14 @@ struct PlayerSession {
 	// What block we are currently breaking, if any
 	std::optional<PendingBlockBreak> pendingBlockBreak = std::nullopt;
 
-	// What our client is claiming this Tick
-	std::optional<Vec3> pendingPosition = std::nullopt;
-	std::optional<Vec3> pendingTeleport = std::nullopt;
-	std::optional<Int2> pending2dTeleport = std::nullopt;
-	bool pendingRespawn = false;
-
 	// Our player entity
-	std::shared_ptr<EntityMPPlayer> entity;
-	EntityTracker* entityTracker = nullptr;
-	bool entityRegistered = false;
-	int ticksFloating = 0;
+	std::shared_ptr<PlayerEntity> entity;
 
 	// rotation.x = yaw, rotation.y = pitch
 	Float2 rotation = { 0.0f, 0.0f };
 
-	std::unordered_set<Int32_2> sentChunks;
-	std::unordered_set<Int32_2> flushedChunks; // Actually written to stream
-
-	// Chunks that were written to the stream during the last flush() call.
-	std::vector<Int32_2> newlyFlushed;
-
-	// Chunks that were unloaded during the last enqueue() call.
-	std::vector<Int32_2> newlyUnloaded;
-
-	// Block updates that arrived while the chunk was enqueued but not yet flushed.
-	std::unordered_map<Int32_2, std::vector<PendingBlock>> pendingBlockChanges;
-
 	ConnectionState connState = ConnectionState::Handshaking;
 	std::string username = "(username not yet set)";
-	std::string ipAddress;
-	std::chrono::steady_clock::time_point lastPacketTime = std::chrono::steady_clock::now();
-	static constexpr size_t CHAT_MESSAGE_LIMIT = 3;
-	std::array<std::chrono::steady_clock::time_point, CHAT_MESSAGE_LIMIT> recentChatMessageTimes{};
-	size_t nextChatMessageTime = 0;
-	size_t recentChatMessageCount = 0;
-
-	std::string serverId;
-	std::future<bool> pendingAuthFuture;
-	std::chrono::steady_clock::time_point authStartTime;
 
 	// Inventory
 	InventoryPlayer inventory;
@@ -122,15 +86,12 @@ struct PlayerSession {
 
 	Dimension dimension = Dimension::Overworld; // 0 = overworld, -1 = nether
 
-	explicit PlayerSession(int _socket, Runtime& _gameRuntime)
-	    : stream(_socket), inventoryInteraction(&inventory, _gameRuntime) {}
-	~PlayerSession() {
+	explicit PlayerSession(Runtime& _gameRuntime) : inventoryInteraction(&inventory, _gameRuntime) {}
+	virtual ~PlayerSession() {
 		// So our player entity despawns from the world
 		if (entity) {
 			entity->isDead = true;
-			entity->session = nullptr;
 		}
-		entityTracker = nullptr;
 	}
 
 	// Load our player data from file
@@ -151,7 +112,7 @@ struct PlayerSession {
 		entity->hasBedSpawn = _nbt.Has("SpawnX") && _nbt.Has("SpawnY") && _nbt.Has("SpawnZ");
 		if (entity->hasBedSpawn) {
 			entity->spawnPosition = { _nbt.Get("SpawnX").GetInt(), _nbt.Get("SpawnY").GetInt(),
-			                          _nbt.Get("SpawnZ").GetInt() };
+				                      _nbt.Get("SpawnZ").GetInt() };
 		}
 
 		if (_nbt.Has("Inventory")) {
@@ -162,7 +123,7 @@ struct PlayerSession {
 				if (networkSlot < 0 || networkSlot >= int(inventory.slots.size()))
 					continue;
 				inventory.slots[size_t(networkSlot)] = ItemStack{ item.Get("id").GetShort(), item.Get("Count").GetByte(),
-				                                                  item.Get("Damage").GetShort() };
+					                                              item.Get("Damage").GetShort() };
 			}
 		}
 
@@ -253,4 +214,7 @@ struct PlayerSession {
 		}
 		return rootTag;
 	}
+
+	// I love polymorphism!!
+	virtual void Reserved(){};
 };

@@ -20,7 +20,7 @@
 #include <limits>
 #include <string>
 
-bool IsOperator(PlayerSession& _session, Server& _server) {
+bool IsOperator(PlayerSessionMP& _session, Server& _server) {
 	return ContainsUsername(_server.operatorUsernames, _session.username);
 }
 
@@ -28,7 +28,7 @@ bool IsOperator(const CommandContext& _ctx) {
 	return !_ctx.sender || (_ctx.server && IsOperator(*_ctx.sender, *_ctx.server));
 }
 
-void SendCommandFeedback(PlayerSession* _recipient, const std::string& _message) {
+void SendCommandFeedback(PlayerSessionMP* _recipient, const std::string& _message) {
 	if (_recipient) {
 		if (!_recipient->stream.IsConnected())
 			return;

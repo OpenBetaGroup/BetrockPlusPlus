@@ -32,7 +32,8 @@
 #include <iomanip>
 #include <memory>
 
-bool IsValidActionInSpawnRadius(PlayerSession& _session, Server& _server, Int3 _pos, WorldManager& _world, int _margin) {
+bool IsValidActionInSpawnRadius(PlayerSessionMP& _session, Server& _server, Int3 _pos, WorldManager& _world,
+                                int _margin) {
 	const int spawnProtection = Gamerule::Get<int32_t>(Gamerule::Id::SpawnProtectionRadius) + _margin;
 	if (spawnProtection <= 0)
 		return true;
@@ -45,14 +46,14 @@ bool IsValidActionInSpawnRadius(PlayerSession& _session, Server& _server, Int3 _
 }
 
 namespace HandlePacket {
-void KeepAlive(Packet::KeepAlive& /*pkt*/, PlayerSession& _session) {
+void KeepAlive(Packet::KeepAlive& /*pkt*/, PlayerSessionMP& _session) {
 	Packet::KeepAlive ka;
 	ka.Serialize(_session.stream);
 }
 
-void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
-                 std::vector<std::shared_ptr<PlayerSession>>& _players, WorldManager& _world, CommandManager& _cmdMgr,
-                 std::function<void(PlayerSession&)> _transferDimension, Server& _server) {
+void ChatMessage(Packet::ChatMessage& _pkt, PlayerSessionMP& _session,
+                 std::vector<std::shared_ptr<PlayerSessionMP>>& _players, WorldManager& _world, CommandManager& _cmdMgr,
+                 std::function<void(PlayerSessionMP&)> _transferDimension, Server& _server) {
 	if (!_session.entity)
 		return;
 
@@ -117,14 +118,14 @@ void ChatMessage(Packet::ChatMessage& _pkt, PlayerSession& _session,
 	}
 }
 
-void PlayerMovement(Packet::PlayerMovement& _pkt, PlayerSession& _session) {
+void PlayerMovement(Packet::PlayerMovement& _pkt, PlayerSessionMP& _session) {
 	// On ground flag from client
 	if (_session.entity) {
 		_session.entity->onGround = _pkt.onGround;
 	}
 }
 
-static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server) {
+static bool HandlePlayerMove(Vec3 _to, PlayerSessionMP& _session, Server& _server) {
 	// A vanilla client never sends these. NaN/inf/huge values would make the movement
 	// simulation sweep (or loop over) an unbounded area, so reject them before anything else.
 	constexpr double K_MAX_HORIZONTAL = double(INT32_MAX);
@@ -174,18 +175,18 @@ static bool HandlePlayerMove(Vec3 _to, PlayerSession& _session, Server& _server)
 	return true;
 }
 
-void PlayerPosition(Packet::PlayerPosition& _pkt, PlayerSession& _session, Server& _server) {
+void PlayerPosition(Packet::PlayerPosition& _pkt, PlayerSessionMP& _session, Server& _server) {
 	if (!HandlePlayerMove(_pkt.position, _session, _server))
 		return;
 
 	_session.pendingPosition = { _pkt.position.x, _pkt.position.y, _pkt.position.z };
 	if (_session.entity) {
 		_session.entity->onGround = _pkt.onGround;
-		_session.entity->HandlePositionChecks();
+		_session.GetEntityAsMPEntity()->HandlePositionChecks();
 	}
 }
 
-void PlayerRotation(Packet::PlayerRotation& _pkt, PlayerSession& _session) {
+void PlayerRotation(Packet::PlayerRotation& _pkt, PlayerSessionMP& _session) {
 	_session.rotation.x = _pkt.yaw;
 	_session.rotation.y = _pkt.pitch;
 	if (_session.entity) {
@@ -193,7 +194,7 @@ void PlayerRotation(Packet::PlayerRotation& _pkt, PlayerSession& _session) {
 	}
 }
 
-void PlayerPositionAndRotation(Packet::PlayerPositionAndRotation& _pkt, PlayerSession& _session, Server& _server) {
+void PlayerPositionAndRotation(Packet::PlayerPositionAndRotation& _pkt, PlayerSessionMP& _session, Server& _server) {
 	_session.rotation.x = _pkt.yaw;
 	_session.rotation.y = _pkt.pitch;
 
@@ -203,11 +204,11 @@ void PlayerPositionAndRotation(Packet::PlayerPositionAndRotation& _pkt, PlayerSe
 	_session.pendingPosition = { _pkt.position.x, _pkt.position.y, _pkt.position.z };
 	if (_session.entity) {
 		_session.entity->onGround = _pkt.onGround;
-		_session.entity->HandlePositionChecks();
+		_session.GetEntityAsMPEntity()->HandlePositionChecks();
 	}
 }
 
-void MineBlock(Packet::MineBlock& _pkt, PlayerSession& _session, WorldManager& _world, Server& _server) {
+void MineBlock(Packet::MineBlock& _pkt, PlayerSessionMP& _session, WorldManager& _world, Server& _server) {
 	Int3 packetPos = { _pkt.position.x, _pkt.position.y, _pkt.position.z };
 
 	if (!_session.entity)
@@ -338,7 +339,7 @@ void MineBlock(Packet::MineBlock& _pkt, PlayerSession& _session, WorldManager& _
 	}
 }
 
-void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager& _world, Runtime& _gameRuntime,
+void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSessionMP& _session, WorldManager& _world, Runtime& _gameRuntime,
                 Server& _server) {
 	Int3 position = { _pkt.position.x, _pkt.position.y, _pkt.position.z };
 
@@ -538,7 +539,7 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSession& _session, WorldManager&
 	}
 }
 
-void SetHotbarSlot(Packet::SetHotbarSlot& _pkt, PlayerSession& _session) {
+void SetHotbarSlot(Packet::SetHotbarSlot& _pkt, PlayerSessionMP& _session) {
 	if (_pkt.slot < 0 || _pkt.slot >= 9)
 		return;
 	// Update previously held item
@@ -559,7 +560,7 @@ void SetHotbarSlot(Packet::SetHotbarSlot& _pkt, PlayerSession& _session) {
 }
 
 // Click handler
-void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
+void ClickSlot(Packet::ClickSlot& _pkt, PlayerSessionMP& _session) {
 	if (_session.inventoryLocked)
 		return;
 	_session.pendingWindowId = _pkt.windowId;
@@ -652,7 +653,7 @@ void ClickSlot(Packet::ClickSlot& _pkt, PlayerSession& _session) {
 	handleInventory(_session.activeInteraction.get());
 }
 
-void CloseContainer(Packet::CloseContainer& _pkt, PlayerSession& _session) {
+void CloseContainer(Packet::CloseContainer& _pkt, PlayerSessionMP& _session) {
 	if (!_session.entity)
 		return;
 
@@ -670,7 +671,7 @@ void CloseContainer(Packet::CloseContainer& _pkt, PlayerSession& _session) {
 }
 
 // Client acknowledges a rejected transaction
-void ContainerTransaction(Packet::ContainerTransaction& _pkt, PlayerSession& _session) {
+void ContainerTransaction(Packet::ContainerTransaction& _pkt, PlayerSessionMP& _session) {
 	if (_session.inventoryLocked && _pkt.windowId == _session.pendingWindowId &&
 	    _pkt.transactionId == _session.pendingTransactionId) {
 		_session.inventoryLocked = false;
@@ -678,7 +679,7 @@ void ContainerTransaction(Packet::ContainerTransaction& _pkt, PlayerSession& _se
 }
 
 // Other handlers
-void InteractWithEntity(Packet::InteractWithEntity& _pkt, PlayerSession& _session, WorldManager& _world) {
+void InteractWithEntity(Packet::InteractWithEntity& _pkt, PlayerSessionMP& _session, WorldManager& _world) {
 	// Check if session entity and source entity match
 	if (!_session.entity)
 		return;
@@ -737,9 +738,9 @@ void InteractWithEntity(Packet::InteractWithEntity& _pkt, PlayerSession& _sessio
 	}
 }
 
-void InteractWithBlock(Packet::InteractWithBlock& /*_pkt*/, PlayerSession& /*_session*/, WorldManager& /*_world*/) {}
+void InteractWithBlock(Packet::InteractWithBlock& /*_pkt*/, PlayerSessionMP& /*_session*/, WorldManager& /*_world*/) {}
 
-void Animation(Packet::Animation& _pkt, PlayerSession& _session, EntityTracker& _entityTracker) {
+void Animation(Packet::Animation& _pkt, PlayerSessionMP& _session, EntityTracker& _entityTracker) {
 	// Broadcast what we were sent to players who can see this player
 	Packet::Animation anim;
 	anim.entityId = _session.entity->id;
@@ -747,7 +748,7 @@ void Animation(Packet::Animation& _pkt, PlayerSession& _session, EntityTracker& 
 	_entityTracker.SendPacketToViewers(anim, anim.entityId);
 }
 
-void PlayerAction(Packet::PlayerAction& _pkt, PlayerSession& _session, EntityTracker& /*_entityTracker*/) {
+void PlayerAction(Packet::PlayerAction& _pkt, PlayerSessionMP& _session, EntityTracker& /*_entityTracker*/) {
 	auto& entity = _session.entity;
 	if (!entity)
 		return;
@@ -768,7 +769,7 @@ void PlayerAction(Packet::PlayerAction& _pkt, PlayerSession& _session, EntityTra
 	// Broadcast what we were sent to players who can see this player
 }
 
-void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server) {
+void Respawn(Packet::Respawn& /*_pkt*/, PlayerSessionMP& _session, Server& _server) {
 	Logger::Info << "Respawned Player " << _session.username << "!\n";
 
 	constexpr Dimension TARGET_DIM = Dimension::Overworld;
@@ -777,7 +778,7 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	// Unregister the dead entity from the world it died in
 	auto oldWorld = _server.GetWorldForDimension(_session.dimension);
 	oldWorld->entityManager.RemoveEntity(_session.entity->id);
-	_session.entity->session = nullptr;
+	_session.GetEntityAsMPEntity()->session = nullptr;
 
 	auto newEntity = std::make_shared<EntityMPPlayer>(std::string(_session.username.begin(), _session.username.end()));
 	newEntity->session = &_session;
@@ -828,8 +829,8 @@ void Respawn(Packet::Respawn& /*_pkt*/, PlayerSession& _session, Server& _server
 	_session.entityTracker->GetTrackerForEntityId(_session.entity->id)->equipmentProfile = {};
 }
 
-void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldManager& _world,
-                std::vector<std::shared_ptr<PlayerSession>>& _players) {
+void UpdateSign(Packet::UpdateSign& _pkt, PlayerSessionMP& /*_session*/, WorldManager& _world,
+                std::vector<std::shared_ptr<PlayerSessionMP>>& _players) {
 	Int3 position = { _pkt.position.x, _pkt.position.y, _pkt.position.z };
 	BlockType blockId = _world.GetBlockId(position);
 	if (blockId != BLOCK_SIGN_STANDING && blockId != BLOCK_SIGN_WALL)
@@ -856,7 +857,7 @@ void UpdateSign(Packet::UpdateSign& _pkt, PlayerSession& /*_session*/, WorldMana
 	}
 }
 
-void Disconnect(Packet::Disconnect& _pkt, PlayerSession& _session, Server& _server) {
+void Disconnect(Packet::Disconnect& _pkt, PlayerSessionMP& _session, Server& _server) {
 	_server.DisconnectPlayer(_pkt.reason, _session);
 }
 

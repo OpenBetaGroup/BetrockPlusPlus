@@ -28,8 +28,7 @@ BlockBehavior blockBehaviors[BLOCK_MAX] = {};
 
 void ServerBlock::Initialize() {
 	// Register unique behaviors here
-	blockBehaviors[BLOCK_CRAFTING_TABLE].onBlockActivated = [](WorldManager& _world, Int3 _position,
-	                                                           PlayerSession& _session, Runtime& _gameRuntime) -> bool {
+	blockBehaviors[BLOCK_CRAFTING_TABLE].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSessionMP& _session, Runtime& _gameRuntime) -> bool {
 		Packet::OpenContainer ow;
 		ow.windowId = _session.GetNextWindowId();
 		ow.slotCount = 9;
@@ -43,7 +42,8 @@ void ServerBlock::Initialize() {
 		return false;
 	};
 
-	blockBehaviors[BLOCK_DISPENSER].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSession& _session,
+	blockBehaviors[BLOCK_DISPENSER].onBlockActivated =
+	    [](WorldManager& _world, Int3 _position, PlayerSessionMP& _session,
 	                                                      Runtime& /*_gameRuntime*/) -> bool {
 		auto trap = _world.GetTileEntityShared<TileEntityDispenser>(_position);
 		if (!trap)
@@ -63,7 +63,7 @@ void ServerBlock::Initialize() {
 		return false;
 	};
 
-	auto furnaceActivated = [](WorldManager& _world, Int3 _position, PlayerSession& _session,
+	auto furnaceActivated = [](WorldManager& _world, Int3 _position, PlayerSessionMP& _session,
 	                           Runtime& /*_gameRuntime*/) -> bool {
 		auto furnace = _world.GetTileEntityShared<TileEntityFurnace>(_position);
 		if (!furnace)
@@ -93,7 +93,7 @@ void ServerBlock::Initialize() {
 	blockBehaviors[BLOCK_FURNACE].onBlockActivated = furnaceActivated;
 	blockBehaviors[BLOCK_FURNACE_LIT].onBlockActivated = furnaceActivated;
 
-	blockBehaviors[BLOCK_CHEST].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSession& _session,
+	blockBehaviors[BLOCK_CHEST].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSessionMP& _session,
 	                                                  Runtime& /*_gameRuntime*/) -> bool {
 		if (!Blocks::CanOpenChest(_world, _position))
 			return false;
@@ -161,7 +161,7 @@ void ServerBlock::Initialize() {
 		return false;
 	};
 
-	blockBehaviors[BLOCK_JUKEBOX].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSession& _session,
+	blockBehaviors[BLOCK_JUKEBOX].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSessionMP& _session,
 	                                                    Runtime& /*_gameRuntime*/) -> bool {
 		auto jukebox = _world.GetTileEntityAs<TileEntityJukebox>(_position);
 		if (!jukebox)
@@ -198,7 +198,7 @@ void ServerBlock::Initialize() {
 		updateChunk();
 		return false;
 	};
-	blockBehaviors[BLOCK_BED].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSession& _session,
+	blockBehaviors[BLOCK_BED].onBlockActivated = [](WorldManager& _world, Int3 _position, PlayerSessionMP& _session,
 	                                                Runtime& /*_gameRuntime*/) -> bool {
 		if (!_world.InBounds(_position.y))
 			return false;

@@ -7,7 +7,7 @@
 
 #pragma once
 #include "../packet/packet_utils.h"
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "enums/blocks.h"
 #include "runtime.h"
 #include "world/world.h"
@@ -18,7 +18,7 @@
 // If its nullptr here, use the base block overrides. Else, use what is here.
 namespace ServerBlock {
 struct BlockBehavior {
-	bool (*onBlockActivated)(WorldManager& _world, Int3 _position, PlayerSession& _session,
+	bool (*onBlockActivated)(WorldManager& _world, Int3 _position, PlayerSessionMP& _session,
 	                         Runtime& _gameRuntime) = nullptr;
 };
 extern BlockBehavior blockBehaviors[BLOCK_MAX];

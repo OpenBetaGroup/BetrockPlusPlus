@@ -240,14 +240,10 @@ void RegisterAll() {
 	};
 
 	// Happy 23rd Birthday to me! (Pixel Brush)
-	itemBehavior[CAKE].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& /*_user*/,
+	itemBehavior[CAKE].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& _user,
 	                                   Cardinal::Value _face) {
-		Int3 placePos = _pos.WithOffset(_face);
-		if (!Blocks::CanCakeSurviveAt(_world, placePos))
-			return;
-
-		_world.SetBlock(placePos, BLOCK_CAKE);
-		_stack->DecrementCount(1);
+		if (Blocks::blockBehaviors[BLOCK_CAKE].onBlockPlaced(_world, _pos, _user, _face, BLOCK_CAKE, 0))
+			_stack->DecrementCount(1);
 	};
 
 	itemBehavior[SEEDS_WHEAT].onBlockUse = [](WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& /*_user*/,
@@ -395,6 +391,7 @@ void RegisterAll() {
 			Map::MakeMarker(Map::Icon::WhiteArrow, _session.rotation.x,
 			                Byte2{ static_cast<int8_t>(pos.x), static_cast<int8_t>(pos.z) })
 		};
+		/*
 		std::vector<uint8_t> mapIcons;
 		PlaceMarkers(mapIcons, markers);
 		Packet::ItemData pkt;
@@ -432,6 +429,7 @@ void RegisterAll() {
 		gfxPkt.data = mapData;
 		gfxPkt.Serialize(_session.stream);
 		x++;
+		*/
 	};
 
 	itemBehavior[MAP].onStopHolding = [](ItemStack* /*_stack*/) {

@@ -6,7 +6,7 @@
 */
 
 #pragma once
-#include "../player_conn/player_session.h"
+#include "../player_conn/player_session_mp.h"
 #include "strategos.h"
 #include "world.h"
 #include <functional>
@@ -19,13 +19,13 @@ class Server;
 class CommandManager;
 
 struct CommandContext {
-	PlayerSession* session = nullptr;
+	PlayerSessionMP* session = nullptr;
 	Entity* executionEntity = nullptr;
 	WorldManager* world = nullptr;
 	Server* server = nullptr;
-	std::function<void(PlayerSession&)> transferDimension;
+	std::function<void(PlayerSessionMP&)> transferDimension;
 	const strategos::BrigadierContext* dispatcher = nullptr;
-	PlayerSession* sender = nullptr;
+	PlayerSessionMP* sender = nullptr;
 	CommandManager* manager = nullptr;
 	uint8_t executionDepth = 0;
 	bool executionSucceeded = true;

@@ -31,8 +31,8 @@ void ChunkBroadcaster::BroadcastBlockChanges(Server& _server,
 		// Find which sessions care about this chunk
 		// Split into flushed (send immediately) and sentOnly (queue).
 		auto indexIt = _server.chunkSessions.find(Server::ChunkKey(chunk, _dimension));
-		std::vector<PlayerSession*> flushedSessions;
-		std::vector<PlayerSession*> sentOnlySessions;
+		std::vector<PlayerSessionMP*> flushedSessions;
+		std::vector<PlayerSessionMP*> sentOnlySessions;
 
 		if (indexIt != _server.chunkSessions.end())
 			flushedSessions = indexIt->second;
