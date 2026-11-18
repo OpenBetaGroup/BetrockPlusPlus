@@ -107,7 +107,8 @@ initial build line.
 sudo apt install git cmake build-essential libdeflate-dev libasan8 libcurl4-openssl-dev
 ```
 
-> Note: `libsdl3-dev` is only packaged on Debian 13 (trixie) and newer, and Ubuntu 25.10 and newer. On Ubuntu 24.04/22.04 LTS it is not in `apt`, so you'll need a newer release or to build SDL3 from source.
+> [!NOTE]
+> `libsdl3-dev` is only packaged on Debian 13 (trixie) and newer, and Ubuntu 25.10 and newer. On Ubuntu 24.04/22.04 LTS it is not in `apt`, so you'll need a newer release or to build SDL3 from source.
 
 ##### RHEL / Fedora
 
@@ -133,7 +134,8 @@ sudo zypper install glm-devel SDL3-devel Mesa-libGL-devel libasan8
 sudo apk add glm-dev sdl3-dev mesa-dev compiler-rt
 ```
 
-> Note: `sdl3-dev` is currently only in the **edge** branch's `community` repo. Also, Alpine ships no `libasan` and GCC's AddressSanitizer is broken on musl, so for Debug builds (which use `-fsanitize=address`) compile with **clang**, which uses the ASan runtime from `compiler-rt`.
+> [!NOTE]
+> `sdl3-dev` is currently only in the **edge** branch's `community` repo. Also, Alpine ships no `libasan` and GCC's AddressSanitizer is broken on musl, so for Debug builds (which use `-fsanitize=address`) compile with **clang**, which uses the ASan runtime from `compiler-rt`.
 > Additionally, you may need to install `libdeflate-static` too.
 > For some reason, just `libdeflate` is not enough sometimes.
 

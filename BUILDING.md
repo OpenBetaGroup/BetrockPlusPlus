@@ -118,15 +118,8 @@ cmake -S . -B build
 cd build
 ```
 
-> Tip: If you have `ccache` and `mold` installed, you can speed up iterative builds with:
->
-> ```bash
-> cmake -S . -B build -G Ninja \
->   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
->   -DCMAKE_C_COMPILER_LAUNCHER=ccache \
->   -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" \
->   -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold"
-> ```
+> [!NOTE]
+> If you have `ccache` and/or `mold` installed, iterative builds will use those
 
 This will make a Release Server build folder.
 Then you build the project.
@@ -134,6 +127,9 @@ Then you build the project.
 ```bash
 cmake --build . -j$(nproc)
 ```
+
+> [!NOTE]
+> `nproc` doesn't exist on Windows and some BSD systems, so you'll have to specify this value manually based on how many cores you have
 
 After that, it's as easy as running the built application.
 
