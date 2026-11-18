@@ -154,11 +154,11 @@ std::string BetacraftHeartbeat::FetchPublicIp() {
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Curl::DefaultWriteCallback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 	const CURLcode res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-	CurlRestoreStopSignals();
+	Curl::RestoreStopSignals();
 	if (res != CURLE_OK)
 		return {};
 	while (!response.empty() && (response.back() == '\n' || response.back() == '\r' || response.back() == ' '))
@@ -167,7 +167,7 @@ std::string BetacraftHeartbeat::FetchPublicIp() {
 }
 
 bool BetacraftHeartbeat::PostJson(const std::string& _url, const std::string& _json, std::string& _response) {
-	static UniqueCurl curl;
+	static Curl::UniqueCurl curl;
     CURL* rawCurl = curl.get();
     // One-time init
     if (!curl) {
@@ -181,20 +181,26 @@ bool BetacraftHeartbeat::PostJson(const std::string& _url, const std::string& _j
 		curl_easy_setopt(rawCurl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(rawCurl, CURLOPT_CONNECTTIMEOUT, 5L);
 		curl_easy_setopt(rawCurl, CURLOPT_TIMEOUT, 10L);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Curl::DefaultWriteCallback);
+		curl_easy_setopt(rawCurl, CURLOPT_WRITEFUNCTION, Curl::DefaultWriteCallback);
 	}
+    // TODO: Don't like this double-grab :p
+    if (!rawCurl)
+        rawCurl = curl.get();
+    // If we don't already have rawCurl here, shit's fucked
+    if (!rawCurl)
+        return false;
 	// Init headers
 	curl_slist* headers = nullptr;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
 	curl_easy_setopt(rawCurl, CURLOPT_HTTPHEADER, headers);
 	// Set url
-	curl_easy_setopt(curl, CURLOPT_URL, _url.c_str());
+	curl_easy_setopt(rawCurl, CURLOPT_URL, _url.c_str());
 	// Set response target
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &_response);
+	curl_easy_setopt(rawCurl, CURLOPT_WRITEDATA, &_response);
 	// Perform stuff
-	const CURLcode res = curl_easy_perform(curl);
+	const CURLcode res = curl_easy_perform(rawCurl);
 	long httpCode = 0;
-	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+	curl_easy_getinfo(rawCurl, CURLINFO_RESPONSE_CODE, &httpCode);
 	// TODO: Figure out how free these alongside the curl object instead of repeated realloc of same data?
 	curl_slist_free_all(headers);
 	Curl::RestoreStopSignals();
