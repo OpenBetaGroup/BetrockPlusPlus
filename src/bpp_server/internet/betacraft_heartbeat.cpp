@@ -196,8 +196,8 @@ bool BetacraftHeartbeat::PostJson(const std::string& _url, const std::string& _j
 	// Set url
 	curl_easy_setopt(rawCurl, CURLOPT_URL, _url.c_str());
 	// Set json data
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, _json.c_str());
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, static_cast<long>(_json.size()));
+	curl_easy_setopt(rawCurl, CURLOPT_POSTFIELDS, _json.c_str());
+	curl_easy_setopt(rawCurl, CURLOPT_POSTFIELDSIZE, static_cast<long>(_json.size()));
 	// Set response target
 	curl_easy_setopt(rawCurl, CURLOPT_WRITEDATA, &_response);
 	// Perform stuff
