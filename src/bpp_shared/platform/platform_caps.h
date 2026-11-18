@@ -17,7 +17,7 @@
 #endif
 
 // <sys/socket.h>, <netinet/in.h>, fcntl(O_NONBLOCK), ...
-#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(PS2) || defined(BPP_PLATFORM_CONSOLE)
+#if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__) || defined(__NetBSD__) || defined(PS2) || defined(BPP_PLATFORM_CONSOLE)
 #define BPP_HAS_POSIX_SOCKETS 1
 #endif
 
