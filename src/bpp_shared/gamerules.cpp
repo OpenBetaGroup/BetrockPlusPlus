@@ -90,7 +90,7 @@ struct Registry {
 		//Register(Id::WaterSourceConversion, "water_source_conversion", "If lava should be able to form new source blocks", true);  // Vanilla: true
 		// Debug
 		Register(Id::PopulationPerTick, "population_per_tick", "How many chunks should be attempted to populate per tick", 16); // Vanilla: n/a
-		Register(Id::LightUpdatesPerTick, "population_per_tick", "How many light updates should be processed per tick", INT_MAX); // Vanilla: n/a
+		Register(Id::LightUpdatesPerTick, "light_updates_per_tick", "How many light updates should be processed per tick", INT_MAX); // Vanilla: n/a
 	}
 
 	Entry* Find(Id _id) {
