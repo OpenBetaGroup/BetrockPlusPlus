@@ -73,4 +73,31 @@ double GetActiveMemoryUsage(const MemoryUnit _unit) {
 void TrimMemory() {}
 
 #endif
+#elif defined(__NetBSD__)
+#include <sys/sysctl.h>
+#include <unistd.h>
+
+size_t GetPageSize() {
+	static const size_t CACHED_PAGE_SIZE = []() -> size_t {
+		const long size = sysconf(_SC_PAGESIZE);
+		return size > 0 ? static_cast<size_t>(size) : 4096;
+	}();
+	return CACHED_PAGE_SIZE;
+}
+
+double GetMemoryUsage(const MemoryUnit _unit) {
+	kinfo_proc2 process{};
+	int mib[] = { CTL_KERN, KERN_PROC2, KERN_PROC_PID, static_cast<int>(getpid()),
+	              static_cast<int>(sizeof(process)), 1 };
+	size_t size = sizeof(process);
+	if (sysctl(mib, 6, &process, &size, nullptr, 0) != 0 || size < sizeof(process) || process.p_vm_rssize < 0)
+		return 0.0;
+	return static_cast<double>(process.p_vm_rssize) * GetPageSize() / BytesPerUnit(_unit);
+}
+
+double GetActiveMemoryUsage(const MemoryUnit _unit) {
+	return GetMemoryUsage(_unit);
+}
+
+void TrimMemory() {}
 #endif
