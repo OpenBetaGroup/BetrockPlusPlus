@@ -554,7 +554,7 @@ target_link_libraries(BetrockPlusPlus
 )
 
 # TODO: Ideally we do a test to see if we need to manually link in atomics as a library
-if(NOT WIN32 AND NOT APPLE AND UNIX AND LINUX)
+if(NOT WIN32 AND NOT APPLE AND UNIX AND (LINUX OR CMAKE_SYSTEM_NAME STREQUAL "NetBSD"))
     target_link_libraries(BetrockPlusPlus PRIVATE atomic)
 endif()
 
