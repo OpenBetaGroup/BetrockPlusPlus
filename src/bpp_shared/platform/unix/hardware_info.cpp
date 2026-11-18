@@ -99,6 +99,67 @@ HardwareInfo QueryHardwareInfo() {
 	return info;
 }
 
+#elif defined(__NetBSD__)
+
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <sys/utsname.h>
+#include <uvm/uvm_extern.h>
+
+namespace {
+template <typename T>
+bool ReadSysctl(const char* _name, T& _value) {
+	size_t size = sizeof(_value);
+	return sysctlbyname(_name, &_value, &size, nullptr, 0) == 0 && size == sizeof(_value);
+}
+
+std::string ReadSysctlString(const char* _name) {
+	size_t size = 0;
+	if (sysctlbyname(_name, nullptr, &size, nullptr, 0) != 0 || size == 0)
+		return {};
+
+	std::string value(size, '\0');
+	if (sysctlbyname(_name, value.data(), &size, nullptr, 0) != 0)
+		return {};
+	const size_t terminator = value.find('\0');
+	if (terminator != std::string::npos)
+		value.resize(terminator);
+	return value;
+}
+} // namespace
+
+HardwareInfo QueryHardwareInfo() {
+	HardwareInfo info;
+	utsname uts{};
+	if (uname(&uts) == 0) {
+		info.os = uts.sysname;
+		info.kernel = std::format("{} {}", uts.sysname, uts.release);
+	}
+
+	info.cpuModel = ReadSysctlString("hw.model");
+	int cpuCount = 0;
+	if ((ReadSysctl("hw.ncpuonline", cpuCount) && cpuCount > 0) ||
+	    (ReadSysctl("hw.ncpu", cpuCount) && cpuCount > 0))
+		info.threads = static_cast<unsigned int>(cpuCount);
+	else
+		info.threads = std::thread::hardware_concurrency();
+
+	if (!ReadSysctl("hw.physmem64", info.memoryTotalBytes)) {
+		uint32_t memoryBytes = 0;
+		if (ReadSysctl("hw.physmem", memoryBytes))
+			info.memoryTotalBytes = memoryBytes;
+	}
+
+	int mib[] = { CTL_VM, VM_UVMEXP2 };
+	uvmexp_sysctl vmInfo{};
+	size_t vmInfoSize = sizeof(vmInfo);
+	if (sysctl(mib, 2, &vmInfo, &vmInfoSize, nullptr, 0) == 0 &&
+	    vmInfoSize >= sizeof(vmInfo) && vmInfo.swpages > 0 && vmInfo.pagesize > 0) {
+		info.swapTotalBytes = static_cast<uint64_t>(vmInfo.swpages) * static_cast<uint64_t>(vmInfo.pagesize);
+	}
+	return info;
+}
+
 #else // Other POSIX systems: only what uname can tell us
 
 #include <sys/utsname.h>
