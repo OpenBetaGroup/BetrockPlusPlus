@@ -235,9 +235,13 @@ void MineBlock(Packet::MineBlock& _pkt, PlayerSessionMP& _session, WorldManager&
 	};
 
 	if (_pkt.status != PacketData::MineStatus::DROPPED_ITEM) {
-		if (packetPos.Distance({ int(entityPos.x), int(entityPos.y), int(entityPos.z) }) > 6.0)
-			return;
-		if (!IsValidActionInSpawnRadius(_session, _server, packetPos, _world)) {
+		Vec3& entityPos = _session.entity->position;
+		Vec3 entityEyePos = entityPos.WithOffset(Cardinal::Value::Up, float(_session.entity->GetEyeHeight()));
+		Vec3 blockCenter = { packetPos.x + 0.5, packetPos.y + 0.5, packetPos.z + 0.5 };
+		Vec3 delta = entityEyePos - blockCenter;
+		bool inRange = delta.Length() < MAXIMUM_PLACEMENT_REACH;
+
+		if (!IsValidActionInSpawnRadius(_session, _server, packetPos, _world) || !inRange) {
 			resyncBlock(packetPos);
 			return;
 		}
@@ -513,8 +517,8 @@ void PlaceBlock(Packet::PlaceBlock& _pkt, PlayerSessionMP& _session, WorldManage
 			Vec3& entityPos = _session.entity->position;
 			Vec3 entityEyePos = entityPos.WithOffset(Cardinal::Value::Up, float(_session.entity->GetEyeHeight()));
 			Vec3 blockCenter = { position.x + 0.5, position.y + 0.5, position.z + 0.5 };
-			Vec3 delta = entityPos - blockCenter;
-			bool inRange = delta.Length() < MAXIMUM_PLACEMENT_REACH * MAXIMUM_PLACEMENT_REACH;
+			Vec3 delta = entityEyePos - blockCenter;
+			bool inRange = delta.Length() < MAXIMUM_PLACEMENT_REACH;
 
 			// We can place the block here
 			auto function = Blocks::blockBehaviors[blockId].onBlockPlaced;
