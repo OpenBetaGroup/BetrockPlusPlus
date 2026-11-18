@@ -467,8 +467,8 @@ void WorldManager::Tick(const std::vector<std::shared_ptr<PlayerSession>>& _play
 	if (_profiler)
 		_profiler->Record(TickTask::ChunkUnloading, Clock::now() - unloadingStart);
 	auto pipelineStart = _profiler ? Clock::now() : Clock::time_point{};
-	PopulateReady();
-	lightManager.ProcessLightQueue(*this, INT_MAX);
+	PopulateReady(Gamerule::Get<int32_t>(Gamerule::Id::PopulationPerTick));
+	lightManager.ProcessLightQueue(*this, Gamerule::Get<int32_t>(Gamerule::Id::LightUpdatesPerTick));
 	regionManager->PumpPipeline();
 	if (_profiler)
 		_profiler->Record(TickTask::ChunkLoading, Clock::now() - pipelineStart);
@@ -988,6 +988,7 @@ void WorldManager::PopulateSingle(Int32_2 _pos) {
 	FlushBleedWrites();
 }
 
+// TODO: Have _maxPopualtes and budget be size_t :p
 void WorldManager::PopulateReady(int _maxPopulates) {
 	int budget = _maxPopulates;
 	while (!requestOrder.empty() && budget > 0) {

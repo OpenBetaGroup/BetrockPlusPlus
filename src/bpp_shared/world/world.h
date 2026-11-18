@@ -151,7 +151,7 @@ public:
 	bool IsAabbInFluidLevel(const AABB& _collider, const Material& _material);
 	void UpdateLoadRadius(const std::vector<std::shared_ptr<PlayerSession>>& _players);
 	void PumpPipeline(const std::vector<std::shared_ptr<PlayerSession>>& _players);
-	void PopulateReady(int _maxPopulates = 16);
+	void PopulateReady(int _maxPopulates);
 	void DrainLoadQueue();
 	void DropInventory(Inventory& inventory, Int3 _wpos);
 	void UpdateSkylightOffset();

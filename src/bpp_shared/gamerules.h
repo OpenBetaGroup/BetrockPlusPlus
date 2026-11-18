@@ -62,6 +62,9 @@ enum class Id {
 	MaxSnowAccumulationHeight,
 	RandomTickSpeed,
 	WaterSourceConversion,
+	// Debug
+	PopulationPerTick,
+	LightUpdatesPerTick,
 
 	// NOTE: Last entry!
 	// This value is not used by any of our gamerules

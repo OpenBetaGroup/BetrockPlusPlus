@@ -9,6 +9,7 @@
 #include "config/config.h"
 #include "logger.h"
 #include <charconv>
+#include <climits>
 #include <map>
 #include <string>
 #include <vector>
@@ -87,6 +88,9 @@ struct Registry {
 		//Register(Id::MaxSnowAccumulationHeight, "max_snow_accumulation_height", "How much snow layers are allowed to accumulate", 3); // Vanilla: Unsure
 		//Register(Id::RandomTickSpeed, "random_tick_speed", 3); // TODO: Remove?
 		//Register(Id::WaterSourceConversion, "water_source_conversion", "If lava should be able to form new source blocks", true);  // Vanilla: true
+		// Debug
+		Register(Id::PopulationPerTick, "population_per_tick", "How many chunks should be attempted to populate per tick", 16); // Vanilla: n/a
+		Register(Id::LightUpdatesPerTick, "population_per_tick", "How many light updates should be processed per tick", INT_MAX); // Vanilla: n/a
 	}
 
 	Entry* Find(Id _id) {
