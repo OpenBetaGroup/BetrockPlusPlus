@@ -385,7 +385,6 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Serve
 	tPkt.time = sessionWorld.elapsedTicks;
 	tPkt.Serialize(_session.stream);
 
-	Logger::Info << "Client connected\n";
 	_session.connState = ConnectionState::Playing;
 
 	// Register our entity with the world
@@ -399,6 +398,8 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Serve
 
 	// Welcome message
 	if (!_session.entityRegistered) {
+		Logger::Info << "Client connected\n";
+
 		Packet::ChatMessage welcomeMsg;
 		welcomeMsg.message = std::string("§eThis Server runs on ") + std::string(PROJECT_FULL_VERSION_LABEL);
 		welcomeMsg.Serialize(_session.stream);
