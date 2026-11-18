@@ -60,6 +60,7 @@
 #ifdef BUILD_SERVER
 #if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
 #include "internet/curl_runtime.h"
+#include "internet/uuid.h"
 #endif
 #include "bpp_server/server.h"
 #endif
@@ -216,8 +217,10 @@ static void RunServer() {
 #if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
 	// Initialize libcurl before the server starts its thread pools. First-login
 	// curl_easy_init() would otherwise do this unsafely and can block SIGTERM.
-	if (!CurlRuntimeInit())
+	if (!Curl::Init())
 		Logger::Warning << "libcurl global init failed; online-mode auth and Betacraft heartbeat may not work.\n";
+	//auto strOpt = Uuid::UsernameToUuid("PixelBrushArt");
+	//std::cout << strOpt.value_or("empty") << std::endl;
 	// libcurl/OpenSSL may have replaced our handlers; put them back.
 	InstallProcessSignalHandlers();
 #if defined(BPP_HAS_POSIX_SIGNALS)
@@ -233,7 +236,7 @@ static void RunServer() {
 	server = nullptr; // don't leave a dangling pointer for the crash handler
 
 #if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
-	CurlRuntimeCleanup();
+	Curl::Cleanup();
 #endif
 }
 #endif

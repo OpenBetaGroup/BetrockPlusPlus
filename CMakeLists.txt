@@ -349,6 +349,7 @@ set(SHARED_SOURCES
 set(SERVER_SOURCES
     src/bpp_server/server.cpp
     src/bpp_server/console/server_console.cpp
+    src/bpp_server/internet/uuid.cpp
     src/bpp_server/internet/online_auth.cpp
     src/bpp_server/internet/betacraft_heartbeat.cpp
     src/bpp_server/packet/handle_packet.cpp

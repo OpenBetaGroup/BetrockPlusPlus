@@ -5,8 +5,8 @@
  *
 */
 
-#pragma once
 #ifdef BETACRAFT_HEARTBEAT
+#pragma once
 #include "config/config.h"
 #include <atomic>
 #include <mutex>

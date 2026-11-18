@@ -5,8 +5,8 @@
  *
 */
 
-#pragma once
 #ifdef ONLINE_MODE_AUTHENTICATION
+#pragma once
 #include "../bpp_shared/helpers/java/java_random.h"
 #include "BS_thread_pool.hpp"
 #include "logger.h"
@@ -23,8 +23,6 @@ struct Authentication {
 	std::string proxy = "http://betacraft.ee";
 	uint16_t proxyPort = 11705;
 	const std::string baseUrl = "http://www.minecraft.net/game";
-	static bool GlobalInit();
-	static void GlobalCleanup();
 	std::string GenerateAuthHash();
 	bool IsRegisteredUsername(std::string _serverId, std::string _username);
 	std::future<bool> IsRegisteredUsernameAsync(std::string _serverId, std::string _username);

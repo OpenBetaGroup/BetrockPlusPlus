@@ -5,9 +5,9 @@
  *
 */
 
+#ifdef BETACRAFT_HEARTBEAT
 #include "betacraft_heartbeat.h"
 
-#ifdef BETACRAFT_HEARTBEAT
 #include "curl_runtime.h"
 #include "logger.h"
 #include "version.h"
@@ -28,12 +28,6 @@ constexpr size_t kMaxDescriptionLen = 256;
 constexpr size_t kMaxIconBytes = 64000;
 
 using json = nlohmann::json;
-
-size_t WriteCallback(char* _ptr, size_t _size, size_t _nmemb, void* _userdata) {
-	auto* out = static_cast<std::string*>(_userdata);
-	out->append(_ptr, _size * _nmemb);
-	return _size * _nmemb;
-}
 
 std::string Truncate(std::string _value, size_t _max) {
 	if (_value.size() > _max)
@@ -148,10 +142,12 @@ void BetacraftHeartbeat::UpdateSnapshot(const BetacraftHeartbeatSnapshot& _snaps
 }
 
 std::string BetacraftHeartbeat::FetchPublicIp() {
+	// One-time curl operation
 	CURL* curl = curl_easy_init();
 	if (!curl)
 		return {};
 	std::string response;
+	// TODO: Allow to be configurable in case this ever goes down?
 	curl_easy_setopt(curl, CURLOPT_URL, "http://checkip.amazonaws.com");
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, "Betrock++");
@@ -171,34 +167,37 @@ std::string BetacraftHeartbeat::FetchPublicIp() {
 }
 
 bool BetacraftHeartbeat::PostJson(const std::string& _url, const std::string& _json, std::string& _response) {
-	CURL* curl = curl_easy_init();
-	if (!curl) {
-		Logger::Error << "Failed to initialize libcurl for Betacraft heartbeat.\n";
-		return false;
+	static UniqueCurl curl;
+    CURL* rawCurl = curl.get();
+    // One-time init
+    if (!curl) {
+		curl.reset(curl_easy_init());
+        rawCurl = curl.get();
+		curl_easy_setopt(rawCurl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+		curl_easy_setopt(rawCurl, CURLOPT_POST, 1L);
+		curl_easy_setopt(rawCurl, CURLOPT_POSTFIELDS, _json.c_str());
+		curl_easy_setopt(rawCurl, CURLOPT_POSTFIELDSIZE, static_cast<long>(_json.size()));
+		curl_easy_setopt(rawCurl, CURLOPT_USERAGENT, "Betrock++");
+		curl_easy_setopt(rawCurl, CURLOPT_NOSIGNAL, 1L);
+		curl_easy_setopt(rawCurl, CURLOPT_CONNECTTIMEOUT, 5L);
+		curl_easy_setopt(rawCurl, CURLOPT_TIMEOUT, 10L);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Curl::DefaultWriteCallback);
 	}
-
+	// Init headers
 	curl_slist* headers = nullptr;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
-
+	curl_easy_setopt(rawCurl, CURLOPT_HTTPHEADER, headers);
+	// Set url
 	curl_easy_setopt(curl, CURLOPT_URL, _url.c_str());
-	curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-	curl_easy_setopt(curl, CURLOPT_POST, 1L);
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, _json.c_str());
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, static_cast<long>(_json.size()));
-	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "Betrock++");
-	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+	// Set response target
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &_response);
-
+	// Perform stuff
 	const CURLcode res = curl_easy_perform(curl);
 	long httpCode = 0;
 	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+	// TODO: Figure out how free these alongside the curl object instead of repeated realloc of same data?
 	curl_slist_free_all(headers);
-	curl_easy_cleanup(curl);
-	CurlRestoreStopSignals();
+	Curl::RestoreStopSignals();
 
 	if (res != CURLE_OK) {
 		Logger::Warning << "Betacraft heartbeat request failed: " << curl_easy_strerror(res) << "\n";

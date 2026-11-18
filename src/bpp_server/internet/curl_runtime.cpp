@@ -5,9 +5,9 @@
  *
 */
 
+#if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
 #include "curl_runtime.h"
 
-#if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
 #include <atomic>
 #include <csignal>
 #include <curl/curl.h>
@@ -20,17 +20,17 @@ extern std::atomic<bool> shutdownRequested;
 
 static std::atomic<bool> curlInitialized{ false };
 
-static void CurlStopSignalHandler(int /*sig*/) {
+static void StopSignalHandler(int /*sig*/) {
 	shutdownRequested.store(true);
 }
 
-void CurlRestoreStopSignals() {
+void Curl::RestoreStopSignals() {
 #if defined(_WIN32) || defined(_WIN64)
-	std::signal(SIGINT, CurlStopSignalHandler);
-	std::signal(SIGTERM, CurlStopSignalHandler);
+	std::signal(SIGINT, StopSignalHandler);
+	std::signal(SIGTERM, StopSignalHandler);
 #else
 	struct sigaction sa{};
-	sa.sa_handler = CurlStopSignalHandler;
+	sa.sa_handler = StopSignalHandler;
 	sigemptyset(&sa.sa_mask);
 	// No SA_RESTART: a blocked connect/wait must return so the tick loop
 	// can observe shutdownRequested.
@@ -51,20 +51,20 @@ void CurlRestoreStopSignals() {
 }
 
 // Note: MUST happen before any other threads exist, otherwise this can block all other signals on Musl
-bool CurlRuntimeInit() {
+bool Curl::Init() {
 	if (curlInitialized.exchange(true)) {
-		CurlRestoreStopSignals();
+		Curl::RestoreStopSignals();
 		return true;
 	}
 	if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
 		curlInitialized.store(false);
 		return false;
 	}
-	CurlRestoreStopSignals();
+	Curl::RestoreStopSignals();
 	return true;
 }
 
-void CurlRuntimeCleanup() {
+void Curl::Cleanup() {
 	if (!curlInitialized.exchange(false))
 		return;
 	curl_global_cleanup();
