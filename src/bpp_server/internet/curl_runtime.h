@@ -8,6 +8,8 @@
 #if defined(ONLINE_MODE_AUTHENTICATION) || defined(BETACRAFT_HEARTBEAT)
 #pragma once
 #include <curl/curl.h>
+#include <memory>
+#include <string>
 namespace Curl {
 bool Init();
 void Cleanup();
