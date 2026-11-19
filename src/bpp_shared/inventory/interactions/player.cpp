@@ -48,10 +48,20 @@ void PlayerInventoryInteraction::OnLeftClick(int _slot) {
 
 			if (pieces[_slot - 5] != Items::GetArmorPiece(this->carried.id))
 				return;
+
+			// We are a msc block
+			InventoryInteraction::OnRightClick(_slot);
+			return;
 		}
 	}
 
-	CraftingInventoryInteraction::OnLeftClick(_slot);
+	// Thanks pumpkins for making my life hard
+	if (_slot == 0)
+		TakeResult();
+	else {
+		InventoryInteraction::OnLeftClick(_slot);
+	}
+	HandleCrafting(_slot);
 }
 
 void PlayerInventoryInteraction::OnRightClick(int _slot) {
@@ -74,7 +84,68 @@ void PlayerInventoryInteraction::OnRightClick(int _slot) {
 		}
 	}
 
-	CraftingInventoryInteraction::OnRightClick(_slot);
+	if (_slot == 0)
+		TakeResult();
+	else {
+		auto targetSlot = inventory->GetStackInSlot(_slot);
+
+		if (carried.id != Items::Id::INVALID && carried.count > 0) {
+			if (!targetSlot) {
+				ItemStack single{ carried.id, 1, carried.data };
+				inventory->SetInventorySlotContents(_slot, &single);
+				carried.count -= 1;
+				if (carried.count == 0)
+					carried = ItemStack{};
+				inventory->OnInventoryChanged();
+				return;
+			}
+
+			// If we right click on the same item we are carrying just add one
+			if (targetSlot->id == carried.id &&
+			    (Items::HasSubtypes(carried.id) ? targetSlot->data == carried.data : true)) {
+				int maxStack = playerInv->GetInventoryAreaFromSlot(_slot) != InvMap::ARMOR
+				                   ? Items::GetMaxStack(targetSlot->id)
+				                   : 1;
+				int space = maxStack - targetSlot->count;
+				if (space >= 1) {
+					targetSlot->count += 1;
+					carried.count -= 1;
+					if (carried.count == 0)
+						carried = ItemStack{};
+					inventory->OnInventoryChanged();
+				}
+				return;
+			}
+
+			// If we right click on a different item, swap the cursor and that item
+			ItemStack temp = *targetSlot;
+			*targetSlot = carried;
+			carried = temp;
+			inventory->OnInventoryChanged();
+			return;
+		}
+
+		if (!targetSlot)
+			return;
+
+		// Only split items if there stack count is greater than 1 and we aren't carrying anything
+		if (targetSlot->count > 1) {
+			// Beta always take the higher of the two if uneven
+			int taken = (targetSlot->count + 1) / 2;
+			int left = targetSlot->count - taken;
+			targetSlot->count = int8_t(left);
+			carried = ItemStack{ targetSlot->id, int8_t(taken), targetSlot->data };
+			inventory->OnInventoryChanged();
+			return;
+		}
+
+		// If its only one item we just pick it up
+		carried = *targetSlot;
+		inventory->ClearSlot(_slot);
+		inventory->OnInventoryChanged();
+		return;
+	}
+	HandleCrafting(_slot);
 }
 
 bool PlayerInventoryInteraction::CanExist(PlayerEntity& /*_player*/) {
@@ -101,21 +172,17 @@ void PlayerInventoryInteraction::ShiftClickOther(int _slot) {
 	if (!stack)
 		return;
 
-	ItemStack copy = *stack; // work on a copy so we can detect what moved
+	ItemStack copy = *stack;
 
-	if (from == InvMap::ARMOR || from == InvMap::CRAFTING_AREA || from == InvMap::CRAFTING_RESULT ||
-	    from == InvMap::HOTBAR) {
-		bool success = playerInventory->MergeItemStackInInventory(copy, false, 9, 35);
-		if (!success && from != InvMap::HOTBAR)
-			playerInventory->MergeItemStackInInventory(copy, false, 36, 44);
-	} else {
+	if (from == InvMap::INVENTORY)
 		playerInventory->MergeItemStackInInventory(copy, false, 36, 44);
-	}
+	else if (from == InvMap::HOTBAR)
+		playerInventory->MergeItemStackInInventory(copy, false, 9, 35);
+	else // crafting grid, armour
+		playerInventory->MergeItemStackInInventory(copy, false, 9, 44);
 
-	// Update the source slot to whatever count is left
-	if (copy.count == 0) {
+	if (copy.count == 0)
 		playerInventory->ClearSlot(_slot);
-	} else {
+	else
 		stack->count = copy.count;
-	}
 }

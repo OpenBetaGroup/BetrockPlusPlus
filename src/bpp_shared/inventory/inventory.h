@@ -108,7 +108,7 @@ struct Inventory {
 				auto slot = GetStackInSlot(i);
 				if (!slot)
 					continue;
-				if (slot->id == _stack.id && slot->data == _stack.data) {
+				if (slot->id == _stack.id && (!Items::HasSubtypes(_stack.id) || slot->data == _stack.data)) {
 					auto maxStack = Items::GetMaxStack(slot->id);
 					// Don't try and merge into an already maxed out stack
 					if (slot->count >= maxStack)
@@ -156,7 +156,7 @@ struct Inventory {
 				auto slot = GetStackInSlot(i);
 				if (!slot)
 					continue;
-				if (slot->id == _stack.id && slot->data == _stack.data) {
+				if (slot->id == _stack.id && (!Items::HasSubtypes(_stack.id) || slot->data == _stack.data)) {
 					auto maxStack = Items::GetMaxStack(slot->id);
 					// Don't try and merge into an already maxed out stack
 					if (slot->count >= maxStack)
