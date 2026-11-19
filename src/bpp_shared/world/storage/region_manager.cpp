@@ -6,6 +6,7 @@
 */
 #include "region_manager.h"
 #include "entities/entity_manager.h"
+#include "gamerules.h"
 #include "logger.h"
 #include "logstream.h"
 #include "managers/tick_scheduler.h"
@@ -46,12 +47,14 @@ void RegionManager::FatalIo(const std::string& _what, Int32_2 _cpos) {
 	Logger::Error << "FATAL IO ERROR at chunk (" << _cpos.x << ", " << _cpos.z << "): " << _what
 	              << "\nStopping server to prevent world corruption.\n";
 	Logger::Flush();
-
 #if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__)
 	kill(getpid(), SIGTERM);
 #else
 	std::raise(SIGTERM);
 #endif
+
+	if (onIoError)
+		onIoError();
 }
 
 bool RegionManager::Initialize(const std::string& _folderPath) {
@@ -212,11 +215,23 @@ void RegionManager::LoadChunk(const Int32_2 _cpos) {
 		return;
 	}
 
-	iopool.detach_task([_cpos, region, this]() {
+	bool regenChunk = Gamerule::Get<bool>("overwrite_data_corruption");
+
+	iopool.detach_task([_cpos, region, regenChunk, this]() {
 		try {
 			Region::ReadStatus status = Region::ReadStatus::Error;
 			auto chunk = region->GetChunk(_cpos, status);
 			if (status == Region::ReadStatus::Missing) {
+				if (regenChunk) {
+					// Drop the bad header entry so the slot reads as "no chunk here"
+					if (!region->InvalidateChunk(_cpos)) {
+						FatalIo("InvalidateChunk failed", _cpos);
+						return;
+					}
+					Logger::Warning << "Chunk " << _cpos << " had corrupt data; it will be regenerated\n";
+					MarkLoadFailed(_cpos);
+					return;
+				}
 				FatalIo("GetChunk failed (missing chunk data)", _cpos);
 				return;
 			}

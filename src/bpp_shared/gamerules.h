@@ -28,6 +28,7 @@ enum class Id {
 	EntityDrops,
 	MobDrops,
 	// Misc
+	OverwriteDataCorruption,
 	MaxMinecartSpeed,
 	TntExplodes,
 	Nightmares,

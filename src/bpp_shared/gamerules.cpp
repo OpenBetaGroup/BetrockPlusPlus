@@ -53,6 +53,8 @@ struct Registry {
 		         "How large the radius in which blocks can't be placed is", 16); // Vanilla: 16
 		Register(Id::ZeroDamageKnockback, "zero_damage_knockback",
 		         "Whether 0 damage attack (snowballs, eggs) do knockback", false); // Vanilla: false
+		Register(Id::OverwriteDataCorruption, "overwrite_data_corruption",
+		         "Whether to regenerate chunks instead of crashing on FatalIO", false);
 		// Mobs
 		//Register(Id::ForgiveDeadPlayers, "forgive_dead_players", "If aggro'd mobs forgive a player after dying", true);
 		Register(Id::MobGriefing, "mob_griefing",

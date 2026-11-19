@@ -178,6 +178,26 @@ bool Region::AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp,
 	return true;
 }
 
+bool Region::InvalidateChunk(Int32_2 _cpos) {
+	std::lock_guard<std::mutex> lock(mutex);
+	Int2 local{ _cpos.x & 31, _cpos.z & 31 };
+	int index = local.x + local.z * 32;
+
+	auto& file = regionFile.Get();
+	if (file.fail())
+		return false;
+
+	uint32_t entry = 0;
+	file.seekp(index * 4);
+	file.write(reinterpret_cast<char*>(&entry), 4);
+	file.flush();
+	if (file.fail())
+		return false;
+
+	regionHeader[index] = {};
+	return true;
+}
+
 std::shared_ptr<Chunk> Region::GetChunk(Int32_2 _cpos, ReadStatus& _status) {
 	_status = ReadStatus::Error;
 	std::lock_guard<std::mutex> lock(mutex);

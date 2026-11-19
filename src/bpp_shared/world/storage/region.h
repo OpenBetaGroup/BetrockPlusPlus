@@ -57,7 +57,7 @@ public:
 	};
 
 	std::shared_ptr<Chunk> GetChunk(Int32_2 _cpos, ReadStatus& _status);
-
+	bool InvalidateChunk(Int32_2 _cpos);
 	bool AddChunk(std::shared_ptr<Chunk> _chunk, int64_t _timestamp, std::shared_ptr<const std::vector<Tag>> _entities);
 	std::vector<uint8_t> EncodeNbtData(const std::shared_ptr<Chunk>& _chunk, int64_t _timestamp,
 	                                   std::shared_ptr<const std::vector<Tag>> _entities);

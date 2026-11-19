@@ -68,13 +68,13 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
-
 #include "server.h"
 #include <chrono>
 #include <type_traits>
 #include <unordered_set>
 
-Server::Server() : config("server.properties"), gamerulesConfig("gamerules.txt"), gameRuntime(this), addonManager(this) {
+Server::Server()
+    : config("server.properties"), gamerulesConfig("gamerules.txt"), gameRuntime(this), addonManager(this) {
 	ServerBlock::Initialize();
 	LoadConfig();
 
@@ -117,7 +117,8 @@ bool Server::ExecuteCommand(std::string_view _command, PlayerSessionMP* _sender)
 		ctx.sender = _sender;
 		ctx.session = _sender;
 		ctx.executionEntity = _sender ? _sender->entity.get() : nullptr;
-		ctx.world = _sender ? GetWorldForDimension(_sender->dimension) : gameRuntime.GetWorldForDimension(Dimension::Overworld);
+		ctx.world = _sender ? GetWorldForDimension(_sender->dimension)
+		                    : gameRuntime.GetWorldForDimension(Dimension::Overworld);
 		ctx.server = this;
 
 		return commandManager.Parse(_command, ctx);
@@ -440,17 +441,17 @@ void Server::Startup() {
 			       IsValidActionInSpawnRadius(*dynamic_cast<PlayerSessionMP*>(player->session), *this, _pos, *_world);
 		};
 	});
-	
+
 	// Block updates
 	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
 		auto dimension = _world->dimension->id;
 		_world->onBlockUpdate = makeBlockUpdateCallback(dimension, *GetBlockChangeMapForDimension(dimension));
 	});
-	
+
 	// World events
-	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { 
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
 		_world->onWorldEvent = [this, _world](PacketData::WorldEvent _eventType, Int3 _position, int32_t _data,
-		                              PlayerSession* _triggeringSession) {
+		                                      PlayerSession* _triggeringSession) {
 			WorldEventBroadcaster::BroadcastWorldEvent(*this, _eventType, _position, _data, _world->dimension->id,
 			                                           dynamic_cast<PlayerSessionMP*>(_triggeringSession));
 		};
@@ -468,13 +469,20 @@ void Server::Startup() {
 	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
 		// Sent by position, not by who can see the exploder: TNT and beds explode with no exploder
 		_world->onExplosion = [this, _world](Vec3 _pos, float _size, std::unordered_set<Int3>& _blockPositions,
-		                                        Entity* /*_exploder*/) {
+		                                     Entity* /*_exploder*/) {
 			WorldEventBroadcaster::BroadcastExplosion(*this, _pos, _size, _blockPositions, _world->dimension->id);
 		};
 	});
 
+	// Fatal IO
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
+		_world->regionManager->onIoError = []() {
+			shutdownRequested.store(true);
+		};
+	});
+
 	// Entity trackers
-	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { 
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
 		this->entityTrackers[_world->dimension->id] = std::make_unique<EntityTracker>();
 
 		auto entityTracker = GetEntityTrackerForDimension(_world->dimension->id);
@@ -503,8 +511,7 @@ void Server::Startup() {
 	// Get spawn ready
 	int spawnChunkDistance = this->spawnChunkRadius;
 	int totalSpawnChunks = (spawnChunkDistance + spawnChunkDistance + 1) * (spawnChunkDistance + spawnChunkDistance + 1);
-	Logger::Info << "Server spawn is " << Int2(int(overworld->spawnPoint.x), int(overworld->spawnPoint.z))
-	             << "\n";
+	Logger::Info << "Server spawn is " << Int2(int(overworld->spawnPoint.x), int(overworld->spawnPoint.z)) << "\n";
 
 	Logger::Info << "Preparing spawn chunks..\n";
 	if (Gamerule::Get<bool>(Gamerule::Id::SpawnChunks)) {
@@ -568,8 +575,8 @@ void Server::Startup() {
 		};
 
 		gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
-			Logger::Info << "Loading spawn chunks for "
-			             << int(_world->dimension->id) << ": (" << totalSpawnChunks << ")\n";
+			Logger::Info << "Loading spawn chunks for " << int(_world->dimension->id) << ": (" << totalSpawnChunks
+			             << ")\n";
 			loadSpawnChunks(*_world);
 		});
 	}
@@ -692,13 +699,13 @@ void Server::Stop() {
 
 void Server::SaveLevelFile() {
 	auto overworld = gameRuntime.GetWorldForDimension(Dimension::Overworld);
-	LevelData& curLevelData  = gameRuntime.saveManager.GetLevelData();
-	curLevelData.randomSeed  = overworld->seed;
-	curLevelData.spawnPoint  = overworld->spawnPoint;
-	curLevelData.time        = overworld->elapsedTicks;
-	curLevelData.raining     = overworld->weatherSystem.isRaining;
-	curLevelData.rainTime    = overworld->weatherSystem.rainTimer;
-	curLevelData.thundering  = overworld->weatherSystem.isThundering;
+	LevelData& curLevelData = gameRuntime.saveManager.GetLevelData();
+	curLevelData.randomSeed = overworld->seed;
+	curLevelData.spawnPoint = overworld->spawnPoint;
+	curLevelData.time = overworld->elapsedTicks;
+	curLevelData.raining = overworld->weatherSystem.isRaining;
+	curLevelData.rainTime = overworld->weatherSystem.rainTimer;
+	curLevelData.thundering = overworld->weatherSystem.isThundering;
 	curLevelData.thunderTime = overworld->weatherSystem.thunderTimer;
 	gameRuntime.saveManager.SaveLevelFile(curLevelData);
 }
@@ -769,9 +776,7 @@ bool Server::ToggleTickFreeze() {
 	tickFrozen = !tickFrozen;
 	if (!tickFrozen)
 		pendingTickSteps = 0;
-	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
-		_world->SetFrozen(tickFrozen);
-	});
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { _world->SetFrozen(tickFrozen); });
 	return tickFrozen;
 }
 
@@ -907,7 +912,7 @@ void Server::Tick() {
 
 	// Send all of the block changes that have accumulated since the last Tick, then clear the list.
 	// TODO: Maybe globally re-use these?
-	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void { 
+	gameRuntime.RunFunctionOnAllDimensions([&](WorldManager* _world) -> void {
 		std::unordered_map<Int32_2, std::vector<PendingBlock>> localBlockChanges;
 		localBlockChanges.swap(*GetBlockChangeMapForDimension(_world->dimension->id));
 
@@ -926,9 +931,7 @@ void Server::Tick() {
 		lastSentRaining = raining;
 		Packet::GameEvent pkt;
 		pkt.eventId = raining ? PacketData::GameEvent::START_RAINING : PacketData::GameEvent::STOP_RAINING;
-		RunFunctionOnAllTrackers([&](EntityTracker* _tracker) -> void {
-			_tracker->SendPacketToAllPlayers(pkt);
-		});
+		RunFunctionOnAllTrackers([&](EntityTracker* _tracker) -> void { _tracker->SendPacketToAllPlayers(pkt); });
 	}
 
 	// Disconnect timed-out clients; the removed sessions are returned so we

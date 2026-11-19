@@ -29,6 +29,8 @@ struct SnapshotContainer {
 class WorldManager;
 
 struct RegionManager {
+	std::function<void()> onIoError;
+
 	BS::thread_pool<> iopool{ 2 };
 
 	static constexpr size_t MAX_PENDING_REGIONS = 32;
