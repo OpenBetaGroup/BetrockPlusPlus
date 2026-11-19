@@ -64,7 +64,7 @@ void PlayerInventoryInteraction::OnLeftClick(int _slot) {
 	HandleCrafting(_slot);
 }
 
-void PlayerInventoryInteraction::OnRightClick(int _slot) {
+void PlayerInventoryInteraction::RightClick(int _slot) {
 	auto playerInv = dynamic_cast<InventoryPlayer*>(inventory);
 	if (!playerInv)
 		return;
@@ -145,6 +145,10 @@ void PlayerInventoryInteraction::OnRightClick(int _slot) {
 		inventory->OnInventoryChanged();
 		return;
 	}
+}
+
+void PlayerInventoryInteraction::OnRightClick(int _slot) {
+	RightClick(_slot);
 	HandleCrafting(_slot);
 }
 
