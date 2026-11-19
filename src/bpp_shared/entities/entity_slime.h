@@ -5,7 +5,16 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_hostile.h"
+#include "entity_manager.h"
+#include "java_random.h"
+#include "nbt/nbt_tag.h"
+#include "packet_data.h"
+#include <optional>
+#include <vector>
 
 struct SlimeEntity : public HostileEntity {
 	int size = 1;

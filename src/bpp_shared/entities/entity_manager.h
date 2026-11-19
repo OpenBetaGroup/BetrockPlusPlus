@@ -5,12 +5,25 @@
  *
 */
 #pragma once
+#include "base_types.h"
+#include "blocks/block_properties.h"
+#include "entities.h"
 #include "entity.h"
+#include "helpers/aabb.h"
 #include "helpers/java/java_math.h"
-#include "logger/logger.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tick_profiler.h"
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 struct EntityBucket {
 	// 16 blocks tall

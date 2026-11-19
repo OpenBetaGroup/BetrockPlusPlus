@@ -6,11 +6,15 @@
  */
 #pragma once
 
+#include "entities.h"
 #include "entity.h"
-#include "explosion.h"
-#include "logger.h"
 #include "gamerules.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "world/world.h"
+#include <optional>
 
 struct TntEntity : public Entity {
 	int fuse = 0;

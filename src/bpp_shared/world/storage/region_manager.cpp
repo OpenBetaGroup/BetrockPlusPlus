@@ -5,11 +5,20 @@
  *
 */
 #include "region_manager.h"
-#include "helpers/deflate_pool.h"
+#include "entities/entity_manager.h"
+#include "logger.h"
+#include "logstream.h"
+#include "managers/tick_scheduler.h"
+#include "region.h"
 #include "world/world.h" // Full WorldManager definition needed here for world->elapsed_ticks etc.
+#include <algorithm>
 #include <csignal>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <utility>
 #if defined(__linux__) || defined(__APPLE__) || defined(__HAIKU__)
 #include <signal.h>
 #include <unistd.h>

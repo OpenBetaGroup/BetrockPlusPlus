@@ -5,9 +5,15 @@
  * 
 */
 
+#include "base_types.h"
 #include "enums/blocks.h"
 #include "enums/items.h"
 #include "recipe_manager.h"
+#include <array>
+#include <cstdint>
+#include <span>
+#include <string_view>
+#include <utility>
 
 void RecipeManager::AddVanillaRecipes() {
 	// Msc

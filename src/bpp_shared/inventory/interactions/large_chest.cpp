@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #include "large_chest.h"
+#include "enums/items.h"
+#include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
+#include "numeric_structs.h"
+#include <cstddef>
 
 LargeChestInventoryInteraction::LargeChestInventoryInteraction(InventoryPlayer* _pinv,
                                                                std::shared_ptr<TileEntityChest> _upper,

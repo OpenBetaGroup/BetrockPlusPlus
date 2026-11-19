@@ -5,8 +5,13 @@
  *
  */
 #include "entity_lightning_bolt.h"
+#include "blocks.h"
 #include "blocks/block_behaviors/internal.h"
+#include "entity.h"
+#include "entity_manager.h"
+#include "helpers/aabb.h"
 #include "world.h"
+#include <vector>
 
 void LightningEntity::TryCatchFire() {
 	if (!world)

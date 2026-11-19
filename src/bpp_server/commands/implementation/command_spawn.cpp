@@ -7,8 +7,17 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
-#include "networking/packets.h"
+#include "commands/strategos.h"
+#include "constants.h"
+#include "dimensions.h"
+#include "gamerules.h"
+#include "numeric_structs.h"
+#include "player_conn/player_session_mp.h"
 #include "server.h"
+#include "world.h"
+#include "world/dimension/dimension.h"
+#include <memory>
+#include <optional>
 
 namespace {
 

@@ -5,9 +5,8 @@
  *
 */
 #pragma once
-#include "entities.h"
 #include "entities/entity_mp_player.h"
-#include "inventory/item_stack.h"
+#include "player_conn/player_session_mp.h"
 #include "runtime.h"
 #include "server.h"
 

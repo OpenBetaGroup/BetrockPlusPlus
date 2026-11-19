@@ -6,7 +6,16 @@
  */
 
 #include "entity_throwable.h"
+#include "blocks/block_behaviors.h"
+#include "damage_types.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "helpers/aabb.h"
 #include "raycast.h"
+#include "world.h"
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 static Tag SetShort(std::string _name, int16_t _value) {
 	Tag shortTag;

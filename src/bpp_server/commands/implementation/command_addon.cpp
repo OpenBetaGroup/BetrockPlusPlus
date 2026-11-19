@@ -7,12 +7,14 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "addon/addon.h"
+#include "addon/addon_manager.h"
+#include "commands/strategos.h"
 #include "server.h"
-#include "username.h"
-#include <algorithm>
-#include <cctype>
 #include <format>
-#include <sstream>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace {
 void ListAddons(const strategos::CmdNode&, void* _userData) {

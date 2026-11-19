@@ -6,6 +6,7 @@
 */
 
 #include "noise_generator.h"
+#include <utility>
 
 void NoiseGenerator::InitPermTable(Java::Random& _rand) {
 	coordinate.x = _rand.NextDouble() * 256.0;

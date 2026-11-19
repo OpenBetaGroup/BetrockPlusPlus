@@ -5,6 +5,11 @@
 */
 
 #include "../feature_gen.h"
+#include "blocks.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
+#include <cstdint>
 
 //  GenerateLake
 bool FeatureGenerator::GenerateLake(BlockType _type, WorldWrapper& _world, Java::Random& _rand, Int3 _pos) {

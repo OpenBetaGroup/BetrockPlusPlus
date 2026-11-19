@@ -7,9 +7,17 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
 #include "gamerules.h"
 #include "server.h"
-#include "version.h"
+#include <cstddef>
+#include <format>
+#include <functional>
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 

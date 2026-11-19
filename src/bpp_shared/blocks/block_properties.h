@@ -5,9 +5,12 @@
  *
 */
 #pragma once
+#include "base_types.h"
+#include "blocks.h"
 #include "direction.h"
+#include "enums/items.h"
 #include "materials.h"
-#include "packet_data.h"
+#include <cstdint>
 #include <numeric_structs.h>
 
 class WorldManager;

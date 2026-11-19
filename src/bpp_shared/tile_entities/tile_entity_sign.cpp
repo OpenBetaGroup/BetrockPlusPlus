@@ -7,6 +7,8 @@
 */
 
 #include "tile_entity_sign.h"
+#include "tile_entity_base.h"
+#include <unordered_map>
 
 void TileEntitySign::Deserialize(const Tag& _tag) {
 	if (_tag.Has("Text1"))

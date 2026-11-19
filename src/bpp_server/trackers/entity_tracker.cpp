@@ -16,14 +16,19 @@
 #include "entities/entity_item.h"
 #include "entities/entity_minecart.h"
 #include "entities/entity_mobile.h"
+#include "entities/entity_mp_player.h"
 #include "entities/entity_painting.h"
+#include "entities/entity_player.h"
 #include "entities/entity_snowball.h"
 #include "logger.h"
 #include "networking/packets.h"
 #include "packet_data.h"
 #include "player_conn/player_session_mp.h"
-#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <utility>
+#include <vector>
 
 double DistanceBetweenPlayerAndEntity(Entity* _entity, Entity* _player) {
 	auto dx = _entity->position.x - _player->position.x;

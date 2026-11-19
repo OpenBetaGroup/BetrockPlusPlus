@@ -9,11 +9,18 @@
 
 #include "../player_conn/player_session_mp.h"
 #include "constants.h"
+#include "entities.h"
+#include "entities/entity.h"
+#include "entities/entity_player.h"
+#include "helpers/java/java_math.h"
 #include "inventory/item_stack.h"
 #include "networking/packets.h"
+#include "numeric_structs.h"
 #include "strategos.h"
 #include "ucs2.h"
+#include <cstddef>
 #include <expected>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>

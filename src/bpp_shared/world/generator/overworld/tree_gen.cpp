@@ -5,7 +5,11 @@
 */
 
 #include "tree_gen.h"
-#include <cassert>
+#include "constants.h"
+#include "generator/shared/feature_gen.h"
+#include "helpers/java/java_math.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 namespace TreeGenerator {

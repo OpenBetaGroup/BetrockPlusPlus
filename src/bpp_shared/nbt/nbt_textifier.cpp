@@ -5,6 +5,7 @@
  *
 */
 #include "nbt_textifier.h"
+#include "nbt_tag.h"
 
 // Sets a tag's appropriate value from a string input
 void TextNBTifier::SetNumberFromText(Tag& _tag, std::string _text) {

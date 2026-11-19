@@ -5,6 +5,10 @@
 */
 
 #include "../feature_gen.h"
+#include "blocks.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
 
 bool FeatureGenerator::GenerateNetherFire(WorldWrapper& _world, Java::Random& _rand, Int3 _pos) {
 	for (int i = 0; i < 64; ++i) {

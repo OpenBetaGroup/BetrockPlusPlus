@@ -5,8 +5,14 @@
  *
  */
 #pragma once
+#include "base_types.h"
+#include "damage_types.h"
+#include "entity.h"
 #include "entity_mobile.h"
+#include "numeric_structs.h"
 #include "raycast.h"
+#include <algorithm>
+#include <memory>
 
 struct MobEntity : public MobileEntity {
 	std::weak_ptr<Entity> lookTarget;

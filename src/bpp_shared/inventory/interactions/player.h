@@ -7,6 +7,7 @@
 #include "entities/entity_player.h"
 #include "inventory/interactions/crafting.h"
 #include "inventory/inventories.h"
+#include "runtime.h"
 
 struct PlayerInventoryInteraction : CraftingInventoryInteraction {
 	InventoryPlayer* playerInventory;

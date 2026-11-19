@@ -8,6 +8,10 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace {
 

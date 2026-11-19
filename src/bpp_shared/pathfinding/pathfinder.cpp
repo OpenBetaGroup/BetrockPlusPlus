@@ -5,10 +5,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  * 
 */
+#include "blocks.h"
+#include "blocks/materials.h"
 #include <algorithm>
 #include <cmath>
 #include <optional>
 #include <queue>
+#include <utility>
 #include <vector>
 #include "world/world.h"
 

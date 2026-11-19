@@ -5,7 +5,9 @@
  *
 */
 #include "tick_scheduler.h"
+#include "blocks/block_behaviors.h"
 #include "world.h"
+#include <algorithm>
 
 void TickScheduler::Tick() {
 	if (!this->world)

@@ -5,8 +5,9 @@
  */
 
 #include "logger.h"
-#include <climits>
+#include "logstream.h"
 #include <cstdint>
+#include <format>
 namespace Test {
 // Total only works for positive-only values
 uint64_t total = 0;

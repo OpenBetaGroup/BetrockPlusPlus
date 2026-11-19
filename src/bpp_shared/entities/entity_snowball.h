@@ -5,8 +5,11 @@
  *
  */
 #pragma once
+#include "entities.h"
+#include "entity_mobile.h"
 #include "entity_throwable.h"
-#include "logger.h"
+#include "numeric_structs.h"
+#include <memory>
 
 struct SnowballEntity : public ThrowableEntity {
 	// Default

@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "platform_caps.h"
 
 namespace Platform {
 #if defined(BPP_PLATFORM_CONSOLE)

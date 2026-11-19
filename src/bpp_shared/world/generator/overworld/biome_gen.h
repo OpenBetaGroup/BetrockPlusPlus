@@ -9,6 +9,8 @@
 #include "constants.h"
 #include "helpers/packed_array.h"
 #include "noise_octaves_simplex.h"
+#include "numeric_structs.h"
+#include <cstdint>
 #include <span>
 
 /**

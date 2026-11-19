@@ -6,9 +6,14 @@
  *
 */
 #pragma once
-#include "entities.h"
+#include "base_types.h"
+#include "damage_types.h"
+#include "entities/entity.h"
 #include "entities/entity_player.h"
 #include "inventory/item_stack.h"
+#include "numeric_structs.h"
+#include <cstdint>
+#include <string>
 
 struct PlayerSessionMP;
 struct EntityMPPlayer : public PlayerEntity {

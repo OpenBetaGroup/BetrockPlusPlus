@@ -10,6 +10,7 @@
 #include "../bpp_shared/helpers/java/java_random.h"
 #include "BS_thread_pool.hpp"
 #include "logger.h"
+#include <cstdint>
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <format>

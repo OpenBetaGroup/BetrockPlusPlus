@@ -8,8 +8,8 @@
 #pragma once
 #include "../enums/blocks.h"
 #include "../enums/network/packet_data.h"
-#include "../numeric_structs.h"
-#include <array>
+#include "direction.h"
+#include <cstdint>
 
 /**
  * @brief Turn a metadata value into an appropriate direction for the block

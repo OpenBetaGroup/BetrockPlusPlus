@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #include "inventory_interaction.h"
+#include "enums/items.h"
+#include "inventory.h"
+#include "items/item_properties.h"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 InventoryInteraction::InventoryInteraction(Inventory* _inv) : inventory(_inv) {}
 

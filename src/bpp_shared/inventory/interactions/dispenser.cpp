@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #include "dispenser.h"
+#include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
+#include <cstddef>
 
 TrapInventoryInteraction::TrapInventoryInteraction(InventoryPlayer* _pinv,
                                                    std::shared_ptr<TileEntityDispenser> _dispenser)

@@ -8,12 +8,15 @@
 #pragma once
 #include "base_structs.h"
 #include "base_types.h"
+#include "blocks.h"
 #include "constants.h"
+#include "enums/items.h"
 #include "inventory/item_stack.h"
 #include "network_stream.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
-#include "quantized_types.h"
+#include <cstddef>
+#include <cstdint>
 #include <dimensions.h>
 #include <packet_ids.h>
 #include <string>

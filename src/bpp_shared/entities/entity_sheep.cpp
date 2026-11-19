@@ -5,6 +5,11 @@
  *
  */
 #include "entity_sheep.h"
+#include "blocks.h"
+#include "entity_animal.h"
+#include <string>
+#include <unordered_map>
+#include <variant>
 
 void SheepEntity::LoadFromNbt(Tag& _nbt) {
 	AnimalEntity::LoadFromNbt(_nbt);

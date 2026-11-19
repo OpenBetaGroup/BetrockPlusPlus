@@ -6,9 +6,10 @@
 */
 #pragma once
 #include "logger.h"
+#include "logstream.h"
 #include <filesystem>
 #include <fstream>
-#include <memory>
+#include <stdexcept>
 #include <string>
 
 class FileHandle {

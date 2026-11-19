@@ -7,6 +7,10 @@
 */
 
 #pragma once
+#include "inventory/inventories.h"
+#include "items/item_properties.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tile_entity_base.h"
 
 // Chest

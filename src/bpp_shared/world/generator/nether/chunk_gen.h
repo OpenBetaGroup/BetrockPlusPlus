@@ -7,6 +7,12 @@
 #include "../../noise/noise_octaves_perlin.h"
 #include "../generator.h"
 #include "../shared/cave_gen.h"
+#include "chunk.h"
+#include "constants.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
+#include <cstddef>
+#include <cstdint>
 
 /**
  * @brief A faithful reimplementation of the Beta 1.7.3 Nether Generator

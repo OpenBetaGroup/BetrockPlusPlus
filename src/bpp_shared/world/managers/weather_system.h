@@ -5,9 +5,9 @@
  *
 */
 #pragma once
-#include "../base_types.h"
 #include "../enums/weather.h"
 #include "../helpers/java/java_random.h"
+#include <cstdint>
 
 // Based on info from https://minecraft.wiki/w/Weather#Java_Edition_mechanics
 

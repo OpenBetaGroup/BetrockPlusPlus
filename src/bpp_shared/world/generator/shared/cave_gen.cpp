@@ -5,7 +5,10 @@
 */
 
 #include "cave_gen.h"
+#include "blocks.h"
+#include "constants.h"
 #include "java_math.h"
+#include <algorithm>
 
 /**
  * @brief Attempts to generate a cave in the current chunk

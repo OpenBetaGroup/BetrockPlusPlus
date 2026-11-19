@@ -5,6 +5,8 @@
  *
  */
 #include "entity_zombie.h"
+#include "enums/items.h"
+#include "java_random.h"
 
 void ZombieEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// Drop 0-2 feathers

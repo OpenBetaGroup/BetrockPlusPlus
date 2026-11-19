@@ -7,6 +7,7 @@
 */
 #pragma once
 #include "logger.h"
+#include "logstream.h"
 #include "platform/platform_caps.h"
 #if defined(BPP_HAS_POSIX_SOCKETS)
 #include <arpa/inet.h>

@@ -7,10 +7,13 @@
 
 #include "list_parser.h"
 #include "logger.h"
+#include "logstream.h"
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <fstream>
 #include <string>
+#include <utility>
 
 namespace {
 

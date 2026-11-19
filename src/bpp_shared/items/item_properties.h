@@ -7,11 +7,11 @@
 
 #pragma once
 #include "base_types.h"
+#include "blocks.h"
 #include "direction.h"
+#include "inventory/item_stack.h"
 #include "items.h"
-#include "logger.h"
 #include "numeric_structs.h"
-#include "packet_data.h"
 #include <cstdint>
 #include <unordered_map>
 

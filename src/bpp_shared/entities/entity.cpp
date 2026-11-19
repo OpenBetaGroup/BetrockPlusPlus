@@ -5,14 +5,27 @@
  *
  */
 #include "entity.h"
+#include "blocks/block_behaviors.h"
+#include "blocks/materials.h"
 #include "entity_item.h"
 #include "entity_lightning_bolt.h"
 #include "entity_manager.h"
 #include "entity_player.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "inventory/item_stack.h"
+#include "java_random.h"
+#include "lighter.h"
+#include "logger.h"
+#include "logstream.h"
 #include "packet_data.h"
 #include "world/world.h"
 #include <algorithm>
 #include <cmath>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <variant>
 
 void Entity::OnMountEntity() {
 	// stub

@@ -5,12 +5,14 @@
  *
 */
 #pragma once
+#include "logger.h"
+#include "logstream.h"
 #include <cstdint>
-#include <cstring>
-#include <format>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 enum TagType : uint8_t {

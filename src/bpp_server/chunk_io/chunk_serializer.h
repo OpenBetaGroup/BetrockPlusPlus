@@ -8,8 +8,15 @@
 
 #pragma once
 #include "chunk.h"
+#include "constants.h"
 #include "helpers/deflate_pool.h"
 #include "subchunk.h"
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <span>
 #include <vector>
 
 namespace ChunkSerializer {

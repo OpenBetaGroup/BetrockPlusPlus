@@ -6,18 +6,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  *
 */
-#include "blocks.h"
-#include "entities/entity_pig.h"
-#include "entities/entity_skeleton.h"
-#include "entities/entity_spider.h"
-#include "entities/entity_zombie.h"
-#include "inventory/inventory.h"
-#include "inventory/item_stack.h"
-#include "items.h"
-#include "items/item_properties.h"
-#include "tile_entity.h"
+#include "nbt/nbt_tag.h"
+#include "tile_entity_base.h"
 #include "world/world.h"
 #include <string>
+#include <unordered_map>
 
 void TileEntity::Deserialize(const Tag& /*_tag*/) {
 	// no-op

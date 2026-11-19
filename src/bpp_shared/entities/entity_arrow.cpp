@@ -6,8 +6,19 @@
  */
 
 #include "entity_arrow.h"
+#include "blocks/block_behaviors.h"
+#include "damage_types.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "enums/items.h"
+#include "helpers/aabb.h"
+#include "inventory/item_stack.h"
 #include "raycast.h"
 #include "entity_player.h"
+#include "world.h"
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 static Tag SetShort(std::string _name, int16_t _value) {
 	Tag shortTag;

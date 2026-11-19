@@ -7,15 +7,14 @@
 
 #pragma once
 #include "helpers/endian_convert.h"
-#include "logger.h"
 #include "nbt_tag.h"
-#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <format>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 struct NBTwriter {

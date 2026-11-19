@@ -5,7 +5,17 @@
  *
  */
 #pragma once
+#include "base_types.h"
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_mobile.h"
+#include "inventory/item_stack.h"
+#include "numeric_structs.h"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
 
 enum SleepFailureReason : uint8_t {
 	CANT_SLEEP_AT_POSITION,

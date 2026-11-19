@@ -5,7 +5,15 @@
  *
  */
 #pragma once
+#include "blocks/materials.h"
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_animal.h"
+#include "helpers/aabb.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world.h"
 
 struct SquidEntity : public AnimalEntity {
 	Vec3 randomVelocity = {};

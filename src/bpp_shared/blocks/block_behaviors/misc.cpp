@@ -9,29 +9,32 @@
 #include "blocks.h"
 #include "blocks/block_behaviors.h"
 #include "blocks/block_properties.h"
-#include "dimensions.h"
-#include "entities/entity_falling_block.h"
+#include "blocks/materials.h"
+#include "direction.h"
+#include "entities/entity.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_player.h"
-#include "entities/entity_skeleton.h"
-#include "entities/entity_spider.h"
 #include "entities/entity_tnt.h"
-#include "entities/entity_zombie.h"
 #include "enums/items.h"
-#include "generator/overworld/tree_gen.h"
 #include "helpers/block_volume.h"
 #include "helpers/direction_fixer.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
+#include "inventory/inventories.h"
+#include "inventory/item_stack.h"
 #include "items/item_properties.h"
-#include "logger.h"
-#include "managers/rail_manager.h"
+#include "java_random.h"
 #include "managers/redstone_manager.h"
-#include "managers/tick_scheduler.h"
 #include "numeric_structs.h"
-#include "packet_data.h"
-#include "tile_entities/tile_entity.h"
+#include "tile_entities/tile_entity_furnace.h"
+#include "tile_entities/tile_entity_jukebox.h"
+#include "tile_entities/tile_entity_mob_spawner.h"
 #include "world.h"
 #include "player/player_session.h"
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace Blocks {
 static void IgniteTnt(WorldManager& _world, Int3 _pos, int _fuse = 80) {

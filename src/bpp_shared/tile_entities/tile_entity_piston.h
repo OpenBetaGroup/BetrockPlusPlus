@@ -6,9 +6,12 @@
 */
 
 #pragma once
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tile_entity_base.h"
 #include "enums/blocks.h"
 #include "helpers/aabb.h"
+#include <cstdint>
 
 struct TileEntityPistonMoving : TileEntity {
 	BlockType storedBlock = BLOCK_AIR;

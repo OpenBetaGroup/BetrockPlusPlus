@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "commands/command_manager.h"
 #include <atomic>
 #include <deque>
 #include <memory>

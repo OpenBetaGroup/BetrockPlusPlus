@@ -7,7 +7,15 @@
 */
 
 #include "world_wrapper.h"
+#include "blocks/block_behaviors.h"
+#include "blocks/block_properties.h"
+#include "blocks/materials.h"
+#include "lighter.h"
 #include "world.h"
+#include <algorithm>
+#include <atomic>
+#include <functional>
+#include <vector>
 
 // Grab the 3x3 region. Any chunk that is already inUse is left as nullptr
 // (writes to it will fall through to the deferred path via the manager).

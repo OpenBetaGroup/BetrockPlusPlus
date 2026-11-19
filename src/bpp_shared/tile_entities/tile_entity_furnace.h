@@ -7,7 +7,11 @@
 */
 
 #pragma once
+#include "inventory/inventories.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tile_entity_base.h"
+#include <cstdint>
 
 // Furnace
 class TileEntityFurnace : public TileEntity {

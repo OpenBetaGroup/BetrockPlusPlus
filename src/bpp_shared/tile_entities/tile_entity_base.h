@@ -6,9 +6,17 @@
  *
 */
 #pragma once
-#include "inventory/inventories.h"
-#include "nbt/nbt.h"
+#include "enums/items.h"
+#include "inventory/inventory.h"
+#include "inventory/item_stack.h"
+#include "items/item_properties.h"
+#include "nbt/nbt_tag.h"
 #include "numeric_structs.h"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 enum class TileType : uint8_t {
 	CHEST,

@@ -8,8 +8,19 @@
 #include "packet_dispatcher.h"
 
 #include "../server.h"
+#include "handle_packet.h"
 #include "logger/logger.h"
+#include "logstream.h"
+#include "networking/network_stream.h"
+#include "networking/packets.h"
+#include "player/player_session.h"
+#include "player_conn/player_session_mp.h"
+#include "player_conn/server_pconnstate_manager.h"
+#include "trackers/entity_tracker.h"
+#include "world.h"
 #include <iomanip>
+#include <memory>
+#include <packet_ids.h>
 
 namespace {
 template <typename Pkt, typename Fn>

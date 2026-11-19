@@ -6,9 +6,15 @@
 */
 #include "entity_dummy_player.h"
 #include "../player_conn/player_session_mp.h"
+#include "damage_types.h"
 #include "entities/entity.h"
-#include "entities/entity_item.h"
-#include "items.h"
+#include "entities/entity_manager.h"
+#include "entities/entity_mobile.h"
+#include "helpers/aabb.h"
+#include "inventory/inventories.h"
+#include "inventory/item_stack.h"
+#include "player/player_session.h"
+#include <vector>
 
 void DummyMPPlayer::Tick() {
 	if (!session) {

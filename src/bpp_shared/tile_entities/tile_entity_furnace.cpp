@@ -7,7 +7,21 @@
 */
 
 #include "tile_entity_furnace.h"
+#include "base_types.h"
+#include "blocks.h"
+#include "blocks/block_properties.h"
+#include "blocks/materials.h"
+#include "chunk.h"
+#include "enums/items.h"
+#include "inventory/inventory.h"
+#include "inventory/item_stack.h"
+#include "items/item_properties.h"
+#include "tile_entity_base.h"
 #include "world/world.h"
+#include <functional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 void TileEntityFurnace::Deserialize(const Tag& _tag) {
 	burnTime = _tag.Has("BurnTime") ? _tag.Get("BurnTime").GetShort() : 0;

@@ -8,11 +8,20 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
-#include "chunk.h"
+#include "commands/strategos.h"
+#include "dimensions.h"
+#include "runtime.h"
 #include "server.h"
+#include "world.h"
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <cstddef>
 #include <format>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace {
 

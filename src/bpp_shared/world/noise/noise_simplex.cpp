@@ -7,9 +7,9 @@
 #include "noise_simplex.h"
 #include "noise_generator.h"
 
-#include <algorithm>
-#include <cassert>
 #include "constants.h"
+#include <array>
+#include <cstddef>
 
 NoiseSimplex::NoiseSimplex() {
 	Java::Random rand;

@@ -6,8 +6,12 @@
 */
 
 #include "addon_manager.h"
+#include "addon.h"
+#include "addon_impl.h"
+#include "commands/command_manager.h"
+#include "commands/strategos.h"
 #include "logger.h"
-#include "platform/platform_caps.h"
+#include "logstream.h"
 #include "server.h"
 
 // This is terrible
@@ -58,6 +62,10 @@ static inline const char* dlerror() {
 #include <dlfcn.h>
 #endif
 #include <filesystem>
+#include <format>
+#include <string>
+#include <system_error>
+#include <utility>
 
 void AddonManager::Load() {
 #ifdef BPP_NO_DYNAMIC_ADDONS

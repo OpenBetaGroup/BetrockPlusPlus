@@ -5,6 +5,14 @@
 */
 
 #include "../feature_gen.h"
+#include "blocks.h"
+#include "blocks/block_properties.h"
+#include "constants.h"
+#include "direction.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
+#include <cstdint>
 
 //  Attempts to generate flower/mushroom patches
 bool FeatureGenerator::GenerateFlowers(BlockType _type, WorldWrapper& _world, Java::Random& _rand, Int3 _pos) {

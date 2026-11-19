@@ -5,6 +5,11 @@
  *
  */
 #include "entity_squid.h"
+#include "entity_animal.h"
+#include "enums/items.h"
+#include "gamerules.h"
+#include "helpers/java/java_math.h"
+#include <cmath>
 
 bool SquidEntity::CanSpawnAt() {
 	if (!this->world)

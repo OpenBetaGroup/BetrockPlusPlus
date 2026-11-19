@@ -9,6 +9,10 @@
 #include "command.h"
 #include "command_registry.h"
 #include "logger.h"
+#include "logstream.h"
+#include "strategos.h"
+#include <exception>
+#include <optional>
 #include <string_view>
 
 void CommandManager::Init(Server* _server) {

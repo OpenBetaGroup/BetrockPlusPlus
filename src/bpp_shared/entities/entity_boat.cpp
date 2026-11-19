@@ -5,11 +5,20 @@
  *
  */
 #include "entity_boat.h"
+#include "base_types.h"
+#include "blocks.h"
+#include "blocks/materials.h"
+#include "entity.h"
 #include "entity_manager.h"
+#include "entity_player.h"
+#include "enums/items.h"
+#include "gamerules.h"
 #include "helpers/java/java_math.h"
 #include "world/world.h"
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <vector>
 
 void BoatEntity::DropAsItems() {
 	if (auto rider = passenger.lock())

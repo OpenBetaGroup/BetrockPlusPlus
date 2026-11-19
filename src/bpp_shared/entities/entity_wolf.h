@@ -6,7 +6,19 @@
  *
  */
 #pragma once
+#include "base_types.h"
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_animal.h"
+#include "entity_manager.h"
+#include "enums/items.h"
+#include "nbt/nbt_tag.h"
+#include "packet_data.h"
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 struct WolfEntity : public AnimalEntity {
 	std::string ownerUsername;

@@ -5,8 +5,20 @@
 */
 
 #include "../feature_gen.h"
+#include "blocks.h"
+#include "enums/items.h"
+#include "inventory/inventories.h"
+#include "inventory/item_stack.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "tile_entities/tile_entity_chest.h"
+#include "tile_entities/tile_entity_mob_spawner.h"
 #include "world.h"
-#include "tile_entities/tile_entity.h"
+#include "world_wrapper.h"
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
 
 bool FeatureGenerator::GenerateDungeon(WorldWrapper& _world, Java::Random& _rand, Int3 _pos) {
 	const int8_t dungeonHeight = 3;

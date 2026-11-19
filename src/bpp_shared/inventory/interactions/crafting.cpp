@@ -7,7 +7,12 @@
 #include "inventory/inventory_interaction.h"
 #include "inventory/item_stack.h"
 #include "items.h"
+#include "items/item_properties.h"
 #include "numeric_structs.h"
+#include <cstddef>
+#include <span>
+#include <utility>
+#include <vector>
 
 CraftingInventoryInteraction::CraftingInventoryInteraction(Inventory* _sharedInventory, Inventory* _craftingInventory,
                                                            InventoryPlayer* _playerInventory, Runtime& _gameRuntime,

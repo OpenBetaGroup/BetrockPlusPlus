@@ -9,16 +9,33 @@
 #include "../../bpp_shared/helpers/identifiers.h"
 #include "../entities/entity_mp_player.h"
 #include "../server.h"
+#include "base_types.h"
 #include "command_manager.h"
-#include "items.h"
+#include "entities/entity_manager.h"
+#include "items/item_properties.h"
+#include "java_random.h"
+#include "logger.h"
+#include "nbt/nbt_tag.h"
 #include "nbt/nbt_textifier.h"
+#include "networking/network_stream.h"
+#include "player/player_session.h"
+#include "player_conn/player_session_mp.h"
+#include "strategos.h"
+#include "trackers/entity_tracker.h"
 #include "username.h"
+#include "world.h"
+#include "world/dimension/dimension.h"
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 bool IsOperator(PlayerSessionMP& _session, Server& _server) {
 	return ContainsUsername(_server.operatorUsernames, _session.username);

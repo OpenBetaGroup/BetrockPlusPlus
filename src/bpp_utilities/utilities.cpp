@@ -5,15 +5,38 @@
  *
 */
 #include "utilities.h"
+#include "blocks.h"
 #include "blocks/block_properties_behaviors.h"
+#include "chunk.h"
+#include "constants.h"
+#include "entities/entity_manager.h"
 #include "helpers/deflate_pool.h"
 #include "helpers/file_handle.h"
+#include "logger.h"
+#include "logstream.h"
 #include "nbt/nbt.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
+#include "storage/region.h"
+#include "world/dimension/dimension.h"
 #include "world/storage/region_manager.h"
 #include "world/storage/save_manager.h"
 #include "world/world.h"
 #include "world/dimension/nether/dimension_nether.h"
 #include "world/dimension/overworld/dimension_overworld.h"
+#include <atomic>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <initializer_list>
+#include <memory>
+#include <optional>
+#include <span>
+#include <system_error>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 

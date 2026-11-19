@@ -5,6 +5,9 @@
  *
 */
 #pragma once
+#include "packet/packet_dispatcher.h"
+#include "player_session_mp.h"
+#include <string>
 
 class Server;
 // For managing the player's connection state

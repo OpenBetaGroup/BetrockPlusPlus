@@ -8,7 +8,8 @@
 #pragma once
 #include "blocks.h"
 #include <array>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
 
 enum Biome : uint8_t {
 	BIOME_NONE = 0,

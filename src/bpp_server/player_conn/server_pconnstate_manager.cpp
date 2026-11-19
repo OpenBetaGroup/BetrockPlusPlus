@@ -7,10 +7,50 @@
 */
 #include "../packet/packet_utils.h"
 #include "../server.h"
-#include "addon/addon_impl.h"
+#include "./internet/online_auth.h"
+#include "addon/addon_manager.h"
+#include "addon_api.h"
+#include "chunk.h"
+#include "chunk_io/chunk_sender.h"
+#include "config/config.h"
+#include "constants.h"
+#include "dimensions.h"
+#include "entities/entity_manager.h"
+#include "entities/entity_mp_player.h"
+#include "entities/entity_player.h"
+#include "helpers/java/java_math.h"
+#include "inventory/interactions/player.h"
+#include "inventory/inventories.h"
+#include "inventory/inventory_interaction.h"
+#include "logger.h"
+#include "logstream.h"
+#include "managers/weather_system.h"
+#include "networking/network_stream.h"
+#include "networking/packets.h"
+#include "numeric_structs.h"
+#include "player/player_session.h"
+#include "player_session_mp.h"
+#include "runtime.h"
+#include "server_pconnstate_manager.h"
 #include "teleporter.h"
 #include "username.h"
 #include "version.h"
+#include "world.h"
+#include "world/dimension/dimension.h"
+#include "world/storage/save_manager.h"
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <future>
+#include <memory>
+#include <optional>
+#include <packet_ids.h>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 void PlayerConnStateManager::HandleConnectionState(PlayerSessionMP& _session, Server& _server) {
 	switch (_session.connState) {
@@ -385,6 +425,7 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Serve
 	tPkt.time = sessionWorld.elapsedTicks;
 	tPkt.Serialize(_session.stream);
 
+	Logger::Info << "Client connected\n";
 	_session.connState = ConnectionState::Playing;
 
 	// Register our entity with the world
@@ -398,8 +439,6 @@ void PlayerConnStateManager::WaitForSpawnChunks(PlayerSessionMP& _session, Serve
 
 	// Welcome message
 	if (!_session.entityRegistered) {
-		Logger::Info << "Client connected\n";
-
 		Packet::ChatMessage welcomeMsg;
 		welcomeMsg.message = std::string("§eThis Server runs on ") + std::string(PROJECT_FULL_VERSION_LABEL);
 		welcomeMsg.Serialize(_session.stream);

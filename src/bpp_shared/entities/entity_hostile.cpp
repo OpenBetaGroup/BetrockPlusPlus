@@ -5,6 +5,17 @@
  *
  */
 #include "entity_hostile.h"
+#include "chunk.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "managers/weather_system.h"
+#include "world.h"
+#include <cmath>
+#include <optional>
+#include <vector>
 
 std::shared_ptr<Entity> HostileEntity::FindPlayerToAttack() {
 	auto candidate = entityManager->GetClosestPlayerWithin(position, 16);

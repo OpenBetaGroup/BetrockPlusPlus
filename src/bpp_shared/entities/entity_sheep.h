@@ -5,7 +5,16 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_animal.h"
+#include "java_random.h"
+#include "nbt/nbt_tag.h"
+#include "packet_data.h"
+#include <cstdint>
+#include <optional>
+#include <vector>
 
 struct SheepEntity : public AnimalEntity {
 	// TODO: Replace with an Enum

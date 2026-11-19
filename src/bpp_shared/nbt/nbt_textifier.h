@@ -6,8 +6,16 @@
 */
 #pragma once
 #include "logger.h"
+#include "logstream.h"
 #include "nbt_tag.h"
 #include <cctype>
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 struct NBTTextifier {
 public:

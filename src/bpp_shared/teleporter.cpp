@@ -5,9 +5,18 @@
  *
 */
 
+#include "blocks.h"
+#include "blocks/materials.h"
+#include "chunk.h"
 #include "constants.h"
+#include "direction.h"
+#include "entities/entity.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "numeric_structs.h"
 #include "world/world.h"
 #include <algorithm>
+#include <cstdint>
 
 namespace Teleporter {
 

@@ -8,7 +8,16 @@
 #include "logger.h"
 #include "strings/ucs2.h"
 #include "style.h"
+#include <chrono>
+#include <ctime>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+#include <stdexcept>
+#include <utility>
 
 // Reference for Escape Codes
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797

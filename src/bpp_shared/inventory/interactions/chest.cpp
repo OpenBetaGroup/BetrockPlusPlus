@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #include "chest.h"
+#include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
+#include <cstddef>
 
 ChestInventoryInteraction::ChestInventoryInteraction(InventoryPlayer* _pinv, std::shared_ptr<TileEntityChest> _chest)
     : InventoryInteraction(&sharedInventory), playerInventory(_pinv), chestHandle(_chest),

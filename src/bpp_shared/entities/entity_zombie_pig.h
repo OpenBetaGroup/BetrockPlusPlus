@@ -5,7 +5,13 @@
  *
 */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_zombie.h"
+#include "nbt/nbt_tag.h"
+#include <memory>
+#include <optional>
 
 struct ZombiePigEntity : public ZombieEntity {
 	bool angry = false;

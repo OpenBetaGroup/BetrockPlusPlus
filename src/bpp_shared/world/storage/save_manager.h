@@ -8,13 +8,27 @@
 #include "helpers/deflate_pool.h"
 #include "helpers/file_handle.h"
 #include "java_math.h"
+#include "logger.h"
+#include "logstream.h"
 #include "nbt/nbt.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "platform/fs_compat.h"
 #include "platform/platform_caps.h"
 #include "utilities.h"
 #include <chrono>
+#include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <span>
+#include <string>
+#include <system_error>
+#include <unordered_map>
+#include <vector>
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN

@@ -5,10 +5,14 @@
 */
 #pragma once
 #include "../inventory_interaction.h"
+#include "entities/entity_player.h"
 #include "inventory/interactions/crafting.h"
 #include "inventory/inventories.h"
+#include "inventory/inventory.h"
+#include "numeric_structs.h"
 #include "runtime.h"
 #include "world.h"
+#include <vector>
 
 struct CraftingTableInventoryInteraction : CraftingInventoryInteraction {
 	InventoryCraftingTable craftInventory;

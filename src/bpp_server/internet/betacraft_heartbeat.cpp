@@ -10,13 +10,17 @@
 
 #include "curl_runtime.h"
 #include "logger.h"
+#include "logstream.h"
 #include "version.h"
 #include <chrono>
+#include <cstddef>
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <fstream>
+#include <map>
 #include <nlohmann/json.hpp>
 #include <sstream>
+#include <utility>
 
 extern std::atomic<bool> shutdownRequested;
 

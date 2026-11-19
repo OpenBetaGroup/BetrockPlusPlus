@@ -6,8 +6,14 @@
 
 // Stand-in for server_console.cpp on targets without a terminal or a line editor
 
-#include "server.h"
 
+#include "commands/command_manager.h"
+#include "server_console.h"
+#include <deque>
+#include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 struct ServerConsole::Impl {};
 
 ServerConsole::ServerConsole() = default;

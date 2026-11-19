@@ -5,10 +5,27 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 
+#include "aabb.h"
+#include "base_types.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "blocks/block_properties.h"
+#include "damage_types.h"
+#include "entities/entity.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_mob.h"
+#include "explosion.h"
 #include "gamerules.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "numeric_structs.h"
 #include "raycast.h"
 #include "world.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <unordered_set>
+#include <vector>
 
 // for handling explosions
 namespace Explosion {

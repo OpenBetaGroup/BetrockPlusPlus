@@ -5,9 +5,15 @@
  *
  */
 #pragma once
+#include "entities.h"
 #include "entity_chicken.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
 #include "entity_throwable.h"
-#include "logger.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include <cstdint>
+#include <memory>
 
 struct EggEntity : public ThrowableEntity {
 	// Default

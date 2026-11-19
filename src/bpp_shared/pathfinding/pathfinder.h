@@ -8,7 +8,8 @@
 #pragma once
 
 #include "numeric_structs.h"
-#include <cstdint>
+#include "world.h"
+#include <functional>
 #include <limits>
 #include <optional>
 #include <queue>

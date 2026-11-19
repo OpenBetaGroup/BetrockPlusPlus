@@ -5,6 +5,14 @@
  *
  */
 #include "entity_creeper.h"
+#include "entity_hostile.h"
+#include "enums/items.h"
+#include "java_random.h"
+#include "world.h"
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <variant>
 
 void CreeperEntity::OnDeath(Entity* _killer, DamageType /*_type*/) {
 	// Drop gunpowder or a music disk if killed by a skeleton

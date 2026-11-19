@@ -6,6 +6,8 @@
 */
 
 #pragma once
+#include "base_types.h"
+#include "blocks.h"
 #include "direction.h"
 
 #include "aabb.h"
@@ -13,7 +15,8 @@
 #include "inventory/item_stack.h"
 #include "java/java_random.h"
 #include "numeric_structs.h"
-#include "packet_data.h"
+#include <cstdint>
+#include <vector>
 
 class WorldManager;
 struct Entity;

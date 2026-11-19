@@ -8,6 +8,7 @@
 #pragma once
 #include "../direction.h"
 #include "base_structs.h"
+#include "blocks.h"
 #include <algorithm>
 #include <cstdint>
 

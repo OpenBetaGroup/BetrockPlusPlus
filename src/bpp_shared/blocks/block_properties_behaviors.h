@@ -6,8 +6,6 @@
 */
 #pragma once
 
-#include "blocks/block_behaviors.h"
-#include "blocks/block_properties.h"
 
 namespace Blocks {
 // Call once at startup before anything reads from the tables

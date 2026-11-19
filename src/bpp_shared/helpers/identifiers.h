@@ -14,6 +14,7 @@
 #include "../base_types.h"
 #include "../enums/blocks.h"
 #include "../enums/items.h"
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 

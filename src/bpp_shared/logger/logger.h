@@ -9,9 +9,8 @@
 
 #include "loglevel.h"
 #include "logstream.h"
-#include <fstream>
 #include <functional>
-#include <mutex>
+#include <string>
 
 namespace Logger {
 // clang-format off

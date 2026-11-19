@@ -7,9 +7,13 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
 #include "server.h"
+#include <atomic>
 #include <cstdint>
 #include <format>
+#include <memory>
+#include <optional>
 
 namespace {
 

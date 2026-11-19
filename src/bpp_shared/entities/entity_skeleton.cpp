@@ -6,6 +6,14 @@
  */
 #include "entity_skeleton.h"
 #include "entity_arrow.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "enums/items.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include <cmath>
+#include <memory>
 
 void SkeletonEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// Drop arrows

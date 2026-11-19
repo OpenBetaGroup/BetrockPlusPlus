@@ -8,6 +8,8 @@
 #include "item_map.h"
 #include "../enums/network/packet_data.h"
 #include "../logger/logger.h"
+#include "logstream.h"
+#include "numeric_structs.h"
 #include <cmath>
 
 namespace Map {

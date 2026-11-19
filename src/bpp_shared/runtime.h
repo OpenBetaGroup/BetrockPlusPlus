@@ -7,16 +7,22 @@
 */
 
 #pragma once
+#include "base_types.h"
 #include "crafting/recipe_manager.h"
-#include "items/tool_item_properties.h"
-#include "logger.h"
+#include "dimensions.h"
+#include "items/item_properties.h"
 #include "platform/platform_caps.h"
-#include "world/dimension/nether/dimension_nether.h"
-#include "world/dimension/overworld/dimension_overworld.h"
-#include "world/storage/region_manager.h"
+#include "spawner.h"
+#include "tick_profiler.h"
+#include "world/dimension/dimension.h"
 #include "world/storage/save_manager.h"
 #include "world/world.h"
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 struct PlayerSession;
 

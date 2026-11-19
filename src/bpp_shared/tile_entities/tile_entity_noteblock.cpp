@@ -8,6 +8,9 @@
 */
 
 #include "tile_entity_noteblock.h"
+#include "tile_entity_base.h"
+#include <string>
+#include <unordered_map>
 
 void TileEntityNoteblock::Deserialize(const Tag& _tag) {
 	if (_tag.Has("note"))

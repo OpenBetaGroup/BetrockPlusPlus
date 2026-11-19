@@ -6,13 +6,19 @@
 */
 
 #include "network_stream.h"
+#include "base_types.h"
+#include "enums/items.h"
+#include "helpers/endian_convert.h"
+#include "inventory/item_stack.h"
 #include "logger.h"
+#include "logstream.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
-#include "packet_labels.h"
 #include "ucs2.h"
 #include <algorithm>
+#include <cerrno>
 #include <string>
+#include <variant>
 #include <vector>
 
 NetworkStream::NetworkStream(int _pClientSocket) {

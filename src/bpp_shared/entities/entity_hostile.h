@@ -5,7 +5,11 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entity.h"
 #include "entity_mob.h"
+#include "numeric_structs.h"
+#include <memory>
 
 struct HostileEntity : public MobEntity {
 	std::weak_ptr<Entity> attackTarget;

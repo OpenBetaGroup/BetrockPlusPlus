@@ -5,6 +5,7 @@
  *
 */
 #include "style.h"
+#include <cstddef>
 
 // Translate color codes into ASCII Escape sequence colors
 std::string FormatToStyle(int8_t _format) {

@@ -5,8 +5,17 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_animal.h"
+#include "entity_manager.h"
 #include "entity_zombie_pig.h"
+#include "nbt/nbt_tag.h"
+#include "packet_data.h"
+#include <memory>
+#include <optional>
+#include <vector>
 
 struct PigEntity : public AnimalEntity {
 	bool isSaddled = false;

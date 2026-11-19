@@ -7,6 +7,8 @@
 
 #pragma once
 #include "blocks/block_behaviors.h"
+#include "direction.h"
+#include "numeric_structs.h"
 
 class WorldManager;
 

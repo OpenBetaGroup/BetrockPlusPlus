@@ -7,11 +7,24 @@
 */
 
 #include "tile_entity_mob_spawner.h"
+#include "chunk.h"
+#include "entities.h"
+#include "entities/entity.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_mob.h"
 #include "entities/entity_pig.h"
 #include "entities/entity_skeleton.h"
 #include "entities/entity_spider.h"
 #include "entities/entity_zombie.h"
+#include "helpers/aabb.h"
+#include "java_random.h"
+#include "tile_entity_base.h"
+#include "world.h"
+#include <cstddef>
+#include <memory>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 void TileEntityMobSpawner::Deserialize(const Tag& _tag) {
 	if (_tag.Has("EntityId"))

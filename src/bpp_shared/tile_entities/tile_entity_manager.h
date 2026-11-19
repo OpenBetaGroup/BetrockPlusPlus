@@ -5,7 +5,8 @@
  *
 */
 #pragma once
-#include "tile_entity.h"
+#include "nbt/nbt_tag.h"
+#include "tile_entity_base.h"
 #include <memory>
 #include <vector>
 

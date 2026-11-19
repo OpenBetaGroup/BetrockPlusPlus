@@ -4,7 +4,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #include "furnace.h"
-#include "tile_entities/tile_entity.h"
+#include "enums/items.h"
+#include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
+#include "items/item_properties.h"
+#include <cstddef>
+#include <cstdint>
 
 // Furnace tile-entity slot indices: 0 = input, 1 = fuel, 2 = output
 static constexpr int RESULT_SLOT = 2;

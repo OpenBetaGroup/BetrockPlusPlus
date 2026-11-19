@@ -7,12 +7,22 @@
 
 #include "blocks.h"
 #include "blocks/block_behaviors.h"
-#include "blocks/block_properties.h"
+#include "direction.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_tnt.h"
+#include "gamerules.h"
 #include "internal.h"
+#include "java_random.h"
+#include "managers/tick_scheduler.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
 #include "world.h"
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <unordered_map>
+#include <utility>
 
 namespace {
 struct BurnProfile {

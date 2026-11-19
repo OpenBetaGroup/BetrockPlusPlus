@@ -6,8 +6,22 @@
  */
 #pragma once
 
+#include "base_types.h"
+#include "damage_types.h"
+#include "direction.h"
+#include "entities.h"
 #include "entity.h"
+#include "enums/items.h"
+#include "java_random.h"
 #include "logger.h"
+#include "logstream.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
+#include <cmath>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <vector>
 
 struct ArtProfile {
 	std::string title = "Kebab";

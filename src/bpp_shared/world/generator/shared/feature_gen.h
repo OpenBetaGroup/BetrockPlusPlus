@@ -6,10 +6,15 @@
 
 #pragma once
 
+#include "blocks.h"
+#include "blocks/materials.h"
+#include "inventory/item_stack.h"
+#include "numeric_structs.h"
 #include "world/world_wrapper.h"
 #include "blocks/block_properties.h"
-#include "constants.h"
 #include "java_random.h"
+#include <cstdint>
+#include <string>
 
 // Inline block-property helpers
 inline constexpr bool IsSolid(BlockType _t) {

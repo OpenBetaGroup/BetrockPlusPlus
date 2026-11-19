@@ -5,8 +5,11 @@
 */
 
 #include "biome_gen.h"
-#include "chunk.h"
+#include "helpers/packed_array.h"
+#include "java_random.h"
 #include <algorithm>
+#include <bit>
+#include <cstddef>
 
 // This one does nothing. DO NOT USE!
 BiomeGenerator::BiomeGenerator() {}

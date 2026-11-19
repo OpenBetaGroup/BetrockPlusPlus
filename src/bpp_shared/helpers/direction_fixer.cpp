@@ -17,6 +17,9 @@
 // Kind regards, Pixel Brush
 
 #include "direction_fixer.h"
+#include "blocks.h"
+#include "packet_data.h"
+#include <cstddef>
 
 // Makes this a little more readable-ish?
 enum DirectionBlockType : size_t {

@@ -8,6 +8,21 @@
 #include "chunk_broadcaster.h"
 
 #include "../server.h"
+#include "base_structs.h"
+#include "chunk.h"
+#include "chunk_sender.h"
+#include "constants.h"
+#include "networking/network_stream.h"
+#include "networking/packets.h"
+#include "player/player_session.h"
+#include "player_conn/player_session_mp.h"
+#include "world.h"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
+#include <utility>
 
 void ChunkBroadcaster::BroadcastBlockChanges(Server& _server,
                                              std::unordered_map<Int32_2, std::vector<PendingBlock>>& _changes,

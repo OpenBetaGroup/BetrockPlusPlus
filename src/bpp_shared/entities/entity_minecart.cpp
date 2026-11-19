@@ -5,13 +5,21 @@
  *
  */
 #include "entity_minecart.h"
+#include "blocks.h"
+#include "blocks/block_builder.h"
+#include "direction.h"
+#include "entity.h"
 #include "entity_manager.h"
 #include "entity_mob.h"
+#include "entity_player.h"
+#include "enums/items.h"
 #include "helpers/java/java_math.h"
 #include "world/managers/rail_manager.h"
 #include "world/world.h"
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <vector>
 
 // This defines the start and end points along the rail blocks
 inline constexpr int RAIL_MATRIX[10][2][3] = {

@@ -8,12 +8,13 @@
 */
 #pragma once
 #include "../base_types.h"
+#include "enums/items.h"
 #include "hash.h"
-#include "strings/labels.h"
+#include <cstddef>
 #include <cstdint>
-#include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 // Just a virtual container
 struct ItemStack {

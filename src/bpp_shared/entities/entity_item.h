@@ -6,9 +6,16 @@
  */
 #pragma once
 
+#include "damage_types.h"
+#include "entities.h"
 #include "entity.h"
+#include "helpers/aabb.h"
 #include "inventory/item_stack.h"
-#include "logger.h"
+#include "java_random.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
+#include <cstdint>
+#include <optional>
 
 struct ItemEntity : public Entity {
 	ItemStack itemStack;

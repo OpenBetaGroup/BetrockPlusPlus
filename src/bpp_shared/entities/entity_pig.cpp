@@ -5,7 +5,15 @@
  *
  */
 #include "entity_pig.h"
+#include "entity_animal.h"
+#include "entity_mob.h"
 #include "entity_player.h"
+#include "enums/items.h"
+#include "java_random.h"
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <variant>
 
 bool PigEntity::TryDespawn() {
 	if (isSaddled)

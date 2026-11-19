@@ -8,6 +8,10 @@
 */
 
 #include "tile_entity_jukebox.h"
+#include "tile_entity_base.h"
+#include <cstdint>
+#include <string>
+#include <unordered_map>
 
 void TileEntityJukebox::Deserialize(const Tag& _tag) {
 	if (_tag.Has("Record"))

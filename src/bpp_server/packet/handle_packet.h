@@ -6,7 +6,9 @@
  *
 */
 #pragma once
+#include "numeric_structs.h"
 #include "platform/platform_caps.h"
+#include "trackers/entity_tracker.h"
 #include <functional>
 #if defined(BPP_HAS_POSIX_SOCKETS)
 #define BPP_INVALID_SOCKET -1
@@ -23,10 +25,11 @@
 
 #include "../commands/command_manager.h"
 #include "../player_conn/player_session_mp.h"
-#include "blocks/block_properties.h"
 #include "networking/packets.h"
 #include "runtime.h"
 #include "world/world.h"
+#include <memory>
+#include <vector>
 
 struct EntityTracker;
 // _margin pads the protected radius (for placements that can spill past the target block)

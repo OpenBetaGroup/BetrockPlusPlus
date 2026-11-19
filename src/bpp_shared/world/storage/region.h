@@ -9,9 +9,15 @@
 #include "chunk.h"
 #include "helpers/endian_convert.h"
 #include "helpers/file_handle.h"
+#include "nbt/nbt_tag.h"
 #include "numeric_structs.h"
+#include <array>
+#include <cstdint>
+#include <fstream>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <vector>
 
 #define REGION_WIDTH 32
 #define REGION_AREA REGION_WIDTH* REGION_WIDTH

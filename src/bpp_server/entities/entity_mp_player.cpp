@@ -7,12 +7,37 @@
 */
 #include "entity_mp_player.h"
 #include "../player_conn/player_session_mp.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "constants.h"
+#include "dimensions.h"
 #include "entities/entity_item.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_player.h"
+#include "enums/items.h"
+#include "gamerules.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "inventory/inventories.h"
+#include "inventory/inventory_interaction.h"
 #include "inventory/item_stack.h"
-#include "networking/network_stream.h"
+#include "java_random.h"
+#include "logger.h"
+#include "logstream.h"
 #include "networking/packets.h"
+#include "packet/packet_utils.h"
+#include "packet_data.h"
+#include "player/player_session.h"
 #include "server.h"
+#include "trackers/entity_tracker.h"
+#include "world.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
 
 void EntityMPPlayer::UsePortal() {
 	if (!this->session || !this->session->server)

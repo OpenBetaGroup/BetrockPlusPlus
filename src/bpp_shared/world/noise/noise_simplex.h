@@ -6,9 +6,12 @@
 
 // A recreation of the the Infdev 20100227-1433 Perlin noise function
 #pragma once
+#include "../../quantized_types.h"
 #include "java_math.h"
+#include "java_random.h"
 #include "noise_generator.h"
-#include <cmath>
+#include "numeric_structs.h"
+#include <cstdint>
 #include <span>
 
 /**

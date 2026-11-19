@@ -5,14 +5,36 @@
  *
 */
 #include "../helpers/direction_fixer.h"
+#include "base_types.h"
 #include "blocks.h"
+#include "blocks/block_behaviors.h"
 #include "blocks/block_behaviors/internal.h"
+#include "blocks/block_properties.h"
+#include "direction.h"
+#include "entities/entity.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_painting.h"
+#include "helpers/java/java_math.h"
+#include "inventory/item_stack.h"
 #include "item_map.h"
 #include "item_properties.h"
 #include "items.h"
+#include "java_random.h"
+#include "logger.h"
+#include "logstream.h"
+#include "numeric_structs.h"
+#include "player/player_session.h"
 #include "server.h"
+#include "tool_item_properties.h"
 #include "tool_properties.h"
+#include "world.h"
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace Items {
 

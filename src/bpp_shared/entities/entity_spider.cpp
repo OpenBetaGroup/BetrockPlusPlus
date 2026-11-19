@@ -5,6 +5,12 @@
  *
  */
 #include "entity_spider.h"
+#include "entity_hostile.h"
+#include "entity_manager.h"
+#include "enums/items.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include <cmath>
 
 void SpiderEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// Drop arrows

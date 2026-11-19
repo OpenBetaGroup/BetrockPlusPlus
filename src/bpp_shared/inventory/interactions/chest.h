@@ -5,8 +5,12 @@
 */
 #pragma once
 #include "../inventory_interaction.h"
+#include "entities/entity_player.h"
 #include "inventory/inventories.h"
-#include "tile_entities/tile_entity.h"
+#include "inventory/inventory.h"
+#include "tile_entities/tile_entity_chest.h"
+#include <memory>
+#include <vector>
 
 struct ChestInventoryInteraction : InventoryInteraction {
 	InventoryPlayer* playerInventory;

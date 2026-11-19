@@ -8,7 +8,14 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
+#include "player/player_session.h"
+#include "player_conn/player_session_mp.h"
+#include <cstddef>
 #include <format>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace {
 

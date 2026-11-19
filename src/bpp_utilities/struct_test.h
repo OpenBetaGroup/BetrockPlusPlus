@@ -6,11 +6,14 @@
 */
 #pragma once
 #include "chunk.h"
+#include "constants.h"
 #include "entities/entity.h"
 #include "logger.h"
-#include "player_conn/player_session.h"
+#include "logstream.h"
+#include "player/player_session.h"
 #include "storage/region.h"
 #include "storage/region_manager.h"
+#include "subchunk.h"
 #include "world/generator/nether/chunk_gen.h"
 #include "world/generator/overworld/chunk_gen.h"
 

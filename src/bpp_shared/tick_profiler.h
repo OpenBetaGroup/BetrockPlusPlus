@@ -10,8 +10,8 @@
 #include "entities.h"
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <unordered_map>
 
 struct TickEntityKey {

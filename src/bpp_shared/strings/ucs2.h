@@ -5,6 +5,7 @@
 */
 
 #pragma once
+#include <cstddef>
 #include <string>
 
 // Some helper functions to provide reliable

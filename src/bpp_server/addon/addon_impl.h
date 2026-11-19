@@ -10,8 +10,10 @@
 #pragma once
 
 #include "addon_api.h"
+#include "base_types.h"
 #include "inventory/item_stack.h"
 #include "commands/strategos.h"
+#include <vector>
 
 struct Entity;
 struct PlayerSession;

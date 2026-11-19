@@ -6,12 +6,20 @@
 
 #pragma once
 
+#include "BS_thread_pool.hpp"
+#include "chunk.h"
+#include "dimensions.h"
+#include "helpers/java/java_math.h"
+#include "lighter.h"
 #include "logger.h"
+#include "logstream.h"
+#include "numeric_structs.h"
 #include "world/storage/region_manager.h"
 #include "world/world.h"
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <climits>
 #include <cstdint>

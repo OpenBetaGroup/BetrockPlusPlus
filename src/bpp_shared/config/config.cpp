@@ -8,6 +8,8 @@
 
 #include "config.h"
 
+#include "logger.h"
+#include "logstream.h"
 #include <fstream>
 #include <iostream>
 #include <mutex>

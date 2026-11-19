@@ -5,6 +5,11 @@
 */
 
 #include "../feature_gen.h"
+#include "blocks.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
+#include <cstdint>
 
 //  Attempts to generate a singular liquid source block
 bool FeatureGenerator::GenerateLiquid(BlockType _type, WorldWrapper& _world, Java::Random& /*_rand*/, Int3 _pos,

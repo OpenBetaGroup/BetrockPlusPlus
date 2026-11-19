@@ -6,11 +6,20 @@
 */
 
 #include "block_properties.h"
+#include "block_behaviors.h"
 #include "blocks.h"
+#include "constants.h"
 #include "entities/entity_item.h"
-#include "packet_data.h"
+#include "entities/entity_manager.h"
+#include "inventory/item_stack.h"
+#include "java_random.h"
+#include "materials.h"
+#include "numeric_structs.h"
 #include "world/world.h"
+#include "world_access.h"
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace Blocks {
 

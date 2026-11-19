@@ -5,7 +5,20 @@
  *
 */
 #include "tile_entity_manager.h"
+#include "logger.h"
+#include "logstream.h"
+#include "numeric_structs.h"
+#include "tile_entity_chest.h"
+#include "tile_entity_dispenser.h"
+#include "tile_entity_furnace.h"
+#include "tile_entity_jukebox.h"
+#include "tile_entity_mob_spawner.h"
+#include "tile_entity_noteblock.h"
+#include "tile_entity_piston.h"
+#include "tile_entity_sign.h"
 #include "world/world.h"
+#include <cstdint>
+#include <string>
 
 void TileEntityManager::TickTileEntities(WorldManager& _world) {
 	// Snapshot for iteration so Tick() can safely mutate tickableTileEntities

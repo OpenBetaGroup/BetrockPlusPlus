@@ -6,16 +6,19 @@
  *
 */
 #include "entity_manager.h"
+#include "blocks.h"
+#include "chunk.h"
+#include "entity.h"
 #include "entity_arrow.h"
 #include "entity_boat.h"
 #include "entity_chicken.h"
 #include "entity_cow.h"
 #include "entity_creeper.h"
-#include "entity_egg.h"
 #include "entity_falling_block.h"
 #include "entity_ghast.h"
 #include "entity_item.h"
 #include "entity_minecart.h"
+#include "entity_mobile.h"
 #include "entity_painting.h"
 #include "entity_pig.h"
 #include "entity_player.h"
@@ -30,8 +33,13 @@
 #include "entity_zombie.h"
 #include "entity_zombie_pig.h"
 #include "gamerules.h"
+#include "helpers/java/java_math.h"
+#include "logger.h"
+#include "logstream.h"
 #include "username.h"
 #include "world.h"
+#include <chrono>
+#include <cstddef>
 
 std::shared_ptr<PlayerEntity> EntityManager::GetPlayerWithName(std::string _name) {
 	// I hate this

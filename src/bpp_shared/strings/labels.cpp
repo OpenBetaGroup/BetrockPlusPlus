@@ -6,7 +6,9 @@
 */
 
 #include "labels.h"
+#include "blocks.h"
 #include "items.h"
+#include <array>
 #include <cstddef>
 #include <string>
 

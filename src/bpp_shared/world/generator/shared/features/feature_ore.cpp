@@ -5,6 +5,12 @@
 */
 
 #include "../feature_gen.h"
+#include "blocks.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
+#include <cstdint>
 
 bool FeatureGenerator::GenerateOre(BlockType _type, WorldWrapper& _world, Java::Random& _rand, Int3 _pos,
                                    int32_t _blobSize) {

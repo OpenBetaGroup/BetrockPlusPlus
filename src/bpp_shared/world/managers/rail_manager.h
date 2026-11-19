@@ -6,12 +6,14 @@
 */
 
 #pragma once
-#include "../helpers/direction_fixer.h"
-#include "base_structs.h"
 #include "blocks.h"
-#include "blocks/block_behaviors.h"
 #include "blocks/block_builder.h"
-#include "blocks/block_properties_behaviors.h"
+#include "blocks/block_properties.h"
+#include "direction.h"
+#include "numeric_structs.h"
+#include <array>
+#include <cstdint>
+#include <vector>
 
 class WorldManager;
 struct RailManager {

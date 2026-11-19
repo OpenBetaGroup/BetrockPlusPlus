@@ -8,6 +8,10 @@
 */
 
 #pragma once
+#include "base_types.h"
+#include "enums/items.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tile_entity_base.h"
 
 struct TileEntityJukebox : TileEntity {

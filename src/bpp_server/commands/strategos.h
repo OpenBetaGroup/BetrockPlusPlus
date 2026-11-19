@@ -15,10 +15,11 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
-#include <expected>
 #include <format>
 #include <functional>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <ranges>

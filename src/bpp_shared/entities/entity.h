@@ -14,9 +14,12 @@
 #include "helpers/aabb.h"
 #include "helpers/java/java_math.h"
 #include "helpers/java/java_random.h"
-#include "nbt/nbt.h"
+#include "nbt/nbt_tag.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
+#include <cmath>
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <vector>
 

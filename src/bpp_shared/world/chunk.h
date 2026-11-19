@@ -7,22 +7,20 @@
 */
 
 #pragma once
-#include "blocks/block_properties.h"
+#include "blocks.h"
 #include "constants.h"
-#include "enums/biomes.h"
-#include "helpers/math_helper.h"
 #include "helpers/packed_array.h"
-#include "nbt/nbt.h"
+#include "nbt/nbt_tag.h"
 #include "subchunk.h"
-#include "tile_entities/tile_entity.h"
+#include "tile_entities/tile_entity_base.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <memory>
 #include <numeric_structs.h>
+#include <vector>
 
 // -- An explanation for those that want it, on why the chunks are laid out this way --
 // Chunks are much more memory efficient in B++ by utilizing

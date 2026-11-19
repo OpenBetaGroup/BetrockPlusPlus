@@ -6,8 +6,15 @@
  */
 #pragma once
 
+#include "damage_types.h"
+#include "entities.h"
 #include "entity.h"
 #include "entity_player.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "numeric_structs.h"
+#include <cmath>
+#include <optional>
 
 struct BoatEntity : public Entity {
 	int damageTaken = 0;

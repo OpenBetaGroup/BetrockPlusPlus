@@ -7,9 +7,9 @@
 #pragma once
 
 #include "chunk.h"
-#include "constants.h"
 #include "java_random.h"
 #include "numeric_structs.h"
+#include <cstdint>
 
 /**
  * @brief Used to carve caves into the world

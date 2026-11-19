@@ -8,11 +8,12 @@
 #include "item_properties.h"
 #include "../entities/entity_mobile.h"
 #include "base_types.h"
+#include "entities/entity.h"
 #include "enums/items.h"
-#include "item_map.h"
-#include "server.h"
+#include "inventory/inventories.h"
+#include "player/player_session.h"
 #include "tool_properties.h"
-#include <cstdint>
+#include <utility>
 
 namespace Items {
 

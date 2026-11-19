@@ -6,6 +6,7 @@
 */
 
 #include "direction.h"
+#include "helpers/java/java_math.h"
 
 // Cardinal Directions
 namespace Cardinal {

@@ -8,6 +8,8 @@
 #include "entities/entity_player.h"
 #include "inventory.h"
 #include "inventory/item_stack.h"
+#include "numeric_structs.h"
+#include <vector>
 
 struct DeltaSlot {
 	ItemStack stack;

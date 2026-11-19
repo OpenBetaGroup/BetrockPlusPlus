@@ -5,11 +5,19 @@
 */
 
 #include "chunk_gen.h"
+#include "../noise/noise_octaves_perlin.h"
+#include "blocks.h"
 #include "chunk.h"
 #include "generator/overworld/biome_gen.h"
-#include "generator/overworld/tree_gen.h"
+#include "generator/shared/cave_gen.h"
+#include "generator/shared/feature_gen.h"
+#include "helpers/java/java_math.h"
 #include "tree_gen.h"
+#include "world/generator/generator.h"
+#include <algorithm>
+#include <cstddef>
 #include <memory>
+#include <span>
 
 /**
  * @brief Construct a new Beta 1.7.3 Overworld Generator

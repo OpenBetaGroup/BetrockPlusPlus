@@ -5,7 +5,14 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_hostile.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
+#include <cstdint>
+#include <vector>
 
 struct GhastEntity : public HostileEntity {
 	Vec3 waypoint = {};

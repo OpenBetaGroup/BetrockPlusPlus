@@ -5,8 +5,10 @@
  *
 */
 #pragma once
+#include "addon_api.h"
+#include <string>
+#include <vector>
 
-#include "addon_impl.h"
 
 class Server;
 

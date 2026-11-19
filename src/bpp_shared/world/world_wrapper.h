@@ -7,8 +7,14 @@
 */
 
 #pragma once
+#include "blocks.h"
 #include "chunk.h"
+#include "constants.h"
+#include "numeric_structs.h"
+#include "tile_entities/tile_entity_base.h"
 #include "world_access.h"
+#include <cstdint>
+#include <memory>
 
 // 3x3 region of chunk pointers, centered on the chunk being populated
 struct ChunkPtrRegion {

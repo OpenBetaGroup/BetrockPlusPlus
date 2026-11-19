@@ -6,6 +6,8 @@
 */
 #include "logstream.h"
 #include "logger.h"
+#include <iostream>
+#include <memory>
 
 LogStream::LogStream(LogLevel _level) : level(_level) {}
 

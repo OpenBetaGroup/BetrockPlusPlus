@@ -6,15 +6,13 @@
 */
 
 #pragma once
-#include "enums/items.h"
+#include "base_types.h"
 #include "events.h"
 #include "inventory.h"
 #include "item_stack.h"
 #include "logger.h"
-#include <algorithm>
-#include <memory>
-#include <optional>
-#include <random>
+#include "logstream.h"
+#include <cstdint>
 
 enum class InvMap : uint8_t {
 	ARMOR,

@@ -9,7 +9,22 @@
 #pragma once
 #include "../entities/entity_mp_player.h"
 #include "../trackers/entity_tracker.h"
+#include "items/item_properties.h"
+#include "networking/network_stream.h"
+#include "numeric_structs.h"
 #include "player/player_session.h"
+#include "runtime.h"
+#include "world.h"
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <future>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 class Server;
 struct PlayerSessionMP : PlayerSession {

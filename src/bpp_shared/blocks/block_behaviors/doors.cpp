@@ -8,26 +8,16 @@
 #include "blocks.h"
 #include "blocks/block_behaviors.h"
 #include "blocks/block_properties.h"
-#include "dimensions.h"
-#include "entities/entity_falling_block.h"
-#include "entities/entity_player.h"
-#include "entities/entity_skeleton.h"
-#include "entities/entity_spider.h"
-#include "entities/entity_zombie.h"
-#include "enums/items.h"
-#include "generator/overworld/tree_gen.h"
+#include "direction.h"
+#include "entities/entity.h"
 #include "helpers/direction_fixer.h"
-#include "helpers/java/java_math.h"
 #include "internal.h"
-#include "items/item_properties.h"
-#include "logger.h"
-#include "managers/rail_manager.h"
 #include "managers/redstone_manager.h"
-#include "managers/tick_scheduler.h"
 #include "numeric_structs.h"
 #include "packet_data.h"
-#include "tile_entities/tile_entity.h"
 #include "world.h"
+#include <cstdint>
+#include <functional>
 
 namespace Blocks {
 

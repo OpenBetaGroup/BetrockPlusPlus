@@ -9,6 +9,7 @@
 
 #include "../numeric_structs.h"
 #include "blocks/materials.h"
+#include <array>
 #include <cstdint>
 #include <map>
 #include <vector>

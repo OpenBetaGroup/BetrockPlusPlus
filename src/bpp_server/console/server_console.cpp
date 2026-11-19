@@ -5,18 +5,29 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+#include "commands/command_manager.h"
+#include "commands/strategos.h"
+#include "logger.h"
 #include "server.h"
 
+#include "server_console.h"
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
+#include <deque>
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <span>
+#include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 
 #include <replxx.hxx>
+#include <vector>
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN

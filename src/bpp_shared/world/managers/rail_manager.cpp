@@ -8,7 +8,8 @@
 #include "rail_manager.h"
 #include "redstone_manager.h"
 #include "world.h"
-#include <algorithm>
+#include <cstddef>
+#include <initializer_list>
 
 Int3 RailManager::FindRailConnection(WorldManager& _world, Int3 _pos, Cardinal::Value _dir) {
 	// Order here matters!

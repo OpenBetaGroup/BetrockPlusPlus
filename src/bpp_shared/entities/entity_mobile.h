@@ -6,10 +6,15 @@
  */
 #pragma once
 
+#include "damage_types.h"
 #include "entity.h"
+#include "helpers/aabb.h"
 #include "inventory/item_stack.h"
+#include "nbt/nbt_tag.h"
 #include "numeric_structs.h"
 #include "pathfinding/pathfinder.h"
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 

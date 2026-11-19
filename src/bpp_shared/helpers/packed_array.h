@@ -6,6 +6,7 @@
 
 #pragma once
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 template <std::size_t Count, unsigned Bits>

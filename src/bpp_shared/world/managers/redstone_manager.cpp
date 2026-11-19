@@ -7,10 +7,12 @@
 
 #include "redstone_manager.h"
 #include "helpers/direction_fixer.h"
-#include "logger/logger.h"
 #include "world.h"
+#include <algorithm>
 #include <deque>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 static std::deque<RedstoneUpdateInfo> torchUpdates;

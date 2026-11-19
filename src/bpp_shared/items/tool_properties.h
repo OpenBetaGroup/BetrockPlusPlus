@@ -10,9 +10,13 @@
 
 #include "base_types.h"
 #include "blocks.h"
+#include "entities/entity.h"
 #include "inventory/item_stack.h"
-#include "packet_data.h"
+#include "numeric_structs.h"
+#include "spawner.h"
 #include "world.h"
+#include <cstdint>
+#include <unordered_map>
 
 namespace Items {
 // Tool material durability

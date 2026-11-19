@@ -6,12 +6,15 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
 #include "server.h"
 #include <cctype>
 #include <cerrno>
 #include <charconv>
 #include <cmath>
 #include <cstdlib>
+#include <format>
+#include <optional>
 #include <string>
 #include <system_error>
 

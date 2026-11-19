@@ -5,11 +5,24 @@
  *
  */
 #include "entity_player.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "constants.h"
+#include "direction.h"
 #include "direction_fixer.h"
 #include "entity_item.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "enums/items.h"
 #include "gamerules.h"
-#include "logger/logger.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
 #include "world/world.h"
+#include <algorithm>
+#include <cmath>
+#include <utility>
+#include <vector>
 
 bool PlayerEntity::AttackEntityFrom(Entity* _entity, int _damage, DamageType _type) {
 	if (health <= 0)

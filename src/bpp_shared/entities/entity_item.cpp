@@ -5,10 +5,18 @@
  *
  */
 #include "entity_item.h"
+#include "blocks.h"
+#include "blocks/block_properties.h"
+#include "blocks/materials.h"
+#include "entity.h"
+#include "entity_manager.h"
 #include "entity_player.h"
+#include "helpers/java/java_math.h"
 #include "world/world.h"
 #include <algorithm>
-#include <cmath>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 void ItemEntity::LoadFromNbt(Tag& _nbt) {
 	Entity::LoadFromNbt(_nbt);

@@ -6,6 +6,16 @@
 */
 
 #pragma once
+#include "blocks.h"
+#include "constants.h"
+#include "helpers/packed_array.h"
+#include "numeric_structs.h"
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 // A 16x16x16 slice of a Chunk. Chunks are stored as a vertical stack of these.
 struct SubChunk {

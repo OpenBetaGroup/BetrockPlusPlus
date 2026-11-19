@@ -7,7 +7,11 @@
 */
 
 #include "chunk.h"
+#include "blocks/block_properties.h"
+#include "helpers/packed_array.h"
+#include "numeric_structs.h"
 #include <algorithm>
+#include <cassert>
 
 int Chunk::GetHighestPoint() const {
 	int highestPoint = 0;

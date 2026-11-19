@@ -6,7 +6,18 @@
 */
 
 #include "tile_entity_piston.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "chunk.h"
+#include "entities/entity.h"
+#include "entities/entity_manager.h"
+#include "helpers/aabb.h"
+#include "tile_entity_base.h"
 #include "world.h"
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 static constexpr int PISTON_DX[6] = { 0, 0, 0, 0, -1, 1 };
 static constexpr int PISTON_DY[6] = { -1, 1, 0, 0, 0, 0 };

@@ -8,19 +8,20 @@
 #include "blocks.h"
 #include "blocks/block_behaviors.h"
 #include "blocks/block_properties.h"
-#include "dimensions.h"
-#include "enums/items.h"
+#include "blocks/materials.h"
+#include "constants.h"
+#include "direction.h"
+#include "entities/entity.h"
 #include "helpers/direction_fixer.h"
 #include "helpers/java/java_math.h"
 #include "internal.h"
-#include "items/item_properties.h"
-#include "logger.h"
 #include "managers/redstone_manager.h"
-#include "managers/tick_scheduler.h"
 #include "numeric_structs.h"
-#include "packet_data.h"
-#include "tile_entities/tile_entity.h"
+#include "tile_entities/tile_entity_piston.h"
 #include "world.h"
+#include <cmath>
+#include <cstdint>
+#include <memory>
 
 namespace Blocks {
 

@@ -7,12 +7,26 @@
 */
 #include "inventory_tracker.h"
 
+#include "base_types.h"
+#include "dimensions.h"
 #include "inventory/interactions/furnace.h"
-#include "logger.h"
+#include "inventory/interactions/player.h"
+#include "inventory/inventories.h"
+#include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
+#include "items/item_properties.h"
+#include "networking/packets.h"
 #include "packet/packet_utils.h"
 #include "packet_data.h"
-#include "tile_entities/tile_entity.h"
+#include "player_conn/player_session_mp.h"
+#include "runtime.h"
+#include "server.h"
+#include "tile_entities/tile_entity_furnace.h"
+#include "world.h"
+#include "world/storage/save_manager.h"
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 void InventoryTracker::Tick(Server& _server) {

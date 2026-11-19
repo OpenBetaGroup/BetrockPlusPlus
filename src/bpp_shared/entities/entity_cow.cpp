@@ -5,6 +5,8 @@
  *
  */
 #include "entity_cow.h"
+#include "enums/items.h"
+#include "java_random.h"
 
 void CowEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// Drop 0-2 leather

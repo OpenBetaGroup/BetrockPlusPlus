@@ -8,6 +8,12 @@
 #ifdef ONLINE_MODE_AUTHENTICATION
 #include "online_auth.h"
 #include "curl_runtime.h"
+#include "java_random.h"
+#include <format>
+#include <ios>
+#include <sstream>
+#include <type_traits>
+#include <utility>
 
 std::string Authentication::GenerateAuthHash() {
 	// Source - https://stackoverflow.com/a/5100745

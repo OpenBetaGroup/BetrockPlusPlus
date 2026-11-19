@@ -7,8 +7,13 @@
 */
 
 #pragma once
+#include "inventory/inventories.h"
+#include "inventory/item_stack.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tile_entity_base.h"
 #include "java_random.h"
+#include <optional>
 
 // Dispenser (Trap)
 struct TileEntityDispenser : TileEntity {

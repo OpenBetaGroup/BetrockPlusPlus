@@ -10,13 +10,19 @@
 #define BUILD_SERVER
 #endif
 
+#include "addon/addon_manager.h"
+#include "addon_api.h"
+#include "logstream.h"
+#include "platform/platform_caps.h"
 #include <atomic>
 #include <chrono>
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <format>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -49,12 +55,9 @@
 // Shared Libs
 #include "bpp_shared/helpers/java/java_math.h"
 #include "bpp_shared/logger/logger.h"
-#include "bpp_shared/platform/memory.h"
 #include "bpp_shared/platform/platform.h"
 #include "bpp_shared/platform/platform_label.h"
-#include "bpp_utilities/utilities.h"
 #include "version.h"
-#include <numeric_structs.h>
 
 // Server includes
 #ifdef BUILD_SERVER

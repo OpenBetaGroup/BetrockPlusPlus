@@ -6,8 +6,10 @@
 #include "crafting_table.h"
 #include "blocks.h"
 #include "inventory/interactions/crafting.h"
+#include "inventory/inventory_interaction.h"
 #include "inventory/item_stack.h"
 #include "items.h"
+#include <cstddef>
 
 CraftingTableInventoryInteraction::CraftingTableInventoryInteraction(InventoryPlayer* _pinv, WorldManager& _worldMng,
                                                                      Runtime& _gameRuntime, Int3 _craftingTablePos)

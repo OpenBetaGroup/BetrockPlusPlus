@@ -6,6 +6,8 @@
 */
 
 #include "aabb.h"
+#include "blocks.h"
+#include "direction.h"
 #include "helpers/direction_fixer.h"
 #include <cstdint>
 

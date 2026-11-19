@@ -5,7 +5,20 @@
  *
  */
 #include "entity_slime.h"
+#include "entity_hostile.h"
+#include "entity_mobile.h"
 #include "entity_player.h"
+#include "enums/items.h"
+#include "gamerules.h"
+#include "helpers/java/java_math.h"
+#include "numeric_structs.h"
+#include "world.h"
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <variant>
 
 void SlimeEntity::SplitSlime() {
 	for (int i = 0; i < 4; i++) {

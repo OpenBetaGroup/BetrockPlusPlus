@@ -11,10 +11,28 @@
 #include "addon.h"
 #include "base_structs.h"
 #include "blocks.h"
+#include "chunk.h"
 #include "commands/command.h"
+#include "commands/command_manager.h"
+#include "entities/entity.h"
+#include "entities/entity_mp_player.h"
 #include "logger.h"
+#include "logstream.h"
+#include "networking/packets.h"
+#include "numeric_structs.h"
+#include "player/player_session.h"
+#include "player_conn/player_session_mp.h"
 #include "server.h"
 #include "version.h"
+#include "world.h"
+#include <atomic>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <utility>
 
 static constexpr Addon* InternalGetAddon(const bp_api* _api) {
 	return static_cast<Addon*>(_api->internal);

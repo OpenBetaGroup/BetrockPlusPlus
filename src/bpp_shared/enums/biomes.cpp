@@ -6,6 +6,7 @@
 */
 
 #include "biomes.h"
+#include <cstddef>
 
 /**
  * @brief Get the Top Block object

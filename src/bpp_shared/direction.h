@@ -6,8 +6,8 @@
 */
 
 #pragma once
-#include "./helpers/java/java_math.h"
 #include <array>
+#include <cstdint>
 #include <string_view>
 namespace Axis {
 // Axis Directions

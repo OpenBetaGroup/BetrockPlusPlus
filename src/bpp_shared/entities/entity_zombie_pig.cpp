@@ -7,6 +7,15 @@
 
 #include "entity_zombie_pig.h"
 #include "entities.h"
+#include "entity_manager.h"
+#include "entity_zombie.h"
+#include "enums/items.h"
+#include "helpers/aabb.h"
+#include "java_random.h"
+#include "world.h"
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 void ZombiePigEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// Drop 0-2 cooked porkchops

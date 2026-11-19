@@ -6,7 +6,13 @@
  */
 
 #include "entity_fireball.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "helpers/aabb.h"
 #include "raycast.h"
+#include "world.h"
+#include <optional>
+#include <vector>
 
 void FireballEntity::Tick() {
 	this->prevRotationYaw = this->rotationYaw;

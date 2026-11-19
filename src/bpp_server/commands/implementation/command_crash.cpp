@@ -8,8 +8,9 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
-#include "server.h"
+#include "commands/strategos.h"
 #include <csignal>
+#include <memory>
 
 namespace {
 void CrashServer(const strategos::CmdNode& /*_cmd*/, void* _userData) {

@@ -5,8 +5,14 @@
 */
 #include "player.h"
 #include "../../entities/entity_player.h"
+#include "enums/items.h"
 #include "inventory/interactions/crafting.h"
 #include "inventory/inventories.h"
+#include "inventory/inventory.h"
+#include "inventory/item_stack.h"
+#include "items/item_properties.h"
+#include <cstddef>
+#include <vector>
 
 PlayerInventoryInteraction::PlayerInventoryInteraction(InventoryPlayer* _inv, Runtime& _gameRuntime)
     : CraftingInventoryInteraction(_inv, _inv, _inv, _gameRuntime, { 2, 2 }), playerInventory(_inv) {}

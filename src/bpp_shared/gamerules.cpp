@@ -8,10 +8,16 @@
 #include "gamerules.h"
 #include "config/config.h"
 #include "logger.h"
+#include "logstream.h"
+#include <cctype>
+#include <cerrno>
 #include <charconv>
 #include <climits>
+#include <cstdlib>
 #include <map>
 #include <string>
+#include <system_error>
+#include <utility>
 #include <vector>
 #include <cmath>
 

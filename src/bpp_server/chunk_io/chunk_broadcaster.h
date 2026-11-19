@@ -9,7 +9,6 @@
 #include "dimensions.h"
 #include "numeric_structs.h"
 #include "world/world.h"
-#include <cstdint>
 #include <unordered_map>
 #include <vector>
 

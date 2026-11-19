@@ -6,14 +6,27 @@
  */
 
 #include "entity_mobile.h"
+#include "addon/addon_manager.h"
+#include "addon_api.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "blocks/block_properties.h"
+#include "blocks/materials.h"
 #include "entities/entity.h"
-#include "entities/entity_player.h"
+#include "entity_manager.h"
 #include "inventory/item_stack.h"
+#include "items/item_properties.h"
 #include "java_math.h"
+#include "java_random.h"
+#include "packet_data.h"
 #include "world.h"
 #include <algorithm>
+#include <climits>
 #include <cmath>
+#include <memory>
 #include <optional>
+#include <string>
+#include <unordered_map>
 
 #ifdef BUILD_SERVER
 #include "server.h"

@@ -5,6 +5,7 @@
  *
 */
 #include "dimension.h"
+#include <cstddef>
 
 Biome BiomeGetter::GetBiomeAtPoint(Int2 _worldPos) {
 	return Biome::BIOME_NONE;

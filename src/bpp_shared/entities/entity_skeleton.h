@@ -5,6 +5,9 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_hostile.h"
 
 struct SkeletonEntity : public HostileEntity {

@@ -6,11 +6,16 @@
 */
 
 #include "spawner.h"
-#include "entities/entity_animal.h"
+#include "biomes.h"
+#include "chunk.h"
+#include "constants.h"
+#include "entities.h"
+#include "entities/entity.h"
 #include "entities/entity_chicken.h"
 #include "entities/entity_cow.h"
 #include "entities/entity_creeper.h"
 #include "entities/entity_ghast.h"
+#include "entities/entity_manager.h"
 #include "entities/entity_mob.h"
 #include "entities/entity_pig.h"
 #include "entities/entity_sheep.h"
@@ -21,9 +26,14 @@
 #include "entities/entity_wolf.h"
 #include "entities/entity_zombie.h"
 #include "entities/entity_zombie_pig.h"
+#include "java_random.h"
 #include "world.h"
 
 #include "player/player_session.h"
+#include <algorithm>
+#include <atomic>
+#include <cmath>
+#include <optional>
 
 EntitySpawner::EntitySpawner() {
 	// Water

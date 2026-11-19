@@ -6,13 +6,11 @@
 */
 
 #pragma once
-#include "../packet/packet_utils.h"
 #include "../player_conn/player_session_mp.h"
 #include "enums/blocks.h"
 #include "runtime.h"
 #include "world/world.h"
 #include <numeric_structs.h>
-#include <vector>
 
 // Behavioral overrides for the base block behaviors.
 // If its nullptr here, use the base block overrides. Else, use what is here.

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #pragma once
-#include "java/java_math.h"
-#include "java/java_random.h"
+#include "entities/entity.h"
+#include "tile_entities/tile_entity_base.h"
 #include <numeric_structs.h>
 #include <unordered_set>
 

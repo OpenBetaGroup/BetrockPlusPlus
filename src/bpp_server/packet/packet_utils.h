@@ -6,9 +6,17 @@
  *
 */
 #pragma once
+#include "../enums/weather.h"
 #include "../player_conn/player_session_mp.h"
+#include "base_types.h"
+#include "enums/items.h"
+#include "inventory/inventory.h"
+#include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
 #include "networking/packets.h"
 #include "packet_data.h"
+#include <memory>
+#include <utility>
 #include <vector>
 
 namespace PacketUtilities {

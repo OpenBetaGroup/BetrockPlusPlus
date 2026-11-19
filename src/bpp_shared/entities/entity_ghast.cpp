@@ -5,12 +5,23 @@
  *
  */
 #include "entity_ghast.h"
+#include "blocks.h"
+#include "blocks/block_properties.h"
+#include "blocks/materials.h"
 #include "entity_fireball.h"
+#include "entity_hostile.h"
 #include "entity_manager.h"
+#include "entity_mob.h"
+#include "entity_mobile.h"
+#include "enums/items.h"
 #include "gamerules.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
 #include "world.h"
-#include <algorithm>
 #include <cmath>
+#include <memory>
+#include <variant>
 
 void GhastEntity::Tick() {
 	// NOTE:

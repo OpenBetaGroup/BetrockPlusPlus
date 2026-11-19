@@ -5,11 +5,16 @@
  *
  */
 #include "entity_painting.h"
+#include "blocks/materials.h"
 #include "direction_fixer.h"
-#include "entity_player.h"
+#include "entity.h"
+#include "entity_manager.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "packet_data.h"
 #include "world/world.h"
-#include <algorithm>
-#include <cmath>
+#include <cstdint>
+#include <unordered_map>
 
 void PaintingEntity::SetDirection(Cardinal::Value _direction) {
 	this->direction = _direction;

@@ -5,6 +5,15 @@
  *
  */
 #include "entity_mob.h"
+#include "blocks.h"
+#include "entity_manager.h"
+#include "entity_mobile.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
+#include "world.h"
+#include <cmath>
+#include <optional>
+#include <vector>
 
 void MobEntity::OnDeath(Entity* /*_killer*/, DamageType /*_type*/) {
 	// no op, drop items

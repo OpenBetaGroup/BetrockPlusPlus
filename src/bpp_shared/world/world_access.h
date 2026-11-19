@@ -8,7 +8,9 @@
 #pragma once
 #include "blocks.h"
 #include "blocks/block_properties.h"
+#include "blocks/materials.h"
 #include "numeric_structs.h"
+#include <cstdint>
 
 class WorldAccess {
 public:

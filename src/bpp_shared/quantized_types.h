@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include "helpers/endian_convert.h"
 #include "numeric_structs.h"
 #include <cstdint>
 #include <ostream>

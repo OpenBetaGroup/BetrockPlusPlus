@@ -6,9 +6,13 @@
 
 #pragma once
 
-#include "../shared/feature_gen.h" // brings in GenView, IsSolid, IsOpaque
+#include "blocks.h"
 #include "java_random.h"
+#include "numeric_structs.h"
 #include "world_access.h"
+#include <array>
+#include <cstddef>
+#include <cstdint>
 
 enum class TreeType : int8_t {
 	Oak = 0,

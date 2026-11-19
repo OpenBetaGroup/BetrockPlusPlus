@@ -7,8 +7,9 @@
 #pragma once
 
 #include "loglevel.h"
-#include <iostream>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 class LogStream {
 private:

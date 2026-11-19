@@ -5,6 +5,10 @@
  *
  */
 #include "entity_tnt.h"
+#include "entity.h"
+#include <cstdint>
+#include <string>
+#include <unordered_map>
 
 static Tag SetByte(std::string _name, int8_t _value) {
 	Tag byteTag;

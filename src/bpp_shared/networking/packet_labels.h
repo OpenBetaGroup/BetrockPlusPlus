@@ -6,7 +6,8 @@
 */
 
 #pragma once
-#include "base_types.h"
+#include <packet_ids.h>
+#include <string>
 
 inline std::string PacketIdToLabel(PacketId _id) {
 	switch (_id) {

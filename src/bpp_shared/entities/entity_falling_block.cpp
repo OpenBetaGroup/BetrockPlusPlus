@@ -6,8 +6,9 @@
  */
 #include "entity_falling_block.h"
 #include "blocks/block_properties.h"
+#include "blocks/materials.h"
+#include "constants.h"
 #include "direction.h"
-#include "entities/entity_item.h"
 #include "java_math.h"
 #include "world/world.h"
 

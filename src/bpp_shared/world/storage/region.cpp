@@ -7,19 +7,32 @@
 */
 
 #include "region.h"
+#include "blocks.h"
 #include "chunk.h"
+#include "constants.h"
 #include "helpers/deflate_pool.h"
 #include "helpers/endian_convert.h"
+#include "helpers/file_handle.h"
+#include "items/item_properties.h"
 #include "logger.h"
+#include "logstream.h"
 #include "nbt/nbt.h"
-#include "nbt/nbt_textifier.h"
 #include "platform/memory.h"
+#include "subchunk.h"
+#include "tile_entities/tile_entity_base.h"
 #include "tile_entities/tile_entity_manager.h"
 #include <algorithm>
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <iterator>
 #include <memory>
+#include <optional>
+#include <span>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace {
 constexpr size_t CHUNK_DATA_SIZE = (16 * 128 * 16) * 5 / 2;

@@ -5,7 +5,14 @@
  *
  */
 #pragma once
+#include "blocks.h"
+#include "entities.h"
 #include "entity.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
+#include <optional>
+#include <string>
+#include <unordered_map>
 
 struct FallingBlockEntity : public Entity {
 	BlockType block = BLOCK_AIR;

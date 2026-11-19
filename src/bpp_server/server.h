@@ -9,38 +9,49 @@
 #pragma once
 
 #include "addon/addon_manager.h"
+#include "base_types.h"
+#include "dimensions.h"
+#include "entities/entity.h"
+#include "entities/entity_player.h"
+#include "logger.h"
+#include "logstream.h"
+#include "numeric_structs.h"
+#include "packet_data.h"
+#include "platform/platform_caps.h"
+#include "player/player_session.h"
+#include "world.h"
+#include "world/storage/save_manager.h"
 #include <atomic>
 extern std::atomic<bool> shutdownRequested;
 
 #include "./internet/betacraft_heartbeat.h"
 #include "./internet/online_auth.h"
 #include "BS_thread_pool.hpp"
-#include "blocks/server_block_behaviors.h"
 #include "chunk_io/chunk_broadcaster.h"
 #include "chunk_io/chunk_sender.h"
 #include "commands/command_manager.h"
 #include "config/config.h"
 #include "console/server_console.h"
-#include "items/item_properties.h"
-#include "items/tool_properties.h"
-#include "networking/network_stream.h"
 #include "networking/packets.h"
-#include "packet/handle_packet.h"
 #include "packet/packet_dispatcher.h"
 #include "player_conn/player_session_mp.h"
 #include "player_conn/server_pconnstate_manager.h"
 #include "runtime.h"
-#include "server_socket.h"
-#include "strings/ucs2.h"
 #include "tick_profiler.h"
 #include "trackers/entity_tracker.h"
 #include "username.h"
 #include "world/world_event_broadcaster.h"
 #include <chrono>
+#include <cstdint>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <packet_ids.h>
+#include <string>
 #include <string_view>
 #include <thread>
-#include <unordered_set>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 class Server {

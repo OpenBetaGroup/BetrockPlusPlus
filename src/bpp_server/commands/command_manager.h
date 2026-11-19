@@ -7,8 +7,11 @@
 
 #pragma once
 #include "../player_conn/player_session_mp.h"
+#include "entities/entity.h"
+#include "items/item_properties.h"
 #include "strategos.h"
 #include "world.h"
+#include <cstdint>
 #include <functional>
 #include <span>
 #include <string>

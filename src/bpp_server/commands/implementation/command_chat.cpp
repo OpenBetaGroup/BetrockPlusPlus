@@ -7,8 +7,12 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
 #include "server.h"
 #include "username.h"
+#include <memory>
+#include <optional>
+#include <string>
 
 namespace {
 // TODO: Still needs to have chat formatting + who sent it!!!!!

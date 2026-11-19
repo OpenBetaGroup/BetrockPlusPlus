@@ -7,9 +7,12 @@
 
 // Lighter used by the main world.
 #pragma once
-#include "blocks/block_properties.h"
 #include "chunk.h"
+#include "constants.h"
+#include "tile_entities/tile_entity_base.h"
+#include <algorithm>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <numeric_structs.h>
 #include <vector>

@@ -5,7 +5,15 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_hostile.h"
+#include "nbt/nbt_tag.h"
+#include "packet_data.h"
+#include <cstdint>
+#include <optional>
+#include <vector>
 
 struct CreeperEntity : public HostileEntity {
 	// -1 = fuse unlit/counting down, 1 = fuse lit and counting up

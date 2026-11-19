@@ -5,7 +5,10 @@
  */
 
 #pragma once
+#include "blocks.h"
 #include "entity.h"
+#include "numeric_structs.h"
+#include <cstdint>
 #include <memory>
 
 struct PlayerEntity;

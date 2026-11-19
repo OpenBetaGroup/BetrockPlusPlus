@@ -5,9 +5,16 @@
  *
 */
 #pragma once
+#include "biomes.h"
+#include "constants.h"
 #include "enums/dimensions.h"
+#include "helpers/packed_array.h"
+#include "numeric_structs.h"
 #include "world/generator/generator.h"
 #include "world/generator/overworld/biome_gen.h"
+#include <cstdint>
+#include <memory>
+#include <span>
 
 // Get the information needed by the world for biomes
 struct BiomeGetter {

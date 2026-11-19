@@ -7,6 +7,12 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
+#include "world.h"
+#include <cmath>
+#include <cstdint>
+#include <optional>
+#include <string>
 
 namespace {
 

@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <stdexcept>
 
 /**
  * @brief A faithful reimplementation of the Java pseudorandom number generator

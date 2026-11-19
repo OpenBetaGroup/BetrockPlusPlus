@@ -5,7 +5,9 @@
 */
 
 #pragma once
-#include "./shared/feature_gen.h"
+#include "chunk.h"
+#include "java_random.h"
+#include "world_wrapper.h"
 #include <cstdint>
 
 /**

@@ -8,7 +8,10 @@
 
 #include "java_random.h"
 #include "noise_perlin.h"
+#include "numeric_structs.h"
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <span>
 #include <vector>
 

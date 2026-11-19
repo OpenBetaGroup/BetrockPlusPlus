@@ -6,8 +6,18 @@
 
 #pragma once
 #include "../direction.h"
+#include "aabb.h"
+#include "base_structs.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "blocks/block_properties.h"
+#include "blocks/materials.h"
+#include "helpers/java/java_math.h"
+#include "numeric_structs.h"
 #include "world.h"
 #include <cmath>
+#include <cstdint>
+#include <optional>
 
 enum class RayCastMode : uint8_t {
 	IGNORE_FLUIDS,

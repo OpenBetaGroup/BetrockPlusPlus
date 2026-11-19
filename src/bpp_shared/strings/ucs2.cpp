@@ -5,6 +5,7 @@
 */
 #include "ucs2.h"
 #include "logger.h"
+#include "logstream.h"
 
 // Turn a UCS-2 String into a UTF-8 String
 std::string ToUTF8(std::u16string _str) {

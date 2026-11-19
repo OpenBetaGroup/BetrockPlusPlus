@@ -5,13 +5,23 @@
  */
 
 #include "entity_fishing_bobber.h"
+#include "base_structs.h"
+#include "blocks/materials.h"
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_manager.h"
-#include "entity_mobile.h"
 #include "entity_player.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "inventory/item_stack.h"
 #include "items.h"
+#include "java_random.h"
 #include "raycast.h"
 #include "world/world.h"
 #include <cmath>
+#include <optional>
+#include <vector>
 
 FishingBobberEntity::FishingBobberEntity(std::shared_ptr<PlayerEntity> _owner, Vec3 _direction) {
 	type = EntityType::FISHING_BOBBER;

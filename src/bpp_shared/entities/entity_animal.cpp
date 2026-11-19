@@ -5,6 +5,12 @@
  *
  */
 #include "entity_animal.h"
+#include "blocks.h"
+#include "entity_mobile.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "numeric_structs.h"
+#include "world.h"
 
 bool AnimalEntity::CanSpawnAt() {
 	if (!world)

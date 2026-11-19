@@ -19,12 +19,15 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <functional>
 #include <string>
 #include <sys/stat.h>
 #include <thread>
+#include <type_traits>
 #include <unistd.h>
+#include <utility>
 
 // Defined in main.cpp. Setting it makes Server::Run() save the world and return.
 extern std::atomic<bool> shutdownRequested;

@@ -7,8 +7,11 @@
 
 #pragma once
 
+#include "blocks/block_properties.h"
+#include "entities.h"
 #include "entity.h"
-#include "logger.h"
+#include "java_random.h"
+#include "numeric_structs.h"
 
 struct LightningEntity : public Entity {
 	int lightningState = 0;

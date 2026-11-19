@@ -7,12 +7,13 @@
 #pragma once
 #include "base_types.h"
 #include "blocks.h"
-#include "logger.h"
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <numeric_structs.h>
 #include <queue>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 struct ScheduledTick {

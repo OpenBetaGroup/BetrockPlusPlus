@@ -6,10 +6,13 @@
 */
 #include "lighter.h"
 #include "blocks.h"
+#include "blocks/block_properties.h"
 #include "constants.h"
 #include "world.h"
+#include "world/dimension/dimension.h"
+#include <atomic>
 #include <cassert>
-#include <cstring>
+#include <memory>
 
 namespace Lighting {
 const float BrightnessArray[16] = { 0.035f, 0.044f, 0.055f, 0.069f, 0.086f, 0.107f, 0.134f, 0.168f,

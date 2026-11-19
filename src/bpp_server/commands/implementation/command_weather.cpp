@@ -7,10 +7,18 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "../enums/weather.h"
+#include "commands/strategos.h"
+#include "dimensions.h"
+#include "java_random.h"
+#include "managers/weather_system.h"
+#include "runtime.h"
 #include "server.h"
+#include "world.h"
 #include <algorithm>
 #include <cstdint>
 #include <format>
+#include <string>
 
 namespace {
 

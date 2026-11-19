@@ -8,6 +8,13 @@
 #include "world_event_broadcaster.h"
 
 #include "../server.h"
+#include "networking/network_stream.h"
+#include "networking/packets.h"
+#include "packet_data.h"
+#include "player/player_session.h"
+#include "player_conn/player_session_mp.h"
+#include <memory>
+#include <vector>
 void WorldEventBroadcaster::BroadcastNoteEvent(Server& _server, Int3 _position, int _instrumentState,
                                                int _instrumentDirection, Dimension _dimension, double _rangeSq) {
 	Packet::BlockEvent pkt;

@@ -7,7 +7,11 @@
 #include "../command.h"
 #include "../command_manager.h"
 #include "../command_registry.h"
+#include "commands/strategos.h"
+#include "dimensions.h"
+#include "player_conn/player_session_mp.h"
 #include "server.h"
+#include <memory>
 
 namespace {
 

@@ -9,8 +9,10 @@
 #include "inventory/item_stack.h"
 #include "items/item_properties.h"
 #include "logger.h"
+#include "logstream.h"
 #include "numeric_structs.h"
 #include <algorithm>
+#include <cstddef>
 
 // TODO: Find a better name for this, please!
 static constexpr ItemKey NormalizeItemMetadata(ItemKey _key) noexcept {

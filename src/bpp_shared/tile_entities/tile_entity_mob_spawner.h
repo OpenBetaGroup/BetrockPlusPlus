@@ -7,7 +7,11 @@
 */
 
 #pragma once
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "tile_entity_base.h"
+#include <cstdint>
+#include <string>
 
 // MobSpawner
 struct TileEntityMobSpawner : TileEntity {

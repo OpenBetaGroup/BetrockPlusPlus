@@ -7,9 +7,16 @@
 #include "../generator.h"
 #include "../noise/noise_octaves_perlin.h"
 #include "../shared/cave_gen.h"
-#include "../shared/feature_gen.h"
 #include "biomes.h"
+#include "chunk.h"
+#include "constants.h"
 #include "generator/overworld/biome_gen.h"
+#include "helpers/packed_array.h"
+#include "java_random.h"
+#include "numeric_structs.h"
+#include "world_wrapper.h"
+#include <cstddef>
+#include <cstdint>
 
 /**
  * @brief A faithful reimplementation of the Beta 1.7.3 Overworld Generator

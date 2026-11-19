@@ -7,7 +7,22 @@
 */
 
 #include "runtime.h"
+#include "blocks/block_properties_behaviors.h"
+#include "entities/entity_manager.h"
+#include "items/tool_item_properties.h"
+#include "java_random.h"
+#include "logger.h"
+#include "logstream.h"
+#include "managers/weather_system.h"
 #include "player/player_session.h"
+#include "utilities.h"
+#include "world.h"
+#include "world/dimension/nether/dimension_nether.h"
+#include "world/dimension/overworld/dimension_overworld.h"
+#include "world/storage/region_manager.h"
+#include "world/storage/save_manager.h"
+#include <cstdlib>
+#include <utility>
 
 #ifdef BUILD_SERVER
 Runtime::Runtime(Server* _server) : server(_server) {

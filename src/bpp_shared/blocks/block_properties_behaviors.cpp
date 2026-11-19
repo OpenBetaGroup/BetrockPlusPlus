@@ -6,6 +6,8 @@
 */
 
 #include "block_properties_behaviors.h"
+#include "block_behaviors.h"
+#include "block_properties.h"
 
 namespace Blocks {
 void RegisterAll() {

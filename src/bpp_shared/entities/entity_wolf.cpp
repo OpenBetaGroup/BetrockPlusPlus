@@ -6,9 +6,22 @@
  *
  */
 #include "entity_wolf.h"
+#include "entity_animal.h"
 #include "entity_mob.h"
+#include "entity_mobile.h"
 #include "entity_player.h"
+#include "helpers/aabb.h"
+#include "helpers/java/java_math.h"
+#include "inventory/item_stack.h"
+#include "items/item_properties.h"
+#include "java_random.h"
+#include "numeric_structs.h"
 #include "username.h"
+#include "world.h"
+#include <cmath>
+#include <cstdint>
+#include <unordered_map>
+#include <variant>
 
 bool WolfEntity::TryDespawn() {
 	if (IsTamed())

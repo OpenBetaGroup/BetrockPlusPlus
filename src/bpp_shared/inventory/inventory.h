@@ -4,10 +4,14 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 #pragma once
+#include "base_types.h"
 #include "enums/items.h"
 #include "item_stack.h"
 #include "items/item_properties.h"
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 

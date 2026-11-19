@@ -7,12 +7,18 @@
 
 #pragma once
 
+#include "base_types.h"
+#include "enums/items.h"
 #include "hash.h"
 #include "inventory/item_stack.h"
 #include "numeric_structs.h"
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
 #include <span>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 

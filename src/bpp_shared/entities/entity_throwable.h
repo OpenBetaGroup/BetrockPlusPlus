@@ -5,8 +5,19 @@
  *
  */
 #pragma once
+#include "blocks.h"
+#include "entity.h"
 #include "entity_mobile.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
 #include "logger.h"
+#include "logstream.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 struct ThrowableEntity : public Entity {
 	// Default

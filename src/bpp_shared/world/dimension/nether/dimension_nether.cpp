@@ -5,6 +5,7 @@
  *
 */
 #include "dimension_nether.h"
+#include <cstddef>
 
 void BiomeGetterNether::GenerateBiomeMap(PackedArray<CHUNK_AREA, 4>& _biomeMap, std::span<double> _temperature,
                                    std::span<double> _humidity, std::span<double> _weirdness, Int2 _blockPos) {

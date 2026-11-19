@@ -7,11 +7,17 @@
 
 #pragma once
 #include "direction.h"
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <ostream>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <type_traits>
 #include <vector>
 
 #if defined(__has_include)

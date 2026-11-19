@@ -8,24 +8,52 @@
  *
 */
 
-#include "addon/addon_impl.h"
+#include "./internet/betacraft_heartbeat.h"
+#include "./internet/online_auth.h"
 #include "addon/addon_manager.h"
+#include "addon_api.h"
 #include "base_types.h"
+#include "blocks.h"
+#include "blocks/block_behaviors.h"
+#include "blocks/block_properties.h"
+#include "blocks/server_block_behaviors.h"
+#include "chunk.h"
+#include "chunk_io/chunk_broadcaster.h"
 #include "commands/command.h"
 #include "config/list_parser.h"
 #include "dimensions.h"
+#include "entities.h"
+#include "entities/entity_manager.h"
+#include "entities/entity_mp_player.h"
 #include "gamerules.h"
+#include "inventory/inventories.h"
+#include "inventory/item_stack.h"
+#include "items/tool_properties.h"
+#include "lighter.h"
 #include "logger.h"
+#include "managers/tick_scheduler.h"
+#include "managers/weather_system.h"
+#include "networking/network_stream.h"
+#include "packet/handle_packet.h"
+#include "packet/packet_dispatcher.h"
 #include "packet/packet_utils.h"
-#include "teleporter.h"
+#include "server_socket.h"
 #include "trackers/inventory_tracker.h"
 #include "world.h"
+#include "world/dimension/dimension.h"
+#include "world/storage/region_manager.h"
+#include "world/world_event_broadcaster.h"
 #include <algorithm>
+#include <array>
 #include <climits>
 #include <cmath>
+#include <compare>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <future>
+#include <random>
+#include <ratio>
 #include <string>
 
 #include "platform/platform_caps.h"
@@ -40,12 +68,11 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
-#include "../bpp_utilities/compression_test.h"
-#include "../bpp_utilities/gen_test.h"
 
 #include "server.h"
-#include "version.h"
 #include <chrono>
+#include <type_traits>
+#include <unordered_set>
 
 Server::Server() : config("server.properties"), gamerulesConfig("gamerules.txt"), gameRuntime(this), addonManager(this) {
 	ServerBlock::Initialize();

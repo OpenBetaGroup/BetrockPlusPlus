@@ -5,9 +5,12 @@
 */
 #pragma once
 #include "../inventory_interaction.h"
+#include "crafting/recipe_manager.h"
 #include "inventory/inventories.h"
 #include "inventory/inventory.h"
+#include "numeric_structs.h"
 #include "runtime.h"
+#include <array>
 
 struct CraftingInventoryInteraction : InventoryInteraction {
 private:

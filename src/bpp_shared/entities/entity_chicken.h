@@ -5,7 +5,13 @@
  *
  */
 #pragma once
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_animal.h"
+#include "enums/items.h"
+#include "java_random.h"
+#include <cstdint>
 
 struct ChickenEntity : public AnimalEntity {
 	uint32_t ticksUntilEgg = 0;

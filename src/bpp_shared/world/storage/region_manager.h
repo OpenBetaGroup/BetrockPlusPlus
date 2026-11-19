@@ -6,7 +6,14 @@
 */
 #pragma once
 #include "BS_thread_pool.hpp"
+#include "chunk.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
 #include "region.h"
+#include "tile_entities/tile_entity_base.h"
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>

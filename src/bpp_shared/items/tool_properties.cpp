@@ -6,8 +6,14 @@
  *
 */
 #include "tool_properties.h"
+#include "base_structs.h"
 #include "blocks.h"
 #include "blocks/block_properties.h"
+#include "blocks/materials.h"
+#include "constants.h"
+#include "damage_types.h"
+#include "dimensions.h"
+#include "entities.h"
 #include "entities/entity.h"
 #include "entities/entity_arrow.h"
 #include "entities/entity_boat.h"
@@ -22,13 +28,19 @@
 #include "entities/entity_player.h"
 #include "entities/entity_sheep.h"
 #include "entities/entity_snowball.h"
+#include "helpers/java/java_math.h"
+#include "inventory/inventories.h"
 #include "inventory/item_stack.h"
 #include "items.h"
 #include "items/item_properties.h"
-#include "logger.h"
-#include "packet/packet_utils.h"
+#include "java_random.h"
+#include "player/player_session.h"
 #include "raycast.h"
 #include "world/managers/rail_manager.h"
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace Items {
 std::unordered_map<ItemId, ToolProperties> toolProperties = {};

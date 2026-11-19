@@ -6,12 +6,9 @@
 */
 
 #pragma once
-#include <array>
 #include <cstdint>
 #include <string>
 
-#include "blocks.h"
-#include "items.h"
 
 constexpr int SLOT_EMPTY = -1; // sentinel for "no slot found"
 

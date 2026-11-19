@@ -6,8 +6,15 @@
  */
 #pragma once
 
+#include "damage_types.h"
+#include "entities.h"
 #include "entity.h"
+#include "entity_mobile.h"
 #include "entity_player.h"
+#include "helpers/aabb.h"
+#include "numeric_structs.h"
+#include <cstdint>
+#include <optional>
 
 enum class MinecartType : int8_t {
 	Empty = 0,

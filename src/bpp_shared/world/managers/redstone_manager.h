@@ -7,10 +7,12 @@
 
 #pragma once
 #include "../helpers/direction_fixer.h"
-#include "base_structs.h"
+#include "base_types.h"
 #include "blocks.h"
-#include "blocks/block_behaviors.h"
-#include "blocks/block_properties_behaviors.h"
+#include "blocks/block_properties.h"
+#include "direction.h"
+#include "numeric_structs.h"
+#include <cstdint>
 
 // For redstone!
 class WorldManager;

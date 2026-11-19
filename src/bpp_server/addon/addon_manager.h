@@ -7,6 +7,7 @@
 #pragma once
 
 #include "addon.h"
+#include "addon_api.h"
 #include <memory>
 #include <vector>
 

@@ -7,20 +7,26 @@
 */
 
 #pragma once
+#include "base_types.h"
+#include "blocks.h"
 #include "dimensions.h"
+#include "entities/entity_player.h"
 #include "inventory/interactions/player.h"
+#include "inventory/inventories.h"
 #include "inventory/inventory_interaction.h"
+#include "inventory/item_stack.h"
 #include "items.h"
-#include "nbt/nbt.h"
-#include "networking/network_stream.h"
-#include "world/client_pos.h"
-#include "world/world.h"
-#include <array>
-#include <chrono>
+#include "logger.h"
+#include "logstream.h"
+#include "nbt/nbt_tag.h"
+#include "numeric_structs.h"
+#include "runtime.h"
+#include <cstddef>
 #include <cstdint>
-#include <future>
+#include <memory>
+#include <optional>
+#include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 enum class ConnectionState : uint8_t {

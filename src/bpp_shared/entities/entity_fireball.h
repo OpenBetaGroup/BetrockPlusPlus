@@ -5,8 +5,18 @@
  *
  */
 #pragma once
+#include "blocks.h"
+#include "damage_types.h"
+#include "entities.h"
+#include "entity.h"
 #include "entity_mobile.h"
+#include "helpers/java/java_math.h"
+#include "java_random.h"
 #include "logger.h"
+#include "logstream.h"
+#include "numeric_structs.h"
+#include <cmath>
+#include <memory>
 
 struct FireballEntity : public Entity {
 	Vec3 acceleration = {};
