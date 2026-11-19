@@ -18,7 +18,6 @@
 class WorldManager;
 struct PlayerSession;
 struct Entity;
-class Server;
 
 namespace Items {
 
@@ -39,7 +38,7 @@ struct ItemBehavior {
 	void (*onBlockUse)(WorldManager& _world, ItemStack* _stack, Int3 _pos, Entity& _user,
 	                   Cardinal::Value _face) = nullptr;
 	void (*onStartHolding)(ItemStack* _stack, PlayerSession& _session) = nullptr;
-	void (*whileHeld)(ItemStack* _stack, PlayerSession& _session, Server& _server) = nullptr;
+	void (*whileHeld)(ItemStack* _stack, PlayerSession& _session) = nullptr;
 	void (*onStopHolding)(ItemStack* _stack) = nullptr;
 };
 

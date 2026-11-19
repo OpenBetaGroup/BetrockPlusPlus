@@ -24,7 +24,6 @@
 #include "logstream.h"
 #include "numeric_structs.h"
 #include "player/player_session.h"
-#include "server.h"
 #include "tool_item_properties.h"
 #include "tool_properties.h"
 #include "world.h"
@@ -411,7 +410,7 @@ void RegisterAll() {
 		Logger::Debug << "Started holding a map!\n";
 	};
 
-	itemBehavior[MAP].whileHeld = [](ItemStack* /*_stack*/, PlayerSession& _session, Server& _server) {
+	itemBehavior[MAP].whileHeld = [](ItemStack* /*_stack*/, PlayerSession& _session) {
 		Int2 pos = { int(std::floor(_session.position.x)), int(std::floor(_session.position.z)) };
 
 		std::vector<Map::MarkerPlacement> markers = {
