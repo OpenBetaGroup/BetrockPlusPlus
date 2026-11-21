@@ -104,8 +104,7 @@ void AddonManager::Load() {
 
 		auto addon = std::make_unique<Addon>();
 
-		addon->api = MakeAddonAPI();
-		addon->api.internal = addon.get();
+		addon->api = MakeAddonAPI(addon.get());
 
 		addon->server = server;
 		addon->info = addonFn(&addon->api);

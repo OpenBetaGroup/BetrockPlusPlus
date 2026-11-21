@@ -149,6 +149,8 @@ struct bp_api {
 		bool (*getEnumArg)(const bp_cmd_action_ctx* ctx, const char* name, int* out);
 		bool (*getVec3Arg)(const bp_cmd_action_ctx* ctx, const char* name, bp_cmd_vec3* out);
 		void (*setAction)(const bp_api* api, bp_cmd_node* node, bp_cmd_action_fn action, void* userData);
+		void (*setDescription)(bp_cmd_node* node, const char* description);
+		void (*requireOperator)(bp_cmd_node* node);
 		// Note: This consumes the root node and it's children, don't hold references to them
 		void (*registerCommand)(const bp_api* api, bp_cmd_node* root);
 		// Note: All addon commands are automatically unregistered on unloads/disablements

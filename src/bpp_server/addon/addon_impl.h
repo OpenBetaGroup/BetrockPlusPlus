@@ -47,4 +47,4 @@ inline void FromBpStack(ItemStack* _dst, const bp_item_stack& _src) noexcept {
 
 } // namespace AddonHelper
 
-bp_api MakeAddonAPI();
+bp_api MakeAddonAPI(Addon* _addon);

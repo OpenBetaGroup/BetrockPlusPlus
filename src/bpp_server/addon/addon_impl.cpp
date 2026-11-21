@@ -242,6 +242,14 @@ void SetCmdNodeAction(const bp_api* _api, bp_cmd_node* _node, bp_cmd_action_fn _
 	};
 }
 
+void SetCmdNodeDescription(bp_cmd_node* _node, const char* _description) {
+	_node->description = _description;
+}
+
+void SetCmdNodeOpFlag(bp_cmd_node* _node) {
+	_node->requiresOperator = true;
+}
+
 void SendCmdActionFeedback(const bp_cmd_action_ctx* _ctx, const char* _message) {
 	SendFeedback(_ctx->cmdCtx, _message);
 }
@@ -331,10 +339,10 @@ bool UnregisterCommand(const bp_api* _api, const char* _name) {
 	return addon->server->GetCommandManager().Dispatcher().remove_command(_name);
 }
 
-bp_api MakeAddonAPI() {
+bp_api MakeAddonAPI(Addon* _addon) {
 	return bp_api{
 		.version = ADDON_API_VERSION,
-		.internal = nullptr, // Set by the addon manager
+		.internal = _addon,
 		.log = { .info = LogInfo, .warning = LogWarning, .error = LogError },
 		.server = { .getPlayerCount = GetPlayerCount, .getPlayerAt = GetPlayerAt, .stop = ServerStop, .getMsptAverage = ServerGetMsptAverage, .getTpsAverage = ServerGetTpsAverage, .getVersion = ServerGetVersion },
 		.player = { .sendMessage = PlayerSendMessage, .kick = PlayerKick, .getUsername = PlayerGetUsername, .getEntity = PlayerGetEntity, },
@@ -354,6 +362,8 @@ bp_api MakeAddonAPI() {
 			.getEnumArg = GetCmdEnumArg,
 			.getVec3Arg = GetCmdVec3Arg,
 			.setAction = SetCmdNodeAction,
+			.setDescription = SetCmdNodeDescription,
+			.requireOperator = SetCmdNodeOpFlag,
 			.registerCommand = RegisterCommand,
 			.unregisterCommand = UnregisterCommand,
 			.execute = ExecuteCommand }
