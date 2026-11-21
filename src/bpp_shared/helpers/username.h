@@ -40,7 +40,7 @@ inline bool ContainsUsername(const std::vector<std::string>& _list, std::string_
 }
 
 inline bool IsValidUsername(const std::string& _username, bool _allowDotPrefix = false) {
-	if (_username.size() < 3 || _username.size() > 16)
+	if (_username.size() < 3 || _username.size() > 16 + (_allowDotPrefix ? 1 : 0))
 		return false;
 	size_t index = 0;
 	for (unsigned char c : _username) {
