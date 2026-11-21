@@ -15,18 +15,34 @@
 
 namespace {
 
-void CollectUsages(const strategos::Node& _node, const std::string& _prefix, std::vector<std::string>& _usages) {
-	std::string token;
-	if (_node.type == strategos::NodeType::Literal)
-		token = _node.name;
-	else if (_node.type != strategos::NodeType::Root)
-		token = "<" + _node.name + ">";
-	std::string here = _prefix.empty() ? token : _prefix + " " + token;
-	if (_node.action)
-		_usages.push_back(here);
-	for (const auto& child : _node.children)
-		CollectUsages(child, here, _usages);
-}
+struct CommandTreeCollector {
+	struct Usage {
+		std::string line;
+		bool requiresOperator;
+	};
+
+	std::vector<Usage> usages;
+	bool allUsagesAreOp = true;
+	std::vector<const strategos::Node*> arguments;
+
+	void Collect(const strategos::Node& _node, const std::string& _prefix = "") {
+		std::string token = _node.type == strategos::NodeType::Literal ? _node.name : "<" + _node.name + ">";
+		std::string accum = _prefix.empty() ? std::move(token) : _prefix + " " + token;
+
+		if (_node.action) {
+			usages.push_back(Usage{ .line = accum, .requiresOperator = _node.requiresOperator });
+			if (!_node.requiresOperator)
+				allUsagesAreOp = false;
+		}
+
+		if (_node.type != strategos::NodeType::Literal && !_node.description.empty() &&
+		    std::ranges::none_of(arguments, [&](const auto* _arg) { return _arg->name == _node.name; }))
+			arguments.push_back(&_node);
+
+		for (const auto& child : _node.children)
+			Collect(child, std::move(accum));
+	}
+};
 
 bool CanSeeCommand(const strategos::Node& _cmd, CommandContext& _ctx) {
 	return !_cmd.requiresOperator || IsOperator(_ctx);
@@ -72,14 +88,20 @@ void HelpCommand(const strategos::CmdNode& _cmd, void* _userData) {
 			return;
 		}
 		SendFeedback(ctx, "§7" + cmd.name + ": " + cmd.description);
-		std::vector<std::string> usages;
-		CollectUsages(cmd, "", usages);
-		for (const auto& usage : usages) {
-			std::string line = "/" + usage;
-			if (line.size() > cmd.name.size() + 1) // more than "/name"
-				SendFeedback(ctx, "§7" + line);
+
+		CommandTreeCollector collector;
+		collector.Collect(cmd);
+		for (const auto& usage : collector.usages) {
+			std::string line = "/" + usage.line;
+			if (usage.requiresOperator && !collector.allUsagesAreOp)
+				line += " (Requires operator)";
+			SendFeedback(ctx, "§7" + line);
 		}
-		if (cmd.requiresOperator)
+		for (const auto& arg : collector.arguments) {
+			std::string line = std::format("§7<{}> - {}", arg->name, arg->description);
+			SendFeedback(ctx, line);
+		}
+		if (collector.allUsagesAreOp)
 			SendFeedback(ctx, "§7(Requires operator)");
 		return;
 	}
