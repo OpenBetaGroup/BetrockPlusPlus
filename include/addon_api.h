@@ -16,10 +16,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ADDON_API_VERSION 5
+#define ADDON_API_VERSION 7
 
 typedef struct bp_api bp_api;
 typedef struct bp_player bp_player;
+typedef struct bp_inventory bp_inventory;
 typedef struct bp_entity bp_entity;
 typedef struct bp_world bp_world;
 typedef struct bp_cmd_node bp_cmd_node;
@@ -30,6 +31,8 @@ typedef struct {
 	double y;
 	double z;
 } bp_vec3;
+
+#define BP_ITEM_NONE ((int16_t)-1)
 
 typedef struct {
 	int16_t id;
@@ -47,6 +50,27 @@ typedef struct {
 	int8_t id;
 	uint8_t meta;
 } bp_block;
+
+// This is mostly dictates which sprite the client should use for the inventory
+typedef uint8_t bp_inventory_type;
+enum {
+	BP_INV_PLAYER,
+	BP_INV_CHEST,
+	BP_INV_LARGE_CHEST,
+	BP_INV_CRAFTING_TABLE,
+	BP_INV_DISPENSER,
+	BP_INV_FURNACE,
+};
+
+typedef uint8_t bp_click_type;
+enum {
+	BP_CLICK_LEFT,
+	BP_CLICK_RIGHT,
+	BP_CLICK_SHIFT_LEFT,
+	BP_CLICK_SHIFT_RIGHT,
+	BP_CLICK_OUTSIDE_LEFT, // slot = -999
+	BP_CLICK_OUTSIDE_RIGHT, // slot = -999
+};
 
 typedef uint8_t bp_damage_type;
 enum {
@@ -118,7 +142,43 @@ struct bp_api {
 		void (*kick)(const bp_api* api, bp_player* player, const char* reason);
 		const char* (*getUsername)(bp_player* player);
 		bp_entity* (*getEntity)(bp_player* player);
+		// Returns the player's own inventory
+		bp_inventory* (*getInventory)(bp_player* player); // Can return NULL
+		bp_inventory* (*getOpenInventory)(bp_player* player);
+		// Returns true if the requested inventory has opened
+		bool (*openInventory)(const bp_api* api, bp_player* player, bp_inventory* inventory);
+		void (*closeInventory)(const bp_api* api, bp_player* player);
+		int (*getHeldSlot)(bp_player* player); // Selected hotbar slot, 0-8
 	} player;
+
+	struct {
+		bp_item_stack (*getItem)(bp_inventory* inventory, int slot);
+		void (*setItem)(bp_inventory* inventory, int slot, bp_item_stack item);
+		int (*getSize)(bp_inventory* inventory);
+		// Note: setSize doesn't exist because resizing would break slot ordering
+
+		// Helper that handles all possible cases like merging, overflow, stacking
+		// Returns left-over count
+		int (*addItem)(bp_inventory* inventory, bp_item_stack item);
+
+		bp_inventory_type (*getType)(bp_inventory* inventory);
+		// True if the inventory is a container
+		bool (*getContainerPos)(bp_inventory* inventory, bp_world** outWorld, bp_block_pos* outPos);
+		// Note: For large chests you need to call this for both halves
+		bp_inventory* (*getAtBlock)(bp_world* world, bp_block_pos pos);
+
+		const char* (*getName)(bp_inventory* inventory);
+		// Note: Vanilla can't change an already open inventory's name
+		void (*setName)(bp_inventory* inventory, const char* name);
+
+		// Hint: If you are going to create custom UIs and want to prevent items from being modified:
+		// Use: `if (api->player.getOpenInventory(ev->player) == shopInv) ev->cancel = true;`
+		// Checking only `ev->inventory == shopInv` is not enough,
+		// shift-click events are called on the player's inventory.
+		bp_inventory* (*create)(const bp_api* api, const char* name, int size, bp_inventory_type type);
+		// You can only destroy inventories that you created using create()
+		void (*destroy)(const bp_api* api, bp_inventory* inventory);
+	} inventory;
 
 	struct {
 		bp_vec3 (*getPosition)(bp_entity* entity);
@@ -189,6 +249,52 @@ typedef struct {
 	bp_player* player;
 
 	// --- Modifiable fields ---
+	bp_inventory* inventory;
+	bool cancel;
+} bp_inventory_open_event;
+
+typedef struct {
+	bp_player* player;
+	bp_inventory* inventory;
+	bool fromClient;
+} bp_inventory_close_event;
+
+typedef struct {
+	bp_player* player;
+	bp_inventory* inventory;
+	int slot;
+	bp_click_type click;
+	bp_item_stack clickedItem;
+	bp_item_stack cursorItem;
+
+	// --- Modifiable fields ---
+	bool cancel;
+} bp_inventory_pre_click_event;
+
+typedef struct {
+	bp_player* player;
+	bp_inventory* inventory;
+	int slot;
+	bp_click_type click;
+	bp_item_stack slotBefore;
+	bp_item_stack slotAfter;
+	bp_item_stack cursorBefore;
+	bp_item_stack cursorAfter;
+} bp_inventory_click_event;
+
+// Note: This isn't called right when a change happens,
+// instead is called each tick for every change that happened inside the tick
+typedef struct {
+	bp_inventory* inventory;
+	int slot;
+	bp_item_stack previous;
+	bp_item_stack current;
+} bp_inventory_change_event;
+
+typedef struct {
+	bp_player* player;
+
+	// --- Modifiable fields ---
 	bp_item_stack item;
 	bool cancel;
 } bp_item_use_event;
@@ -248,6 +354,11 @@ typedef void (*bp_player_join_fn)(const bp_api* api, const bp_player_join_event*
 typedef void (*bp_player_leave_fn)(const bp_api* api, const bp_player_leave_event* event);
 typedef void (*bp_player_chat_fn)(const bp_api* api, bp_player_chat_event* event);
 typedef void (*bp_player_move_fn)(const bp_api* api, bp_player_move_event* event);
+typedef void (*bp_inventory_open_fn)(const bp_api* api, bp_inventory_open_event* event);
+typedef void (*bp_inventory_close_fn)(const bp_api* api, const bp_inventory_close_event* event);
+typedef void (*bp_inventory_pre_click_fn)(const bp_api* api, bp_inventory_pre_click_event* event);
+typedef void (*bp_inventory_click_fn)(const bp_api* api, const bp_inventory_click_event* event);
+typedef void (*bp_inventory_change_fn)(const bp_api* api, const bp_inventory_change_event* event);
 typedef void (*bp_item_use_fn)(const bp_api* api, bp_item_use_event* event);
 typedef void (*bp_block_use_fn)(const bp_api* api, bp_block_use_event* event);
 typedef void (*bp_block_break_fn)(const bp_api* api, bp_block_break_event* event);
@@ -264,6 +375,11 @@ typedef struct {
 	bp_player_chat_fn playerChat;
 	bp_player_move_fn playerMove;
 	bp_item_use_fn itemUse;
+	bp_inventory_open_fn inventoryOpen;
+	bp_inventory_close_fn inventoryClose;
+	bp_inventory_pre_click_fn inventoryPreClick;
+	bp_inventory_click_fn inventoryClick;
+	bp_inventory_change_fn inventoryChange;
 	bp_block_break_fn blockBreak;
 	bp_block_place_fn blockPlace;
 	bp_block_use_fn blockUse;
