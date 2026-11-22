@@ -61,8 +61,54 @@ void TeleportToSpawn(const strategos::CmdNode&, void* _userData) {
 	SendTeleport2d(*ctx.session, dest);
 }
 
+void SetSpawnPos(const strategos::CmdNode& _cmd, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
+	auto cmdPos = _cmd.get_arg<strategos::Vec3>("pos");
+	if (!cmdPos) {
+		SendErrorFeedback(ctx, ERROR_REASON_PARAMETERS);
+		return;
+	}
+	if (!ctx.world) {
+		SendErrorFeedback(ctx, ERROR_REASON_ERROR);
+		return;
+	}
+	auto resolved = ResolveCmdPos(ctx, *cmdPos);
+	if (!resolved) {
+		SendErrorFeedback(ctx, resolved.error());
+		return;
+	}
+	Vec3 pos = *resolved;
+
+	WorldManager* overworld = ctx.server->GetWorldForDimension(Dimension::Overworld);
+	if (!overworld) {
+		SendErrorFeedback(ctx, ERROR_REASON_ERROR);
+		return;
+	}
+	overworld->spawnPoint.x = pos.x;
+	overworld->spawnPoint.z = pos.z;
+	SendFeedback(ctx, std::format("Set world spawn to {}", overworld->GetSpawnPoint(false).Str()));
+}
+
+void GetSpawn(const strategos::CmdNode&, void* _userData) {
+	auto& ctx = CmdCtx(_userData);
+	if (!ctx.world) {
+		SendErrorFeedback(ctx, ERROR_REASON_ERROR);
+		return;
+	}
+
+	WorldManager* overworld = ctx.server->GetWorldForDimension(Dimension::Overworld);
+	Int32_3 ipos = overworld->GetSpawnPoint(false);
+	SendFeedback(ctx, "World spawn is at " + Int32_2{ipos.x,ipos.z}.Str());
+}
+
 } // namespace
 
 void RegisterSpawn(strategos::BrigadierContext& _dispatcher) {
-	_dispatcher.add_command(strategos::Node::literal("spawn").describe("Teleport to spawn").executes(TeleportToSpawn));
+	_dispatcher.add_command(
+		strategos::Node::literal("spawn").describe("Teleport to, get and set spawn").executes(TeleportToSpawn)
+		.op()
+		.then(strategos::Node::literal("set").describe("Set world spawn at current x,z position")
+			.then(strategos::Node::vec3("pos").describe("Set world spawn at passed x,z position (requires x,y,z)").executes(SetSpawnPos)))
+		.then(strategos::Node::literal("get").describe("Get world spawn").executes(GetSpawn))
+	);
 }
