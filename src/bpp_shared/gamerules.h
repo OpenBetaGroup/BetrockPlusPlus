@@ -68,6 +68,7 @@ enum class Id {
 	// Debug
 	PopulationPerTick,
 	LightUpdatesPerTick,
+	BlockCoordinateLimit,
 
 	// NOTE: Last entry!
 	// This value is not used by any of our gamerules

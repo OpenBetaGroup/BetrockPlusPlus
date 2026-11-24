@@ -23,11 +23,15 @@
 #include <memory>
 #include <unordered_set>
 #include <utility>
+#include "helpers/valid_range.h"
 
 void ChunkBroadcaster::BroadcastBlockChanges(Server& _server,
                                              std::unordered_map<Int32_2, std::vector<PendingBlock>>& _changes,
                                              Dimension _dimension, WorldManager& _dimWorld) {
+	const bool limitCoords = Gamerule::Get<bool>(Gamerule::Id::BlockCoordinateLimit);
 	for (auto& [chunk, blockChanges] : _changes) {
+		if (limitCoords && !IsChunkInWorldBounds(chunk)) 
+			continue;
 		{
 			std::vector<PendingBlock> unique;
 			unique.reserve(blockChanges.size());

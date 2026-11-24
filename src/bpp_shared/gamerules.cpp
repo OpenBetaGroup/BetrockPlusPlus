@@ -99,6 +99,7 @@ struct Registry {
 		// Debug
 		Register(Id::PopulationPerTick, "population_per_tick", "How many chunks should be attempted to populate per tick", 16); // Vanilla: n/a
 		Register(Id::LightUpdatesPerTick, "light_updates_per_tick", "How many light updates should be processed per tick", INT_MAX); // Vanilla: n/a
+		Register(Id::BlockCoordinateLimit, "block_coordinate_limit", "Avoids sending blocks and chunks past the 32-bit integer limit, which crashes vanilla clients", true); // Vanilla: false
 	}
 
 	Entry* Find(Id _id) {

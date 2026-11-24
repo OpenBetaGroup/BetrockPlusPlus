@@ -30,6 +30,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "helpers/valid_range.h"
 
 // ChunkSender offloads zlib chunk serialization onto a thread-pool
 struct ChunkSender {
@@ -76,9 +77,12 @@ struct ChunkSender {
 		                 : _world.GetViewRadius();
 
 		std::vector<Int32_2> toSend;
+		const bool limitCoords = Gamerule::Get<bool>(Gamerule::Id::BlockCoordinateLimit);
 		for (int dx = -radius; dx <= radius; dx++) {
 			for (int dz = -radius; dz <= radius; dz++) {
 				Int32_2 p{ cx + dx, cz + dz };
+				if (limitCoords && !IsChunkInWorldBounds(p))
+					continue;
 				if (!_world.chunks.contains(p))
 					continue;
 				if (_session.sentChunks.contains(p))
