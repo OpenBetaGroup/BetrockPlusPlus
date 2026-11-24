@@ -40,10 +40,12 @@ enum class NodeType : uint8_t {
 	String,
 	GreedyString,
 	Integer,
-	Float,
+	Number,
 	Boolean,
 	Enum,
-	Vec3,
+	Pos1,
+	Pos2,
+	Pos3,
 	Root,
 };
 
@@ -53,8 +55,8 @@ enum class Axis : uint8_t {
 	Z
 };
 
-struct Vec3 {
-	float pos[3]{};
+struct Pos {
+	double vec[3]{};
 	uint8_t relative_axes = 0; // bitmask
 
 	[[nodiscard]] constexpr bool is_relative(Axis axis) const noexcept {
@@ -68,20 +70,6 @@ struct Vec3 {
 			relative_axes &= ~(1 << std::to_underlying(axis));
 	}
 };
-} // namespace strategos
-
-namespace std {
-
-template <>
-struct formatter<strategos::Vec3> : formatter<std::string> {
-	auto format(const strategos::Vec3& v, format_context& ctx) const {
-		return formatter<std::string>::format(std::format("[{}, {}, {}]", v.pos[0], v.pos[1], v.pos[2]), ctx);
-	}
-};
-
-} // namespace std
-
-namespace strategos {
 
 using ActionFunc = std::function<void(const CmdNode& ctx, void* user_data)>;
 using PermissionFunc = std::function<bool(void* user_data)>;
@@ -91,7 +79,7 @@ struct IntSettings {
 	int max = std::numeric_limits<int>::max();
 };
 
-struct FloatSettings {
+struct NumberSettings {
 	float min = std::numeric_limits<float>::lowest();
 	float max = std::numeric_limits<float>::max();
 };
@@ -114,7 +102,7 @@ struct Suggestion {
 };
 
 // Settings are used to specify metadata like constraints for a node.
-using NodeSettings = std::variant<std::monostate, IntSettings, FloatSettings, EnumSettings>;
+using NodeSettings = std::variant<std::monostate, IntSettings, NumberSettings, EnumSettings>;
 
 struct AbstractNode {
 	NodeType type{};
@@ -192,19 +180,27 @@ struct Node : AbstractNode {
 	}
 
 	static inline Node float_(std::string name, float min, float max) {
-		return { NodeType::Float, std::move(name), FloatSettings{ min, max } };
+		return { NodeType::Number, std::move(name), NumberSettings{ min, max } };
 	}
 
 	static inline Node float_(std::string name) {
-		return { NodeType::Float, std::move(name), FloatSettings{} };
+		return { NodeType::Number, std::move(name), NumberSettings{} };
 	}
 
 	static inline Node boolean(std::string name) {
 		return { NodeType::Boolean, std::move(name) };
 	}
 
-	static inline Node vec3(std::string name) {
-		return { NodeType::Vec3, std::move(name) };
+	static inline Node pos1(std::string name) {
+		return { NodeType::Pos1, std::move(name) };
+	}
+
+	static inline Node pos2(std::string name) {
+		return { NodeType::Pos2, std::move(name) };
+	}
+
+	static inline Node pos3(std::string name) {
+		return { NodeType::Pos3, std::move(name) };
 	}
 
 	static inline Node enum_(std::string name, std::vector<std::string> values) {
@@ -212,7 +208,7 @@ struct Node : AbstractNode {
 	}
 };
 
-using CmdNodeData = std::variant<std::monostate, int, float, std::string, Vec3, bool>;
+using CmdNodeData = std::variant<std::monostate, int, double, std::string, Pos, bool>;
 
 struct CmdNode {
 	const Node* node{ nullptr };
@@ -336,7 +332,7 @@ public:
 	// End LLM disclosure
 
 	[[nodiscard]] std::optional<ParseError> execute(std::string_view cmdline, void* user_data = nullptr,
-	                                   PermissionFunc canOperate = nullptr) const {
+	                                                PermissionFunc canOperate = nullptr) const {
 		auto tokens = tokenize(cmdline);
 		if (tokens.empty()) {
 			return ParseError{ .type = ParseErrorType::IncompleteCommand, .message = "Empty command" };
@@ -356,8 +352,7 @@ public:
 			       (!canOperate || !canOperate(user_data));
 		};
 		auto operatorError = []() {
-			return
-			    ParseError{ .type = ParseErrorType::NoPermission, .message = "Only operators can use this command!" };
+			return ParseError{ .type = ParseErrorType::NoPermission, .message = "Only operators can use this command!" };
 		};
 
 		while (token_idx < tokens.size()) {
@@ -365,8 +360,8 @@ public:
 				if (lacksOperator())
 					return operatorError();
 				return ParseError{ .type = ParseErrorType::TooManyArguments,
-				                                  .message = std::format("Unexpected token '{}'", tokens[token_idx]),
-				                                  .position = token_idx };
+				                   .message = std::format("Unexpected token '{}'", tokens[token_idx]),
+				                   .position = token_idx };
 			}
 
 			auto [matched_node, consumed] = find_matching_child(*current, tokens, token_idx);
@@ -374,11 +369,10 @@ public:
 			if (!matched_node) {
 				if (lacksOperator())
 					return operatorError();
-				return
-				    ParseError{ .type = ParseErrorType::UnknownCommand,
-					           .message = std::format("Unknown token '{}'. Expected: {}", tokens[token_idx],
-					                                  get_expected_names(*current)),
-					           .position = token_idx };
+				return ParseError{ .type = ParseErrorType::UnknownCommand,
+				                   .message = std::format("Unknown token '{}'. Expected: {}", tokens[token_idx],
+					                                      get_expected_names(*current)),
+				                   .position = token_idx };
 			}
 
 			auto& cmd_node = cmd_ctx.emplace_back();
@@ -390,8 +384,8 @@ public:
 
 			if (!parse_node_value(*matched_node, tokens, token_idx, consumed, cmdline, cmd_node.data)) {
 				return ParseError{ .type = ParseErrorType::InvalidToken,
-				                                  .message = std::format("Invalid value for '{}'", matched_node->name),
-				                                  .position = token_idx };
+				                   .message = std::format("Invalid value for '{}'", matched_node->name),
+				                   .position = token_idx };
 			}
 
 			cmd_ctx[cmd_ctx.size() - 2].next = &cmd_node;
@@ -404,9 +398,9 @@ public:
 			return operatorError();
 
 		if (!current->action) {
-			return
-			    ParseError{ .type = ParseErrorType::IncompleteCommand,
-				           .message = std::format("Incomplete command. Expected: {}", get_expected_names(*current)) };
+			return ParseError{ .type = ParseErrorType::IncompleteCommand,
+			                   .message = std::format("Incomplete command. Expected: {}",
+				                                      get_expected_names(*current)) };
 		}
 
 		current->action(cmd_ctx[1], user_data);
@@ -426,7 +420,8 @@ private:
 			auto [node, consumed] = find_matching_child(*current, tokens.first(completed), index);
 			if (!node)
 				return output;
-			if (node->type == NodeType::Vec3 && consumed != 2)
+			if ((node->type == NodeType::Pos1 || node->type == NodeType::Pos2 || node->type == NodeType::Pos3) &&
+			    consumed != 2)
 				return output;
 			if (node->type == NodeType::GreedyString && node->suggestionSource == SuggestionSource::NestedCommand) {
 				if (depth < 16)
@@ -600,8 +595,8 @@ private:
 		case NodeType::Integer:
 			return validate_int(token);
 
-		case NodeType::Float:
-			return validate_float(token);
+		case NodeType::Number:
+			return validate_number(token);
 
 		case NodeType::Boolean:
 			return token == "true" || token == "false";
@@ -611,8 +606,10 @@ private:
 			return std::ranges::find(settings.values, token) != settings.values.end();
 		}
 
-		case NodeType::Vec3:
-			return validate_vec3_component(token);
+		case NodeType::Pos1:
+		case NodeType::Pos2:
+		case NodeType::Pos3:
+			return validate_pos_component(token);
 
 		default:
 			return false;
@@ -623,7 +620,7 @@ private:
 	                                                size_t token_idx) {
 		if (node.type == NodeType::GreedyString)
 			return tokens.size() - token_idx - 1;
-		if (node.type == NodeType::Vec3 && tokens.size() > token_idx + 2)
+		if (node.type == NodeType::Pos3 && tokens.size() > token_idx + 2)
 			return 2;
 		return 0;
 	}
@@ -663,10 +660,10 @@ private:
 			return false;
 		}
 
-		case NodeType::Float: {
-			if (auto val = parse_float(token)) {
-				FloatSettings settings{};
-				if (auto* s = std::get_if<FloatSettings>(&node.settings)) {
+		case NodeType::Number: {
+			if (auto val = parse_number(token)) {
+				NumberSettings settings{};
+				if (auto* s = std::get_if<NumberSettings>(&node.settings)) {
 					settings = *s;
 				}
 				if (*val < settings.min || *val > settings.max) {
@@ -682,17 +679,40 @@ private:
 			data = (token == "true");
 			return true;
 
-		case NodeType::Vec3: {
+		case NodeType::Pos1: {
+			Pos pos;
+			if (!parse_pos_component(token, pos, Axis::X))
+				return false;
+
+			data = pos;
+			return true;
+		}
+
+		case NodeType::Pos2: {
+			if (consumed != 1)
+				return false;
+			Pos pos;
+			if (!parse_pos_component(token, pos, Axis::X))
+				return false;
+			if (!parse_pos_component(tokens[token_idx + 1], pos, Axis::Y))
+				return false;
+
+			data = pos;
+			return true;
+		}
+
+		case NodeType::Pos3: {
 			if (consumed != 2)
 				return false;
-			Vec3 vec;
-			if (!parse_vec3_component(token, vec, Axis::X))
+			Pos pos;
+			if (!parse_pos_component(token, pos, Axis::X))
 				return false;
-			if (!parse_vec3_component(tokens[token_idx + 1], vec, Axis::Y))
+			if (!parse_pos_component(tokens[token_idx + 1], pos, Axis::Y))
 				return false;
-			if (!parse_vec3_component(tokens[token_idx + 2], vec, Axis::Z))
+			if (!parse_pos_component(tokens[token_idx + 2], pos, Axis::Z))
 				return false;
-			data = vec;
+
+			data = pos;
 			return true;
 		}
 
@@ -715,8 +735,8 @@ private:
 		return parse_int(token).has_value();
 	}
 
-	[[nodiscard]] static bool validate_float(std::string_view token) {
-		return parse_float(token).has_value();
+	[[nodiscard]] static bool validate_number(std::string_view token) {
+		return parse_number(token).has_value();
 	}
 
 	[[nodiscard]] static std::optional<int> parse_int(std::string_view token) {
@@ -744,20 +764,20 @@ private:
 		}
 	}
 
-	[[nodiscard]] static std::optional<float> parse_float(std::string_view token) {
+	[[nodiscard]] static std::optional<double> parse_number(std::string_view token) {
 		if (token.empty())
 			return std::nullopt;
 
 		try {
 			size_t pos = 0;
-			float val = std::stof(std::string(token), &pos);
+			double val = std::stod(std::string(token), &pos);
 			return (pos == token.size()) ? std::optional{ val } : std::nullopt;
 		} catch (...) {
 			return std::nullopt;
 		}
 	}
 
-	[[nodiscard]] static bool validate_vec3_component(std::string_view token) {
+	[[nodiscard]] static bool validate_pos_component(std::string_view token) {
 		if (token.empty())
 			return false;
 
@@ -768,10 +788,10 @@ private:
 				return true; // Just '~' is valid
 		}
 
-		return validate_float(t);
+		return validate_number(t);
 	}
 
-	[[nodiscard]] static bool parse_vec3_component(std::string_view token, Vec3& vec, Axis axis) {
+	[[nodiscard]] static bool parse_pos_component(std::string_view token, Pos& pos, Axis axis) {
 		auto t = token;
 		bool relative = false;
 		float value = 0.0f;
@@ -780,22 +800,22 @@ private:
 			relative = true;
 			t = t.substr(1);
 			if (!t.empty()) {
-				if (auto val = parse_float(t)) {
+				if (auto val = parse_number(t)) {
 					value = *val;
 				} else {
 					return false;
 				}
 			}
 		} else {
-			if (auto val = parse_float(t)) {
+			if (auto val = parse_number(t)) {
 				value = *val;
 			} else {
 				return false;
 			}
 		}
 
-		vec.pos[std::to_underlying(axis)] = value;
-		vec.set_relative(axis, relative);
+		pos.vec[std::to_underlying(axis)] = value;
+		pos.set_relative(axis, relative);
 		return true;
 	}
 
@@ -829,14 +849,18 @@ private:
 			return "greedy_string";
 		case Integer:
 			return "integer";
-		case Float:
+		case Number:
 			return "float";
 		case Boolean:
 			return "boolean";
 		case Enum:
 			return "enum";
-		case Vec3:
-			return "vec3";
+		case Pos1:
+			return "pos1";
+		case Pos2:
+			return "pos2";
+		case Pos3:
+			return "pos3";
 		case Root:
 			return "root";
 		default:
