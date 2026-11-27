@@ -198,7 +198,10 @@ void WolfEntity::UpdateAIState() {
 		attackTarget.reset();
 		currentTarget = nullptr;
 	} else {
-		float distance = float(position.Distance(currentTarget->position));
+		Vec3 targetRef = currentTarget->position;
+		if (currentTarget->type == EntityType::PLAYER)
+			targetRef.y += PLAYER_EYE_HEIGHT;
+		float distance = float(position.Distance(targetRef));
 		Vec3 eyeFrom = { position.x, position.y + GetEyeHeight(), position.z };
 		Vec3 eyeTo = { currentTarget->position.x, currentTarget->position.y + currentTarget->height * 0.85f,
 			           currentTarget->position.z };
