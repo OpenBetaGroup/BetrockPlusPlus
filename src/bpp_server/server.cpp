@@ -1005,7 +1005,7 @@ void Server::Tick() {
 			                        }));
 			if (connected) {
 				if (activeSampleMode == SampleMode::Health) {
-					const std::array<std::pair<TickTask, const char*>, 11> tasks = {
+					const std::array<std::pair<TickTask, const char*>, 12> tasks = {
 						{ { TickTask::TotalTick, "Total Tick" },
 						  { TickTask::Network, "Network" },
 						  { TickTask::Autosave, "Autosave" },
@@ -1014,6 +1014,7 @@ void Server::Tick() {
 						  { TickTask::ChunkLoading, "Chunk Loading" },
 						  { TickTask::ChunkUnloading, "Chunk Unloading" },
 						  { TickTask::BlockUpdates, "Block Updates" },
+						  { TickTask::RandomTicks, "Random Ticks" },
 						  { TickTask::EntityTicks, "Entity Ticks" },
 						  { TickTask::BlockEntityTicks, "Block Entity Ticks" },
 						  { TickTask::Environment, "Environment" } }

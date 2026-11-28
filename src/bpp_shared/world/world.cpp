@@ -433,7 +433,8 @@ void WorldManager::Tick(const std::vector<std::shared_ptr<PlayerSession>>& _play
 	if (_profiler)
 		_profiler->Record(TickTask::ChunkLoading, Clock::now() - loadingStart);
 	if (_advanceSimulation) {
-		auto blockStart = _profiler ? Clock::now() : Clock::time_point{};
+		auto start = _profiler ? Clock::now() : Clock::time_point{};
+		// Block updates + Scheduled ticks
 		replayingDeferred = true;
 		while (!deferredUpdates.empty()) {
 			auto update = deferredUpdates.front();
@@ -446,23 +447,28 @@ void WorldManager::Tick(const std::vector<std::shared_ptr<PlayerSession>>& _play
 		replayingDeferred = false;
 		tickScheduler.Tick();
 		if (_profiler)
-			_profiler->Record(TickTask::BlockUpdates, Clock::now() - blockStart);
-		auto start = _profiler ? Clock::now() : Clock::time_point{};
+			_profiler->Record(TickTask::BlockUpdates, Clock::now() - start);
+		// Mob Spawning
+		start = _profiler ? Clock::now() : Clock::time_point{};
 		entitySpawner.TrySpawnEntities(*this, _players);
 		if (_profiler)
 			_profiler->Record(TickTask::MobSpawning, Clock::now() - start);
-		blockStart = _profiler ? Clock::now() : Clock::time_point{};
+		// Random ticks
+		start = _profiler ? Clock::now() : Clock::time_point{};
 		PerformRandomTicks(_players);
 		if (_profiler)
-			_profiler->Record(TickTask::BlockUpdates, Clock::now() - blockStart);
+			_profiler->Record(TickTask::RandomTicks, Clock::now() - start);
+		// Entity ticking
 		start = _profiler ? Clock::now() : Clock::time_point{};
 		entityManager.Tick(_profiler && _profiler->EntityProfilingEnabled() ? _profiler : nullptr);
 		if (_profiler)
 			_profiler->Record(TickTask::EntityTicks, Clock::now() - start);
+		// Tile entity ticking
 		start = _profiler ? Clock::now() : Clock::time_point{};
 		tileEntityManager.TickTileEntities(*this);
 		if (_profiler)
 			_profiler->Record(TickTask::BlockEntityTicks, Clock::now() - start);
+		// Weather ticking
 		start = _profiler ? Clock::now() : Clock::time_point{};
 		if (dimension->hasWeather)
 			weatherSystem.Tick(rand);

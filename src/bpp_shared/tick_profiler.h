@@ -39,6 +39,7 @@ enum class TickTask : uint8_t {
 	ChunkLoading,
 	ChunkUnloading,
 	BlockUpdates,
+	RandomTicks,
 	EntityTicks,
 	BlockEntityTicks,
 	Environment,
